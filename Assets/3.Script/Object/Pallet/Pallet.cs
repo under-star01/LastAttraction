@@ -3,23 +3,24 @@ using UnityEngine;
 
 public class Pallet : MonoBehaviour, IInteractable
 {
+    // 판자는 버튼 1번 눌러서 즉시 실행되는 타입
     public InteractType InteractType => InteractType.Press;
 
     [Header("참조")]
     [SerializeField] private Animator animator;
-    [SerializeField] private Collider standingCollider;   // 드롭 전 충돌
-    [SerializeField] private Collider droppedCollider;    // 드롭 후 충돌
-    [SerializeField] private Collider interactTrigger;    // 상호작용 범위 트리거
-    [SerializeField] private Transform leftDropStandPoint;    // 왼쪽에서 내릴 때 서바이버 위치
-    [SerializeField] private Transform rightDropStandPoint;   // 오른쪽에서 내릴 때 서바이버 위치
+    [SerializeField] private Collider standingCollider; // 세워진 상태 충돌
+    [SerializeField] private Collider droppedCollider;  // 넘어간 뒤 충돌
+    [SerializeField] private Collider interactTrigger;  // 상호작용 범위
+    [SerializeField] private Transform leftDropStandPoint;  // 왼쪽 접근 위치
+    [SerializeField] private Transform rightDropStandPoint; // 오른쪽 접근 위치
 
     [Header("시간")]
-    [SerializeField] private float dropActionTime = 1f;
+    [SerializeField] private float dropActionTime = 1f; // 판자 내리는 연출 시간
 
-    private bool isDropped;
-    private bool isDropping;
-    private SurvivorInteractor currentInteractor;
-    private bool isLeftSide;
+    private bool isDropped;            // 이미 내려갔는지
+    private bool isDropping;           // 현재 내리는 중인지
+    private SurvivorInteractor currentInteractor; // 현재 범위 안 플레이어
+    private bool isLeftSide;           // 플레이어가 왼쪽에서 접근했는지
 
     private void Awake()
     {
@@ -33,6 +34,7 @@ public class Pallet : MonoBehaviour, IInteractable
             droppedCollider.enabled = false;
     }
 
+    // 상호작용 시작
     public void BeginInteract()
     {
         if (isDropped || isDropping)
@@ -43,16 +45,18 @@ public class Pallet : MonoBehaviour, IInteractable
 
     public void EndInteract()
     {
-        // SPACE 즉발형이라 비워둠
+        // Press 타입이라 종료 처리는 필요 없음
     }
 
+    // 판자 내리는 전체 흐름
     private IEnumerator DropRoutine()
     {
         isDropping = true;
 
-        SnapSurvivorToDropPoint();
-        FaceSurvivorToDropDirection();
-        LockSurvivorMovement(true);
+        // 플레이어 위치와 방향을 연출용 자리로 맞춤
+        ToDropPoint();
+        FaceToDrop();
+        LockMovement(true);
 
         if (animator != null)
             animator.SetTrigger("Drop");
@@ -61,10 +65,11 @@ public class Pallet : MonoBehaviour, IInteractable
 
         Drop();
 
-        LockSurvivorMovement(false);
+        LockMovement(false);
         isDropping = false;
     }
 
+    // 실제 판자 상태 변경
     private void Drop()
     {
         isDropped = true;
@@ -81,7 +86,8 @@ public class Pallet : MonoBehaviour, IInteractable
         Debug.Log($"{name} 판자 드롭");
     }
 
-    private void SnapSurvivorToDropPoint()
+    // 플레이어를 판자 내리기용 자리로 이동
+    private void ToDropPoint()
     {
         if (currentInteractor == null)
             return;
@@ -96,6 +102,7 @@ public class Pallet : MonoBehaviour, IInteractable
 
         Transform survivorTransform = currentInteractor.transform;
 
+        // CharacterController 켠 상태로 순간이동하면 문제날 수 있어서 잠깐 끔
         if (controller != null)
             controller.enabled = false;
 
@@ -105,6 +112,7 @@ public class Pallet : MonoBehaviour, IInteractable
             controller.enabled = true;
     }
 
+    // 현재 플레이어가 왼쪽/오른쪽 어느 쪽인지 판정
     private Transform GetSideDropPoint()
     {
         if (currentInteractor == null)
@@ -115,11 +123,12 @@ public class Pallet : MonoBehaviour, IInteractable
 
         if (isLeftSide)
             return leftDropStandPoint != null ? leftDropStandPoint : rightDropStandPoint;
-
-        return rightDropStandPoint != null ? rightDropStandPoint : leftDropStandPoint;
+        else
+            return rightDropStandPoint != null ? rightDropStandPoint : leftDropStandPoint;
     }
 
-    private void FaceSurvivorToDropDirection()
+    // 판자 내리는 방향으로 플레이어를 바라보게 함
+    private void FaceToDrop()
     {
         if (currentInteractor == null)
             return;
@@ -135,12 +144,13 @@ public class Pallet : MonoBehaviour, IInteractable
             move = currentInteractor.GetComponentInParent<SurvivorMove>();
 
         if (move != null)
-            move.FaceDirection(lookDir);
+            move.FaceDirection(lookDir.normalized);
         else
             currentInteractor.transform.rotation = Quaternion.LookRotation(lookDir.normalized);
     }
 
-    private void LockSurvivorMovement(bool value)
+    // 판자 내리는 동안 이동 잠금
+    private void LockMovement(bool value)
     {
         if (currentInteractor == null)
             return;
@@ -153,10 +163,14 @@ public class Pallet : MonoBehaviour, IInteractable
             move.SetMoveLock(value);
     }
 
+    // 범위 진입 시 상호작용 가능 등록
     private void OnTriggerEnter(Collider other)
     {
-        if (isDropped || isDropping) return;
-        if (!other.CompareTag("Survivor")) return;
+        if (isDropped || isDropping)
+            return;
+
+        if (!other.CompareTag("Survivor"))
+            return;
 
         SurvivorInteractor interactor = other.GetComponent<SurvivorInteractor>();
         if (interactor == null)
@@ -170,9 +184,11 @@ public class Pallet : MonoBehaviour, IInteractable
         }
     }
 
+    // 범위 이탈 시 상호작용 해제
     private void OnTriggerExit(Collider other)
     {
-        if (!other.CompareTag("Survivor")) return;
+        if (!other.CompareTag("Survivor"))
+            return;
 
         SurvivorInteractor interactor = other.GetComponent<SurvivorInteractor>();
         if (interactor == null)

@@ -3,43 +3,50 @@ using UnityEngine;
 public class SurvivorMove : MonoBehaviour
 {
     [Header("참조")]
-    [SerializeField] private Transform cameraYawRoot; // 카메라 좌우 회전 루트
-    [SerializeField] private Transform cameraPitchRoot; // 카메라 상하 회전 루트
-    [SerializeField] private Camera playerCamera; // 카메라
-    [SerializeField] private Transform modelRoot; // 모델루트
+    [SerializeField] private Transform cameraYawRoot;   // 좌우 회전용 루트
+    [SerializeField] private Transform cameraPitchRoot; // 상하 회전용 루트
+    [SerializeField] private Camera playerCamera;       // 이동 방향 기준이 되는 카메라
+    [SerializeField] private Transform modelRoot;       // 플레이어 모델 회전용
 
     [Header("속도")]
-    [SerializeField] private float walkSpeed = 2f; //걷는 속도
-    [SerializeField] private float runSpeed = 4f; // 달리는 속도
-    [SerializeField] private float crouchSpeed = 1f; // 앉은 속도
-    [SerializeField] private float turnSpeed = 15f; // 몸 회전 속도
+    [SerializeField] private float walkSpeed = 2f;
+    [SerializeField] private float runSpeed = 4f;
+    [SerializeField] private float crouchSpeed = 1f;
+    [SerializeField] private float turnSpeed = 15f;
 
     [Header("카메라")]
-    [SerializeField] private float mouseSensitivity = 0.1f; // 마우스 감도
-    [SerializeField] private float minPitch = -60f; // 마우스 최소 각
-    [SerializeField] private float maxPitch = 60f; // 마우스 최대 각
+    [SerializeField] private float mouseSensitivity = 0.1f;
+    [SerializeField] private float minPitch = -60f;
+    [SerializeField] private float maxPitch = 60f;
 
     [Header("앉기")]
-    [SerializeField] private float standHeight = 1.8f; // 일어선 높이
-    [SerializeField] private float crouchHeight = 1.1f; // 앉은 높이
+    [SerializeField] private float standHeight = 1.8f;
+    [SerializeField] private float crouchHeight = 1.1f;
 
     private CharacterController controller;
     private SurvivorInput input;
 
-    private float cameraYaw;
-    private float pitch;
-    private float yVelocity;
+    private float cameraYaw;     // 좌우 회전 값
+    private float pitch;         // 상하 회전 값
+    private float yVelocity;     // 중력용 y속도
+
+    // true면 이동만 막힘
+    // 중요한 점: Look()는 계속 돌기 때문에 마우스 회전은 살아 있음
     private bool isMoveLocked;
 
+    // 외부(증거조사, 판자 등)에서 이동 잠금/해제할 때 사용
     public void SetMoveLock(bool value)
     {
         isMoveLocked = value;
     }
 
+    // 플레이어 모델을 특정 방향으로 바라보게 함
     public void FaceDirection(Vector3 dir)
     {
         dir.y = 0f;
-        if (dir.sqrMagnitude <= 0.001f) return;
+
+        if (dir.sqrMagnitude <= 0.001f)
+            return;
 
         if (modelRoot != null)
             modelRoot.rotation = Quaternion.LookRotation(dir.normalized);
@@ -58,8 +65,10 @@ public class SurvivorMove : MonoBehaviour
 
     private void Update()
     {
+        // 이동이 막혀도 마우스 회전은 항상 가능하게 유지
         Look();
 
+        // 이동 잠금 상태면 걷기/달리기/앉기는 막고 중력만 적용
         if (isMoveLocked)
         {
             ApplyGravityOnly();
@@ -70,6 +79,7 @@ public class SurvivorMove : MonoBehaviour
         Crouch();
     }
 
+    // 마우스로 카메라 회전
     private void Look()
     {
         Vector2 look = input.Look;
@@ -85,10 +95,12 @@ public class SurvivorMove : MonoBehaviour
             cameraPitchRoot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
 
+    // 이동 처리
     private void Move()
     {
         Vector2 moveInput = input.Move;
 
+        // 카메라 기준 앞/오른쪽 방향으로 이동
         Vector3 forward = playerCamera.transform.forward;
         Vector3 right = playerCamera.transform.right;
 
@@ -99,9 +111,11 @@ public class SurvivorMove : MonoBehaviour
         right.Normalize();
 
         Vector3 move = forward * moveInput.y + right * moveInput.x;
+
         if (move.magnitude > 1f)
             move.Normalize();
 
+        // 상태에 따라 속도 결정
         float speed = walkSpeed;
 
         if (input.IsCrouching)
@@ -109,6 +123,7 @@ public class SurvivorMove : MonoBehaviour
         else if (input.IsRunning)
             speed = runSpeed;
 
+        // 중력 처리
         if (controller.isGrounded)
             yVelocity = -1f;
         else
@@ -116,8 +131,10 @@ public class SurvivorMove : MonoBehaviour
 
         Vector3 finalMove = move;
         finalMove.y = yVelocity;
+
         controller.Move(finalMove * speed * Time.deltaTime);
 
+        // 움직이는 방향으로 모델 회전
         if (move.sqrMagnitude > 0.001f && modelRoot != null)
         {
             Quaternion targetRot = Quaternion.LookRotation(move);
@@ -130,6 +147,7 @@ public class SurvivorMove : MonoBehaviour
         }
     }
 
+    // 이동 잠금 상태에서도 바닥에 붙고 낙하는 되게 하기 위함
     private void ApplyGravityOnly()
     {
         if (controller.isGrounded)
@@ -141,6 +159,7 @@ public class SurvivorMove : MonoBehaviour
         controller.Move(gravityMove * Time.deltaTime);
     }
 
+    // 앉기 높이 변경
     private void Crouch()
     {
         if (input.IsCrouching)
