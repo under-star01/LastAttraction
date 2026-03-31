@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a73b06921a870e44ab2a62a0434904cb
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 291284
+  packageName: MC Sample - Believable 3D Animations by MoCap Central
+  packageVersion: 1.2.0
+  assetPath: Assets/MoCapCentral/MC_Sample/Demo/Objects/VendingMachine/MI_VM_Color1.mat
+  uploadId: 835434

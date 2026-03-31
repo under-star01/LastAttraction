@@ -3,10 +3,11 @@ using UnityEngine;
 public class SurvivorMove : MonoBehaviour
 {
     [Header("참조")]
-    [SerializeField] private Transform cameraYawRoot;   // 좌우 회전용 루트
-    [SerializeField] private Transform cameraPitchRoot; // 상하 회전용 루트
-    [SerializeField] private Camera playerCamera;       // 이동 방향 기준이 되는 카메라
-    [SerializeField] private Transform modelRoot;       // 플레이어 모델 회전용
+    [SerializeField] private Transform cameraYawRoot;
+    [SerializeField] private Transform cameraPitchRoot;
+    [SerializeField] private Camera playerCamera;
+    [SerializeField] private Transform modelRoot;
+    [SerializeField] private Animator animator;
 
     [Header("속도")]
     [SerializeField] private float walkSpeed = 2f;
@@ -19,28 +20,19 @@ public class SurvivorMove : MonoBehaviour
     [SerializeField] private float minPitch = -60f;
     [SerializeField] private float maxPitch = 60f;
 
-    [Header("앉기")]
-    [SerializeField] private float standHeight = 1.8f;
-    [SerializeField] private float crouchHeight = 1.1f;
-
     private CharacterController controller;
     private SurvivorInput input;
 
-    private float cameraYaw;     // 좌우 회전 값
-    private float pitch;         // 상하 회전 값
-    private float yVelocity;     // 중력용 y속도
-
-    // true면 이동만 막힘
-    // 중요한 점: Look()는 계속 돌기 때문에 마우스 회전은 살아 있음
+    private float cameraYaw;
+    private float pitch;
+    private float yVelocity;
     private bool isMoveLocked;
 
-    // 외부(증거조사, 판자 등)에서 이동 잠금/해제할 때 사용
     public void SetMoveLock(bool value)
     {
         isMoveLocked = value;
     }
 
-    // 플레이어 모델을 특정 방향으로 바라보게 함
     public void FaceDirection(Vector3 dir)
     {
         dir.y = 0f;
@@ -57,7 +49,8 @@ public class SurvivorMove : MonoBehaviour
         controller = GetComponent<CharacterController>();
         input = GetComponent<SurvivorInput>();
 
-        controller.height = standHeight;
+        if (animator == null && modelRoot != null)
+            animator = modelRoot.GetComponentInChildren<Animator>();
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -65,13 +58,15 @@ public class SurvivorMove : MonoBehaviour
 
     private void Update()
     {
-        // 이동이 막혀도 마우스 회전은 항상 가능하게 유지
+        if (controller == null || !controller.enabled)
+            return;
+
         Look();
 
-        // 이동 잠금 상태면 걷기/달리기/앉기는 막고 중력만 적용
         if (isMoveLocked)
         {
             ApplyGravityOnly();
+            UpdateAnimator(0f, input.IsCrouching);
             return;
         }
 
@@ -79,7 +74,6 @@ public class SurvivorMove : MonoBehaviour
         Crouch();
     }
 
-    // 마우스로 카메라 회전
     private void Look()
     {
         Vector2 look = input.Look;
@@ -95,12 +89,10 @@ public class SurvivorMove : MonoBehaviour
             cameraPitchRoot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
 
-    // 이동 처리
     private void Move()
     {
         Vector2 moveInput = input.Move;
 
-        // 카메라 기준 앞/오른쪽 방향으로 이동
         Vector3 forward = playerCamera.transform.forward;
         Vector3 right = playerCamera.transform.right;
 
@@ -115,27 +107,39 @@ public class SurvivorMove : MonoBehaviour
         if (move.magnitude > 1f)
             move.Normalize();
 
-        // 상태에 따라 속도 결정
+        bool isMoving = move.sqrMagnitude > 0.001f;
+        bool isRunning = isMoving && !input.IsCrouching && input.IsRunning;
+
         float speed = walkSpeed;
+        float animSpeed = 0f;
 
         if (input.IsCrouching)
+        {
             speed = crouchSpeed;
-        else if (input.IsRunning)
+            animSpeed = isMoving ? 0.5f : 0f;
+        }
+        else if (isRunning)
+        {
             speed = runSpeed;
+            animSpeed = 1f;
+        }
+        else if (isMoving)
+        {
+            speed = walkSpeed;
+            animSpeed = 0.5f;
+        }
 
-        // 중력 처리
         if (controller.isGrounded)
             yVelocity = -1f;
         else
             yVelocity += Physics.gravity.y * Time.deltaTime;
 
         Vector3 finalMove = move;
-        finalMove.y = yVelocity;
+        finalMove.y = yVelocity / speed;
 
         controller.Move(finalMove * speed * Time.deltaTime);
 
-        // 움직이는 방향으로 모델 회전
-        if (move.sqrMagnitude > 0.001f && modelRoot != null)
+        if (isMoving && modelRoot != null)
         {
             Quaternion targetRot = Quaternion.LookRotation(move);
 
@@ -145,11 +149,15 @@ public class SurvivorMove : MonoBehaviour
                 turnSpeed * Time.deltaTime
             );
         }
+
+        UpdateAnimator(animSpeed, input.IsCrouching);
     }
 
-    // 이동 잠금 상태에서도 바닥에 붙고 낙하는 되게 하기 위함
     private void ApplyGravityOnly()
     {
+        if (controller == null || !controller.enabled)
+            return;
+
         if (controller.isGrounded)
             yVelocity = -1f;
         else
@@ -159,12 +167,28 @@ public class SurvivorMove : MonoBehaviour
         controller.Move(gravityMove * Time.deltaTime);
     }
 
-    // 앉기 높이 변경
     private void Crouch()
     {
         if (input.IsCrouching)
-            controller.height = crouchHeight;
+        {
+            controller.height = 0.9f;
+            // 높이가 0.9면 중심은 0.45여야 발바닥이 0 위치에 고정
+            controller.center = new Vector3(0f, 0.45f, 0f);
+        }
         else
-            controller.height = standHeight;
+        {
+            controller.height = 1.8f;
+            // 높이가 1.8이면 중심은 0.9
+            controller.center = new Vector3(0f, 0.9f, 0f);
+        }
+    }
+
+    private void UpdateAnimator(float targetMoveSpeed, bool isCrouching)
+    {
+        if (animator == null)
+            return;
+
+        animator.SetFloat("MoveSpeed", targetMoveSpeed, 0.1f, Time.deltaTime);
+        animator.SetBool("IsCrouching", isCrouching);
     }
 }

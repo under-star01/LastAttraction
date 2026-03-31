@@ -142,7 +142,9 @@ MonoBehaviour:
   interactTrigger: {fileID: 4862970796217135275}
   leftDropStandPoint: {fileID: 3809310533888025628}
   rightDropStandPoint: {fileID: 9112308028019181740}
+  moveToPointTime: 0.15
   dropActionTime: 1
+  pushDistance: 1.2
 --- !u!1 &3037625827884435423
 GameObject:
   m_ObjectHideFlags: 0
@@ -168,7 +170,7 @@ Transform:
   m_GameObject: {fileID: 3037625827884435423}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.5, y: 0, z: 0.75}
+  m_LocalPosition: {x: -1.5, y: -1, z: 0.75}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -199,7 +201,7 @@ Transform:
   m_GameObject: {fileID: 4515538186916736939}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.5, y: 0, z: 0.75}
+  m_LocalPosition: {x: 1.5, y: -1, z: 0.75}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

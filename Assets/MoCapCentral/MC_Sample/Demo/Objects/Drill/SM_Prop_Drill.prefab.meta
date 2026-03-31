@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 793bf76d475f0b341b507c035996303a
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 291284
+  packageName: MC Sample - Believable 3D Animations by MoCap Central
+  packageVersion: 1.2.0
+  assetPath: Assets/MoCapCentral/MC_Sample/Demo/Objects/Drill/SM_Prop_Drill.prefab
+  uploadId: 835434
