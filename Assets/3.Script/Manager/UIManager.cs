@@ -48,4 +48,12 @@ public class UIManager : MonoBehaviour
 
         CustomNetworkManager.Instance.ConnectAsSurvivor();
     }
+
+    public void OnClickBackButton()
+    {
+        if (CustomNetworkManager.Instance == null)
+            return;
+
+        CustomNetworkManager.Instance.BackToRoleSelect();
+    }
 }

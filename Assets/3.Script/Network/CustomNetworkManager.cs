@@ -33,7 +33,6 @@ public class CustomNetworkManager : NetworkManager
     public static CustomNetworkManager Instance { get; private set; }
 
     [Header("Port Settings")]
-    [SerializeField] private ushort defaultPort = 7777;
     [SerializeField] private List<ushort> serverPorts = new List<ushort> { 7777, 7778, 7779 };
 
     [Header("Role Prefabs")]
@@ -61,6 +60,9 @@ public class CustomNetworkManager : NetworkManager
     private bool joinApproved = false;
     private bool retryScheduled = false;
 
+    // 수동 취소/돌아가기 여부
+    private bool isLeavingManually = false;
+
     public bool HasKiller
     {
         get
@@ -77,6 +79,10 @@ public class CustomNetworkManager : NetworkManager
     public bool IsRoomFull => numPlayers >= maxRoomPlayers;
     public bool CanJoinAsKiller => !HasKiller && !IsRoomFull;
     public bool CanJoinAsSurvivor => HasKiller && !IsRoomFull;
+
+    public bool IsSearchingServer => isSearchingServer;
+    public bool IsConnectedToServer => NetworkClient.isConnected;
+    public JoinRole CurrentLocalJoinRole => localJoinRole;
 
     public override void Awake()
     {
@@ -97,8 +103,9 @@ public class CustomNetworkManager : NetworkManager
             return;
         }
 
-        ushort targetPort = GetPortFromArgs(defaultPort);
+        ushort targetPort = GetPortFromArgs();
         kcpTransport.Port = targetPort;
+
         maxConnections = maxRoomPlayers;
 
         Debug.Log($"[CustomNetworkManager] 적용된 포트: {kcpTransport.Port}");
@@ -126,6 +133,29 @@ public class CustomNetworkManager : NetworkManager
         BeginRoleSearch(JoinRole.Survivor);
     }
 
+    public void BackToRoleSelect()
+    {
+        Debug.Log("[CustomNetworkManager] 돌아가기 요청");
+
+        isLeavingManually = true;
+
+        // 자동 재시도 방지
+        isSearchingServer = false;
+        retryScheduled = false;
+        joinApproved = false;
+
+        // 클라이언트가 연결 중이거나 활성 상태면 종료
+        if (NetworkClient.active || NetworkClient.isConnected)
+        {
+            StopClient();
+        }
+        else
+        {
+            ResetClientSearchState();
+            isLeavingManually = false;
+        }
+    }
+
     private void BeginRoleSearch(JoinRole role)
     {
         if (NetworkClient.active || isSearchingServer)
@@ -140,6 +170,7 @@ public class CustomNetworkManager : NetworkManager
             return;
         }
 
+        isLeavingManually = false;
         localJoinRole = role;
         currentPortIndex = -1;
         isSearchingServer = true;
@@ -172,10 +203,13 @@ public class CustomNetworkManager : NetworkManager
     {
         retryScheduled = true;
 
-        // Mirror 내부 상태 정리 한 프레임 대기
         yield return null;
 
         retryScheduled = false;
+
+        if (!isSearchingServer || isLeavingManually)
+            yield break;
+
         TryNextPort();
     }
 
@@ -242,6 +276,14 @@ public class CustomNetworkManager : NetworkManager
         NetworkClient.RegisterHandler<JoinAcceptedMessage>(OnJoinAccepted, false);
     }
 
+    public override void OnStopClient()
+    {
+        base.OnStopClient();
+
+        ResetClientSearchState();
+        isLeavingManually = false;
+    }
+
     public override void OnClientConnect()
     {
         base.OnClientConnect();
@@ -265,9 +307,9 @@ public class CustomNetworkManager : NetworkManager
 
     public override void OnClientDisconnect()
     {
-        bool shouldRetry = isSearchingServer && !joinApproved;
+        bool shouldRetry = isSearchingServer && !joinApproved && !isLeavingManually;
 
-        Debug.Log($"[CustomNetworkManager] 서버 연결 종료 - role: {localJoinRole}, lastPort: {(currentPortIndex >= 0 && currentPortIndex < serverPorts.Count ? serverPorts[currentPortIndex].ToString() : "Unknown")}");
+        Debug.Log($"[CustomNetworkManager] 서버 연결 종료 - role: {localJoinRole}, lastPort: {(currentPortIndex >= 0 && currentPortIndex < serverPorts.Count ? serverPorts[currentPortIndex].ToString() : "Unknown")}, manualLeave: {isLeavingManually}");
 
         base.OnClientDisconnect();
 
@@ -278,6 +320,7 @@ public class CustomNetworkManager : NetworkManager
         }
 
         ResetClientSearchState();
+        isLeavingManually = false;
     }
 
     private void OnJoinDenied(JoinDeniedMessage msg)
@@ -397,14 +440,14 @@ public class CustomNetworkManager : NetworkManager
         GameObject playerObj = Instantiate(prefabToSpawn, spawnPosition, spawnRotation);
         NetworkServer.AddPlayerForConnection(conn, playerObj);
 
-        Debug.Log($"[CustomNetworkManager] 플레이어 생성 완료 - connId: {conn.connectionId}, role: {role}, totalPlayers: {numPlayers + 1}");
+        Debug.Log($"[CustomNetworkManager] 플레이어 생성 완료 - connId: {conn.connectionId}, role: {role}, totalPlayers: {numPlayers}");
     }
 
     #endregion
 
     #region Utils
 
-    private ushort GetPortFromArgs(ushort fallbackPort)
+    private ushort GetPortFromArgs()
     {
         string[] args = Environment.GetCommandLineArgs();
 
@@ -424,8 +467,14 @@ public class CustomNetworkManager : NetworkManager
             }
         }
 
-        Debug.Log($"[CustomNetworkManager] 포트 인자가 없어 기본 포트 사용: {fallbackPort}");
-        return fallbackPort;
+        if (serverPorts == null || serverPorts.Count == 0)
+        {
+            Debug.LogError("[CustomNetworkManager] serverPorts가 비어 있습니다. 기본 포트를 결정할 수 없습니다.");
+            return 7777;
+        }
+
+        Debug.Log($"[CustomNetworkManager] 명령줄 포트가 없어 serverPorts[0] 사용: {serverPorts[0]}");
+        return serverPorts[0];
     }
 
     private int GetCurrentSurvivorCount()
