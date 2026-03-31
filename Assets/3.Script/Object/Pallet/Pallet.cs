@@ -16,7 +16,7 @@ public class Pallet : MonoBehaviour, IInteractable
 
     [Header("시간")]
     [SerializeField] private float moveToPointTime = 0.15f; // 드롭 위치로 부드럽게 이동하는 시간
-    [SerializeField] private float dropActionTime = 1f; // 판자 내리는 연출 시간
+    [SerializeField] private float dropActionTime = 0.5f; // 판자 내리는 연출 시간
 
     [Header("밀어내기")]
     [SerializeField] private float pushDistance = 1.2f; // 겹친 대상을 얼마나 밀어낼지
@@ -64,7 +64,14 @@ public class Pallet : MonoBehaviour, IInteractable
         LockMovement(true);
         FaceToDrop();
 
-        yield return MoveToDropPointRoutine(targetPoint);
+        // 드랍 위치까지 부드럽게 이동
+        yield return MoveToPoint(targetPoint);
+
+        // 이동 직후 걷기 애니메이션이 남아있지 않게 정지
+        StopSurvivorMoveAnim();
+
+        // 생존자 드랍 애니메이션 실행
+        PlaySurvivorDropAnimation();
 
         if (animator != null)
             animator.SetTrigger("Drop");
@@ -98,7 +105,7 @@ public class Pallet : MonoBehaviour, IInteractable
     }
 
     // 플레이어를 판자 내리기용 자리로 부드럽게 이동
-    private IEnumerator MoveToDropPointRoutine(Transform targetPoint)
+    private IEnumerator MoveToPoint(Transform targetPoint)
     {
         if (currentInteractor == null || targetPoint == null)
             yield break;
@@ -281,5 +288,33 @@ public class Pallet : MonoBehaviour, IInteractable
 
             Debug.Log($"{name} 범위 이탈");
         }
+    }
+
+    // 생존자의 내리는 애니메이션 불러오기
+    private void PlaySurvivorDropAnimation()
+    {
+        if (currentInteractor == null)
+            return;
+
+        SurvivorMove move = currentInteractor.GetComponent<SurvivorMove>();
+        if (move == null)
+            move = currentInteractor.GetComponentInParent<SurvivorMove>();
+
+        if (move != null)
+            move.PlayAnimation("Drop");
+    }
+
+    // 생존자의 애니메이션 초기화
+    private void StopSurvivorMoveAnim()
+    {
+        if (currentInteractor == null)
+            return;
+
+        SurvivorMove move = currentInteractor.GetComponent<SurvivorMove>();
+        if (move == null)
+            move = currentInteractor.GetComponentInParent<SurvivorMove>();
+
+        if (move != null)
+            move.StopAnimation();
     }
 }

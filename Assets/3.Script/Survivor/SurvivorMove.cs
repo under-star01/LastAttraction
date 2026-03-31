@@ -185,10 +185,17 @@ public class SurvivorMove : MonoBehaviour
 
     private void UpdateAnimator(float targetMoveSpeed, bool isCrouching)
     {
-        if (animator == null)
-            return;
-
         animator.SetFloat("MoveSpeed", targetMoveSpeed, 0.1f, Time.deltaTime);
         animator.SetBool("IsCrouching", isCrouching);
+    }
+
+    public void PlayAnimation(string triggerName)
+    {
+        animator.SetTrigger(triggerName);
+    }
+
+    public void StopAnimation()
+    {
+        UpdateAnimator(0f, input != null && input.IsCrouching);
     }
 }

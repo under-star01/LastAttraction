@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: MCU_am_InjuredBelly_Idle_01
+  m_Name: Injured_Idle
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
