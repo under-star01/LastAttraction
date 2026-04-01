@@ -143,6 +143,8 @@ public class CustomNetworkManager : NetworkManager
         isJoiningFinalRoom = false;
         selectedPort = 0;
 
+        UIManager.Instance?.ShowLoading(false);
+
         LobbySceneBinder.Instance?.ApplyCameraForRole(JoinRole.None);
 
         if (connectRoutine != null)
@@ -188,8 +190,8 @@ public class CustomNetworkManager : NetworkManager
         isJoiningFinalRoom = false;
         selectedPort = 0;
 
+        UIManager.Instance?.ShowLoading(true);
         probedRooms.Clear();
-
         ProbeNextPort();
     }
 
@@ -213,6 +215,7 @@ public class CustomNetworkManager : NetworkManager
         if (selectedPort == 0)
         {
             Debug.LogWarning($"[CustomNetworkManager] {localJoinRole} 입장 가능한 방이 없습니다.");
+            UIManager.Instance?.ShowLoading(false);
             ResetClientSearchState();
             return;
         }
@@ -402,8 +405,17 @@ public class CustomNetworkManager : NetworkManager
             Debug.LogWarning("[CustomNetworkManager] 최종 방 입장에 실패했습니다.");
         }
 
-        if (!joinApproved)
+        if (isLeavingManually)
+        {
             ResetClientSearchState();
+            return;
+        }
+
+        if (!joinApproved)
+        {
+            UIManager.Instance?.ShowLoading(false);
+            ResetClientSearchState();
+        }
     }
 
     private void OnJoinDenied(JoinDeniedMessage msg)
@@ -411,7 +423,14 @@ public class CustomNetworkManager : NetworkManager
         Debug.LogWarning($"[CustomNetworkManager] 입장 거부: {msg.reason}");
 
         if (NetworkClient.active || NetworkClient.isConnected)
+        {
             StopClient();
+        }
+        else
+        {
+            UIManager.Instance?.ShowLoading(false);
+            ResetClientSearchState();
+        }
     }
 
     private void OnJoinAccepted(JoinAcceptedMessage msg)
@@ -420,6 +439,8 @@ public class CustomNetworkManager : NetworkManager
         isSearchingServer = false;
         isJoiningFinalRoom = false;
         localJoinRole = (JoinRole)msg.role;
+
+        UIManager.Instance?.ShowLoading(false);
 
         Debug.Log($"[CustomNetworkManager] 입장 완료 - Role: {localJoinRole}, Port: {msg.port}");
     }

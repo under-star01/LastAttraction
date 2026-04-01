@@ -3,12 +3,23 @@ using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
+    public static UIManager Instance { get; private set; }
+
     [Header("Buttons")]
     [SerializeField] private Button killerButton;
     [SerializeField] private Button survivorButton;
+    [SerializeField] private GameObject loadingPanel;
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
         BindButtons();
     }
 
@@ -55,5 +66,11 @@ public class UIManager : MonoBehaviour
             return;
 
         CustomNetworkManager.Instance.BackToRoleSelect();
+    }
+
+    public void ShowLoading(bool isActive)
+    {
+        if (loadingPanel != null)
+            loadingPanel.SetActive(isActive);
     }
 }
