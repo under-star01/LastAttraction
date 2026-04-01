@@ -5,6 +5,7 @@ using UnityEngine;
 using Mirror;
 using kcp2k;
 
+// 어떤 역할로 입장할지
 public enum JoinRole
 {
     None,
@@ -12,24 +13,29 @@ public enum JoinRole
     Survivor
 }
 
+// 클라 -> 서버 : 서버 입장 최종 요청 메세지
 public struct JoinRequestMessage : NetworkMessage
 {
     public int role;
 }
 
+// 서버 -> 클라 : 서버 입장 거절 메세지 
 public struct JoinDeniedMessage : NetworkMessage
 {
     public string reason;
 }
 
+// 서버 -> 클라 : 서버 입장 승인 메세지
 public struct JoinAcceptedMessage : NetworkMessage
 {
     public int role;
     public ushort port;
 }
 
+// 클라 -> 서버 : 서버 상태 요청 메세지 (요청만)
 public struct RoomProbeRequestMessage : NetworkMessage { }
 
+// 서버 -> 클라 : 현재 서버 상태 반환 메세지
 public struct RoomProbeResponseMessage : NetworkMessage
 {
     public ushort port;
@@ -43,7 +49,7 @@ public class CustomNetworkManager : NetworkManager
     public static CustomNetworkManager Instance { get; private set; }
 
     [Header("Port Settings")]
-    [SerializeField] private List<ushort> serverPorts = new() { 7777, 7778, 7779, 7780, 7781 };
+    [SerializeField] private List<ushort> serverPorts = new() { 7777, 7778, 7779};
 
     [Header("Role Prefabs")]
     [SerializeField] private GameObject killerPrefab;
@@ -62,12 +68,12 @@ public class CustomNetworkManager : NetworkManager
     private readonly Dictionary<int, JoinRole> joinedRoles = new();
     private readonly List<RoomProbeResponseMessage> probedRooms = new();
 
-    private int currentPortIndex = -1;
-    private bool isSearchingServer;
-    private bool joinApproved;
-    private bool isLeavingManually;
-    private bool isJoiningFinalRoom;
-    private ushort selectedPort;
+    private int currentPortIndex = -1; // 현재 탐색중인 포트 Index
+    private bool isSearchingServer; // 현재 서버 탐색 여부
+    private bool isLeavingManually; // 수동으로 나가는 중인지 여부
+    private bool isJoiningFinalRoom; // 최종 입장 시도 중인지 여부
+    private bool joinApproved; // 최종 입장 승인 여부
+    private ushort selectedPort; // 최종 선택된 포트
 
     private Coroutine connectRoutine;
 
@@ -75,9 +81,9 @@ public class CustomNetworkManager : NetworkManager
     {
         get
         {
-            foreach (var pair in joinedRoles)
+            foreach (var role in joinedRoles)
             {
-                if (pair.Value == JoinRole.Killer)
+                if (role.Value == JoinRole.Killer)
                     return true;
             }
 
@@ -86,9 +92,12 @@ public class CustomNetworkManager : NetworkManager
     }
 
     public bool IsRoomFull => numPlayers >= maxRoomPlayers;
+    // 살인마 입장 가능 상태 여부
     public bool CanJoinAsKiller => !HasKiller && !IsRoomFull;
+    // 생존자 입장 가능 상태 여부
     public bool CanJoinAsSurvivor => HasKiller && !IsRoomFull;
 
+    // 상태 확인용 프로퍼티
     public bool IsSearchingServer => isSearchingServer;
     public bool IsConnectedToServer => NetworkClient.isConnected;
     public JoinRole CurrentLocalJoinRole => localJoinRole;
@@ -117,24 +126,27 @@ public class CustomNetworkManager : NetworkManager
 
     private void Start()
     {
-        if (!Application.isBatchMode)
-            return;
+        // 서버 컴퓨터에서만 실행
+        if (!Application.isBatchMode) return;
 
         StartServer();
     }
 
-    #region Client API
+    #region Client Connect
 
+    // 살인마로 접속 메소드
     public void ConnectAsKiller()
     {
         BeginRoleSearch(JoinRole.Killer);
     }
 
+    // 생존자로 접속 메소드
     public void ConnectAsSurvivor()
     {
         BeginRoleSearch(JoinRole.Survivor);
     }
 
+    // 역할 선택 초기화 메소드
     public void BackToRoleSelect()
     {
         isLeavingManually = true;
@@ -164,6 +176,7 @@ public class CustomNetworkManager : NetworkManager
 
     private void BeginRoleSearch(JoinRole role)
     {
+        // 탐색 가능 여부 확인
         if (role != JoinRole.Killer && role != JoinRole.Survivor)
         {
             Debug.LogWarning("[CustomNetworkManager] 유효하지 않은 역할입니다.");
@@ -182,16 +195,19 @@ public class CustomNetworkManager : NetworkManager
             return;
         }
 
+        // 탐색 상태 초기화
         localJoinRole = role;
         currentPortIndex = -1;
-        isSearchingServer = true;
-        joinApproved = false;
+        isSearchingServer = true; // 탐색 상태로 전환
         isLeavingManually = false;
         isJoiningFinalRoom = false;
+        joinApproved = false;
         selectedPort = 0;
 
         UIManager.Instance?.ShowLoading(true);
         probedRooms.Clear();
+        
+        // 포트 탐색 시작
         ProbeNextPort();
     }
 
@@ -201,13 +217,16 @@ public class CustomNetworkManager : NetworkManager
 
         if (currentPortIndex >= serverPorts.Count)
         {
+            // 최종 접속 방 선택
             SelectBestRoomAndJoin();
             return;
         }
 
+        // 목표 포트에 클라이언트 접속
         StartClientDelayed(serverPorts[currentPortIndex]);
     }
 
+    // 최종 접속 포트 선택 메소드
     private void SelectBestRoomAndJoin()
     {
         selectedPort = FindBestPort();
@@ -220,43 +239,12 @@ public class CustomNetworkManager : NetworkManager
             return;
         }
 
+        // 최종 입장 단계로 전환 (OnClientConnect에서 JoinRequestMessage로 변환)
         isJoiningFinalRoom = true;
         StartClientDelayed(selectedPort);
     }
 
-    private ushort FindBestPort()
-    {
-        if (localJoinRole == JoinRole.Killer)
-        {
-            foreach (var room in probedRooms)
-            {
-                if (!room.isFull && !room.hasKiller && room.survivorCount > 0)
-                    return room.port;
-            }
-
-            foreach (var room in probedRooms)
-            {
-                if (!room.isFull && !room.hasKiller && room.survivorCount == 0)
-                    return room.port;
-            }
-
-            return 0;
-        }
-
-        if (localJoinRole == JoinRole.Survivor)
-        {
-            foreach (var room in probedRooms)
-            {
-                if (!room.isFull && room.hasKiller)
-                    return room.port;
-            }
-
-            return 0;
-        }
-
-        return 0;
-    }
-
+    // 목표 포트 접속 메소드
     private void StartClientDelayed(ushort targetPort)
     {
         if (connectRoutine != null)
@@ -270,9 +258,10 @@ public class CustomNetworkManager : NetworkManager
 
     private IEnumerator StartClientNextFrame(ushort targetPort)
     {
-        yield return null;
+        // 약간 지연을 주고 확인
         yield return new WaitForSeconds(0.1f);
 
+        // 접속 가능 상태 확인
         if (isLeavingManually)
         {
             connectRoutine = null;
@@ -292,12 +281,53 @@ public class CustomNetworkManager : NetworkManager
             yield break;
         }
 
+        // 목표 포트로 Client 접속
         kcpTransport.Port = targetPort;
         StartClient();
 
         connectRoutine = null;
     }
 
+    // 최적 포트 반환 메소드
+    private ushort FindBestPort()
+    {
+        // 살인마 접속의 경우
+        if (localJoinRole == JoinRole.Killer)
+        {
+            // 우선순위 1 : 살인마x + 생존자o
+            foreach (var room in probedRooms)
+            {
+                if (!room.isFull && !room.hasKiller && room.survivorCount > 0)
+                    return room.port;
+            }
+
+            // 우선순위 2 : 살인마x + 생존자x
+            foreach (var room in probedRooms)
+            {
+                if (!room.isFull && !room.hasKiller && room.survivorCount == 0)
+                    return room.port;
+            }
+
+            return 0;
+        }
+
+        // 생존자 접속의 경우
+        if (localJoinRole == JoinRole.Survivor)
+        {
+            // 살인마o + 최대 인원수x
+            foreach (var room in probedRooms)
+            {
+                if (room.hasKiller && !room.isFull)
+                    return room.port;
+            }
+
+            return 0;
+        }
+
+        return 0;
+    }
+
+    // 탐색 상태 초기화 메소드
     private void ResetClientSearchState()
     {
         localJoinRole = JoinRole.None;
