@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 7e8e07c3bbe393742bef6b41418b366d
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 291284
+  packageName: MC Sample - Believable 3D Animations by MoCap Central
+  packageVersion: 1.2.0
+  assetPath: Assets/MoCapCentral/MC_Sample/Demo/Objects/Hat/SM_Prop_Hat.prefab
+  uploadId: 835434
