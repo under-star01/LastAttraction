@@ -847,6 +847,7 @@ GameObject:
   - component: {fileID: 7436738972924962348}
   - component: {fileID: 9165850540253019217}
   - component: {fileID: 7660049669671203594}
+  - component: {fileID: 2069850198979918394}
   m_Layer: 6
   m_Name: Survivor
   m_TagString: Survivor
@@ -1050,6 +1051,23 @@ MonoBehaviour:
   rotationSensitivity: 0.01
   positionPrecision: 0.01
   scalePrecision: 0.01
+--- !u!114 &2069850198979918394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f6f3bf89aa97405989c802ba270f815, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkAnimator
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  clientAuthority: 0
+  animator: {fileID: 0}
 --- !u!1 &4079158676388771637
 GameObject:
   m_ObjectHideFlags: 0
