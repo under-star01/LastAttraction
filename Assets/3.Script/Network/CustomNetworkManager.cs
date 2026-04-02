@@ -678,5 +678,23 @@ public class CustomNetworkManager : NetworkManager
         return survivorSpawnPoints[index];
     }
 
+    public void MoveToGameScene()
+    {
+        if (!NetworkServer.active)
+        {
+            Debug.LogWarning("[CustomNetworkManager] 서버가 활성화되어 있지 않아 Game 씬으로 이동할 수 없습니다.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace("Game"))
+        {
+            Debug.LogError("[CustomNetworkManager] Game씬이 존재하지 않습니다.");
+            return;
+        }
+
+        Debug.Log($"[CustomNetworkManager] Game씬으로 이동");
+        ServerChangeScene("Game");
+    }
+
     #endregion
 }

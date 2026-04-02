@@ -839,8 +839,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7059863242562477750}
-  - component: {fileID: 6204537575143600446}
   - component: {fileID: 2147077015295458698}
+  - component: {fileID: 6204537575143600446}
   - component: {fileID: 8330642673507539603}
   - component: {fileID: 8912751445133143526}
   - component: {fileID: 2491799505081291953}
@@ -870,18 +870,6 @@ Transform:
   - {fileID: 8488072216295189698}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6204537575143600446
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4072989509792940907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 45a8348c6018b9943a67b7f34134166a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SurvivorInput
 --- !u!143 &2147077015295458698
 CharacterController:
   m_ObjectHideFlags: 0
@@ -907,6 +895,18 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &6204537575143600446
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45a8348c6018b9943a67b7f34134166a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivorInput
 --- !u!114 &8330642673507539603
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2364,6 +2364,7 @@ MonoBehaviour:
   healTime: 30
   progressUI: {fileID: 0}
   targetState: {fileID: 2491799505081291953}
+  targetMove: {fileID: 0}
   healerMove: {fileID: 8330642673507539603}
 --- !u!1 &8771985788226487456
 GameObject:
