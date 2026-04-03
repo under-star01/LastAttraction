@@ -4,11 +4,11 @@ using UnityEngine;
 public class SurvivorMove : NetworkBehaviour
 {
     [Header("참조")]
-    [SerializeField] private Transform cameraYawRoot;
-    [SerializeField] private Transform cameraPitchRoot;
-    [SerializeField] private Camera playerCamera;
-    [SerializeField] private Transform modelRoot;
-    [SerializeField] private Animator animator;
+    [SerializeField] private Transform cameraYawRoot;   // 좌우 회전용 루트
+    [SerializeField] private Transform cameraPitchRoot; // 상하 회전용 루트
+    [SerializeField] private Camera playerCamera;       // 로컬 플레이어 카메라
+    [SerializeField] private Transform modelRoot;       // 캐릭터 모델 회전용
+    [SerializeField] private Animator animator;         // 애니메이터
 
     [Header("속도")]
     [SerializeField] private float walkSpeed = 2.3f;
@@ -25,6 +25,7 @@ public class SurvivorMove : NetworkBehaviour
     [Header("컨트롤러 높이")]
     [SerializeField] private float standHeight = 1.8f;
     [SerializeField] private Vector3 standCenter = new Vector3(0f, 0.9f, 0f);
+
     [SerializeField] private float crouchHeight = 0.9f;
     [SerializeField] private Vector3 crouchCenter = new Vector3(0f, 0.45f, 0f);
 
@@ -33,6 +34,22 @@ public class SurvivorMove : NetworkBehaviour
     private SurvivorInteractor interactor;
     private SurvivorState state;
 
+    // 로컬 카메라 회전용
+    private float localYaw;
+    private float localPitch;
+
+    // 서버 실제 이동용
+    private float yVelocity;
+    private bool isMoveLocked;
+
+    // 클라 -> 서버로 보낸 최신 입력 저장
+    private Vector2 serverMoveInput;
+    private bool serverWantsRun;
+    private bool serverWantsCrouch;
+    private float serverYaw;
+    private float serverPitch;
+
+    // 원격 표시용 동기화 값
     [SyncVar] private float syncedYaw;
     [SyncVar] private float syncedPitch;
     [SyncVar] private float syncedModelYaw;
@@ -40,11 +57,6 @@ public class SurvivorMove : NetworkBehaviour
     [SyncVar] private float syncedMoveSpeed;
     [SyncVar] private bool syncedIsCrouching;
     [SyncVar] private bool syncedIsDowned;
-
-    private float localYaw;
-    private float localPitch;
-    private float yVelocity;
-    private bool isMoveLocked;
 
     public void SetMoveLock(bool value)
     {
@@ -153,6 +165,14 @@ public class SurvivorMove : NetworkBehaviour
         }
     }
 
+    private void FixedUpdate()
+    {
+        if (!isServer)
+            return;
+
+        ServerTickMovement();
+    }
+
     private void UpdateLocalLook()
     {
         if (input == null)
@@ -208,7 +228,7 @@ public class SurvivorMove : NetworkBehaviour
         if (input == null)
             return;
 
-        CmdMove(
+        CmdSetMoveInput(
             input.Move,
             input.IsRunning,
             input.IsCrouching,
@@ -218,11 +238,21 @@ public class SurvivorMove : NetworkBehaviour
     }
 
     [Command]
-    private void CmdMove(Vector2 moveInput, bool isRunning, bool isCrouching, float yaw, float pitch)
+    private void CmdSetMoveInput(Vector2 moveInput, bool wantsRun, bool wantsCrouch, float yaw, float pitch)
     {
+        serverMoveInput = moveInput;
+        serverWantsRun = wantsRun;
+        serverWantsCrouch = wantsCrouch;
+        serverYaw = yaw;
+        serverPitch = pitch;
+
         syncedYaw = yaw;
         syncedPitch = pitch;
+    }
 
+    [Server]
+    private void ServerTickMovement()
+    {
         if (controller == null || !controller.enabled)
             return;
 
@@ -238,27 +268,27 @@ public class SurvivorMove : NetworkBehaviour
 
         if (isDowned)
         {
-            CrawlMoveServer(moveInput, yaw);
+            CrawlMoveServer(serverMoveInput, serverYaw);
             return;
         }
 
         bool canCrouch = interactor == null || !interactor.IsInteracting;
-        bool finalCrouch = canCrouch && isCrouching;
+        bool isCrouching = canCrouch && serverWantsCrouch;
 
-        if (finalCrouch)
-            SetSize(crouchHeight, crouchCenter);
+        if (isCrouching)
+            SetSizeServer(crouchHeight, crouchCenter);
         else
-            SetSize(standHeight, standCenter);
+            SetSizeServer(standHeight, standCenter);
 
-        MoveServer(moveInput, isRunning, finalCrouch, yaw);
+        MoveServer(serverMoveInput, serverWantsRun, isCrouching, serverYaw);
     }
 
     [Server]
-    private void MoveServer(Vector2 moveInput, bool isRunning, bool isCrouching, float yaw)
+    private void MoveServer(Vector2 moveInput, bool wantsRun, bool isCrouching, float yaw)
     {
-        Quaternion yawRot = Quaternion.Euler(0f, yaw, 0f);
-        Vector3 forward = yawRot * Vector3.forward;
-        Vector3 right = yawRot * Vector3.right;
+        Quaternion yawRotation = Quaternion.Euler(0f, yaw, 0f);
+        Vector3 forward = yawRotation * Vector3.forward;
+        Vector3 right = yawRotation * Vector3.right;
 
         Vector3 move = forward * moveInput.y + right * moveInput.x;
 
@@ -266,7 +296,7 @@ public class SurvivorMove : NetworkBehaviour
             move.Normalize();
 
         bool isMoving = move.sqrMagnitude > 0.001f;
-        bool finalRun = isMoving && !isCrouching && isRunning;
+        bool isRunning = isMoving && !isCrouching && wantsRun;
 
         float speed = walkSpeed;
         float animSpeed = 0f;
@@ -274,10 +304,11 @@ public class SurvivorMove : NetworkBehaviour
         if (isCrouching)
         {
             speed = crouchSpeed;
+
             if (isMoving)
                 animSpeed = 0.25f;
         }
-        else if (finalRun)
+        else if (isRunning)
         {
             speed = runSpeed;
             animSpeed = 1f;
@@ -291,12 +322,12 @@ public class SurvivorMove : NetworkBehaviour
         if (controller.isGrounded)
             yVelocity = -1f;
         else
-            yVelocity += Physics.gravity.y * Time.deltaTime;
+            yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
 
         Vector3 finalMove = move * speed;
         finalMove.y = yVelocity;
 
-        controller.Move(finalMove * Time.deltaTime);
+        controller.Move(finalMove * Time.fixedDeltaTime);
 
         RotateModelServer(move, isMoving);
         UpdateAnimatorServer(animSpeed, isCrouching, false);
@@ -305,9 +336,9 @@ public class SurvivorMove : NetworkBehaviour
     [Server]
     private void CrawlMoveServer(Vector2 moveInput, float yaw)
     {
-        Quaternion yawRot = Quaternion.Euler(0f, yaw, 0f);
-        Vector3 forward = yawRot * Vector3.forward;
-        Vector3 right = yawRot * Vector3.right;
+        Quaternion yawRotation = Quaternion.Euler(0f, yaw, 0f);
+        Vector3 forward = yawRotation * Vector3.forward;
+        Vector3 right = yawRotation * Vector3.right;
 
         Vector3 move = forward * moveInput.y + right * moveInput.x;
 
@@ -319,21 +350,27 @@ public class SurvivorMove : NetworkBehaviour
         if (controller.isGrounded)
             yVelocity = -1f;
         else
-            yVelocity += Physics.gravity.y * Time.deltaTime;
+            yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
 
         Vector3 finalMove = move * crawlSpeed;
         finalMove.y = yVelocity;
 
-        controller.Move(finalMove * Time.deltaTime);
+        controller.Move(finalMove * Time.fixedDeltaTime);
 
         if (isMoving && modelRoot != null)
         {
             Quaternion targetRot = Quaternion.LookRotation(move);
-            modelRoot.rotation = Quaternion.Slerp(modelRoot.rotation, targetRot, turnSpeed * Time.deltaTime);
+            modelRoot.rotation = Quaternion.Slerp(
+                modelRoot.rotation,
+                targetRot,
+                turnSpeed * Time.fixedDeltaTime
+            );
+
             syncedModelYaw = modelRoot.eulerAngles.y;
         }
 
         float animSpeed = 0f;
+
         if (isMoving)
             animSpeed = 0.2f;
 
@@ -347,7 +384,12 @@ public class SurvivorMove : NetworkBehaviour
             return;
 
         Quaternion targetRot = Quaternion.LookRotation(move);
-        modelRoot.rotation = Quaternion.Slerp(modelRoot.rotation, targetRot, turnSpeed * Time.deltaTime);
+        modelRoot.rotation = Quaternion.Slerp(
+            modelRoot.rotation,
+            targetRot,
+            turnSpeed * Time.fixedDeltaTime
+        );
+
         syncedModelYaw = modelRoot.eulerAngles.y;
     }
 
@@ -360,14 +402,14 @@ public class SurvivorMove : NetworkBehaviour
         if (controller.isGrounded)
             yVelocity = -1f;
         else
-            yVelocity += Physics.gravity.y * Time.deltaTime;
+            yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
 
         Vector3 gravityMove = new Vector3(0f, yVelocity, 0f);
-        controller.Move(gravityMove * Time.deltaTime);
+        controller.Move(gravityMove * Time.fixedDeltaTime);
     }
 
     [Server]
-    private void SetSize(float height, Vector3 center)
+    private void SetSizeServer(float height, Vector3 center)
     {
         controller.height = height;
         controller.center = center;
