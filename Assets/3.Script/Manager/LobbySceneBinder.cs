@@ -9,6 +9,10 @@ public class LobbySceneBinder : MonoBehaviour
     [SerializeField] private CinemachineCamera killerLobbyCamera;
     [SerializeField] private CinemachineCamera survivorLobbyCamera;
 
+    [Header("Lobby UI")]
+    [SerializeField] private ProgressUI progressUI;
+
+
     [Header("Priority")]
     [SerializeField] private int livePriority = 20;
     [SerializeField] private int idlePriority = 10;
@@ -41,5 +45,10 @@ public class LobbySceneBinder : MonoBehaviour
                 Debug.Log("[LobbySceneBinder] Survivor 로비 카메라 활성화");
                 break;
         }
+    }
+
+    public ProgressUI GetProgressUI()
+    {
+        return progressUI;
     }
 }

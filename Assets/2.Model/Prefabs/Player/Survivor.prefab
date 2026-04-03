@@ -2444,11 +2444,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1fd5ea9ffca34544e900211c97710d68, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivorHeal
-  healTime: 30
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  healTime: 5
   progressUI: {fileID: 0}
   targetState: {fileID: 2491799505081291953}
   targetMove: {fileID: 0}
-  healerMove: {fileID: 8330642673507539603}
 --- !u!1 &8771985788226487456
 GameObject:
   m_ObjectHideFlags: 0
