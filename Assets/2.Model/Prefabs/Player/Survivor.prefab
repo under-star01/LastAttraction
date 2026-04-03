@@ -931,6 +931,7 @@ MonoBehaviour:
   cameraYawRoot: {fileID: 8308895304835925812}
   cameraPitchRoot: {fileID: 2859212466978346225}
   playerCamera: {fileID: 4220329845384900408}
+  playerListener: {fileID: 0}
   modelRoot: {fileID: 8174374209964335500}
   animator: {fileID: 7436738972924962348}
   walkSpeed: 2.3
