@@ -1067,7 +1067,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   clientAuthority: 0
-  animator: {fileID: 0}
+  animator: {fileID: 7436738972924962348}
 --- !u!1 &4079158676388771637
 GameObject:
   m_ObjectHideFlags: 0

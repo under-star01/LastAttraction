@@ -10,7 +10,9 @@ public class SurvivorInput : NetworkBehaviour
     {
         get
         {
-            if (inputSys == null) return Vector2.zero;
+            if (inputSys == null)
+                return Vector2.zero;
+
             return inputSys.Player.Move.ReadValue<Vector2>();
         }
     }
@@ -19,7 +21,9 @@ public class SurvivorInput : NetworkBehaviour
     {
         get
         {
-            if (inputSys == null) return Vector2.zero;
+            if (inputSys == null)
+                return Vector2.zero;
+
             return inputSys.Player.Look.ReadValue<Vector2>();
         }
     }
@@ -28,7 +32,9 @@ public class SurvivorInput : NetworkBehaviour
     {
         get
         {
-            if (inputSys == null) return false;
+            if (inputSys == null)
+                return false;
+
             return inputSys.Player.Run.IsPressed();
         }
     }
@@ -37,7 +43,9 @@ public class SurvivorInput : NetworkBehaviour
     {
         get
         {
-            if (inputSys == null) return false;
+            if (inputSys == null)
+                return false;
+
             return inputSys.Player.Crouch.IsPressed();
         }
     }
@@ -46,7 +54,9 @@ public class SurvivorInput : NetworkBehaviour
     {
         get
         {
-            if (inputSys == null) return false;
+            if (inputSys == null)
+                return false;
+
             return inputSys.Player.Interact1.IsPressed();
         }
     }
@@ -55,7 +65,9 @@ public class SurvivorInput : NetworkBehaviour
     {
         get
         {
-            if (inputSys == null) return false;
+            if (inputSys == null)
+                return false;
+
             return inputSys.Player.Interact2.WasPressedThisFrame();
         }
     }
@@ -68,6 +80,8 @@ public class SurvivorInput : NetworkBehaviour
 
     public override void OnStopClient()
     {
+        base.OnStopClient();
+
         if (isLocalPlayer && inputSys != null)
         {
             inputSys.Player.Disable();
