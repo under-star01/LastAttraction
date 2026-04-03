@@ -4718,7 +4718,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4778764277507616533}
   - component: {fileID: 624040733216888687}
-  m_Layer: 8
+  m_Layer: 11
   m_Name: Hair
   m_TagString: Untagged
   m_Icon: {fileID: 0}
