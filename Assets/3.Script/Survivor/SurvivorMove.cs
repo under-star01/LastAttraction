@@ -163,11 +163,14 @@ public class SurvivorMove : NetworkBehaviour
             ApplyRemoteAnimator();
             ApplyModelRotation();
         }
+    }
 
-        if (isServer)
-        {
-            ServerTickMovement();
-        }
+    private void FixedUpdate()
+    {
+        if (!isServer)
+            return;
+
+        ServerTickMovement();
     }
 
     private void UpdateLocalLook()
@@ -319,12 +322,12 @@ public class SurvivorMove : NetworkBehaviour
         if (controller.isGrounded)
             yVelocity = -1f;
         else
-            yVelocity += Physics.gravity.y * Time.deltaTime;
+            yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
 
         Vector3 finalMove = move * speed;
         finalMove.y = yVelocity;
 
-        controller.Move(finalMove * Time.deltaTime);
+        controller.Move(finalMove * Time.fixedDeltaTime);
 
         RotateModelServer(move, isMoving);
         UpdateAnimatorServer(animSpeed, isCrouching, false);
@@ -347,12 +350,12 @@ public class SurvivorMove : NetworkBehaviour
         if (controller.isGrounded)
             yVelocity = -1f;
         else
-            yVelocity += Physics.gravity.y * Time.deltaTime;
+            yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
 
         Vector3 finalMove = move * crawlSpeed;
         finalMove.y = yVelocity;
 
-        controller.Move(finalMove * Time.deltaTime);
+        controller.Move(finalMove * Time.fixedDeltaTime);
 
         if (isMoving && modelRoot != null)
         {
@@ -360,7 +363,7 @@ public class SurvivorMove : NetworkBehaviour
             modelRoot.rotation = Quaternion.Slerp(
                 modelRoot.rotation,
                 targetRot,
-                turnSpeed * Time.deltaTime
+                turnSpeed * Time.fixedDeltaTime
             );
 
             syncedModelYaw = modelRoot.eulerAngles.y;
@@ -384,7 +387,7 @@ public class SurvivorMove : NetworkBehaviour
         modelRoot.rotation = Quaternion.Slerp(
             modelRoot.rotation,
             targetRot,
-            turnSpeed * Time.deltaTime
+            turnSpeed * Time.fixedDeltaTime
         );
 
         syncedModelYaw = modelRoot.eulerAngles.y;
@@ -399,10 +402,10 @@ public class SurvivorMove : NetworkBehaviour
         if (controller.isGrounded)
             yVelocity = -1f;
         else
-            yVelocity += Physics.gravity.y * Time.deltaTime;
+            yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
 
         Vector3 gravityMove = new Vector3(0f, yVelocity, 0f);
-        controller.Move(gravityMove * Time.deltaTime);
+        controller.Move(gravityMove * Time.fixedDeltaTime);
     }
 
     [Server]
