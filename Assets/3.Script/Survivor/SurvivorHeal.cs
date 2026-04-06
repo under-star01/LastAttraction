@@ -142,11 +142,6 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         isHealing = true;
         healer = sender.identity.netId;
 
-        // 중요:
-        // 힐 시작 시 0부터 새로 시작
-        // 중간 취소 후 이어서 하려면 이 줄 삭제
-        progress = 0f;
-
         // 힐받는 대상은 다른 상호작용 불가
         targetState.SetBeingHealedServer(true);
 
@@ -222,11 +217,6 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         isHealing = false;
         healer = 0;
 
-        // 중요:
-        // 지금은 취소되면 진행도 0 초기화
-        // 유지 구조 원하면 이 줄 삭제
-        progress = 0f;
-
         // 힐받는 상태 해제
         targetState.SetBeingHealedServer(false);
 
@@ -267,14 +257,14 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
     [ClientRpc]
     private void RpcStopHeal()
     {
-        // 힐러 쪽 로컬 효과 정리
+        // 힐러 쪽 로컬
         if (localHealerMove != null)
         {
             localHealerMove.SetMoveLock(false);
             localHealerMove.SetSearching(false);
         }
 
-        // 힐받는 대상 쪽 애니메이션 정리
+        // 힐받는 대상 쪽 애니메이션 멈춤
         if (targetMove != null)
             targetMove.StopAnimation();
 

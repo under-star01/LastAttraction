@@ -14,7 +14,6 @@ public class SurvivorInteractor : NetworkBehaviour
     [SerializeField] private ProgressUI progressUI; // 이 로컬 플레이어가 사용할 진행도 UI
 
     // 현재 ProgressUI를 사용 중인 오브젝트
-    // 예: EvidencePoint, SurvivorHeal
     private object progressOwner;
 
     public bool IsInteracting => isInteracting;
@@ -102,13 +101,13 @@ public class SurvivorInteractor : NetworkBehaviour
     // ProgressUI 연결
     private void BindUI()
     {
-        // 1순위: Binder에서 가져오기
+        // Binder에서 가져오기
         if (LobbySceneBinder.Instance != null)
         {
             progressUI = LobbySceneBinder.Instance.GetProgressUI();
         }
 
-        // 2순위: 씬에서 직접 찾기
+        // 씬에서 직접 찾기
         if (progressUI == null)
         {
             progressUI = FindFirstObjectByType<ProgressUI>(FindObjectsInactive.Include);

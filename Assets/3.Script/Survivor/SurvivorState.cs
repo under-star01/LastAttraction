@@ -222,7 +222,7 @@ public class SurvivorState : NetworkBehaviour
     private void SetLayer(Transform target, int layer)
     {
         // 힐 트리거는 레이어 변경 제외
-        // 같이 바뀌면 힐 판정이 꼬일 수 있음
+        // 같이 바뀌면 힐이 안댐
         if (target.GetComponent<SurvivorHeal>() != null)
             return;
 
