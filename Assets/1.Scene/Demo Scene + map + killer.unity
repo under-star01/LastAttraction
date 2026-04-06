@@ -3587,6 +3587,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 412044784717743803, guid: 63c20eccf90c6844aadab5e4b9b03a0a, type: 3}
+      propertyPath: sceneId
+      value: 1564192049
+      objectReference: {fileID: 0}
     - target: {fileID: 1256734401940520962, guid: 63c20eccf90c6844aadab5e4b9b03a0a, type: 3}
       propertyPath: progressUI
       value: 
