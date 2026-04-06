@@ -32,8 +32,8 @@ public class SQLManager : NetworkBehaviour
     [SerializeField] private string server = "127.0.0.1";
     [SerializeField] private int port = 3306;
     [SerializeField] private string database = "last_attraction_db";
-    [SerializeField] private string user = "gameuser"; // 처음엔 root로 테스트 가능
-    [SerializeField] private string password = "your_password";
+    [SerializeField] private string user = "root";
+    [SerializeField] private string password = "";
 
     private string connectionString;
 
@@ -54,7 +54,7 @@ public class SQLManager : NetworkBehaviour
 
         connectionString = $"Server={server};Port={port};Database={database};User ID={user};Password={password};";
 
-        TestConnection();
+        TestConnection(); 
     }
 
     [Server]
