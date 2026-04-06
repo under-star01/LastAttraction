@@ -16,24 +16,24 @@ public class SurvivorState : NetworkBehaviour
     [SerializeField] private SurvivorInteractor interactor;
 
     [Header("다운 연출")]
-    [SerializeField] private float downHitDuration = 1.2f; // 다운 피격 애니메이션 시간
+    [SerializeField] private float downHitDuration = 3f; // 다운 피격 연출 시간
 
     private SurvivorMove move;
 
-    private int normalLayer; // 기본 레이어 번호
-    private int downedLayer; // 다운 레이어 번호
+    private int normalLayer; // 기본 레이어
+    private int downedLayer; // 다운 레이어
 
-    // 실제 상태는 서버가 가지고, 클라이언트들에게 자동 동기화
-    [SyncVar(hook = nameof(OnConditionChanged))]
+    // 현재 상태는 서버가 가지고 있고 자동 동기화됨
+    [SyncVar(hook = nameof(OnCondition))]
     private SurvivorCondition currentCondition = SurvivorCondition.Healthy;
 
-    // 다운 피격 연출 중 여부도 동기화
-    [SyncVar(hook = nameof(OnBusyChanged))]
+    // 다운 피격 연출 중인지 여부
+    [SyncVar(hook = nameof(OnBusy))]
     private bool isToDowned;
 
-    // 현재 "다른 생존자에게 힐을 받고 있는 중"인지 여부
-    // 이 값을 따로 둬야 힐 받는 대상이 다른 상호작용을 못 하게 막을 수 있다.
-    [SyncVar(hook = nameof(OnBeingHealedChanged))]
+    // 현재 다른 생존자에게 힐을 받고 있는 중인지 여부
+    // 힐받는 동안 다른 상호작용을 막기 위해 사용
+    [SyncVar(hook = nameof(OnHealed))]
     private bool isBeingHealed;
 
     public SurvivorCondition CurrentCondition => currentCondition;
@@ -62,23 +62,21 @@ public class SurvivorState : NetworkBehaviour
     {
         base.OnStartClient();
 
-        // 접속 직후 현재 동기화된 상태를 외형에 바로 반영
-        ApplyInteractionState();
+        // 접속 직후 현재 상태를 외형에 바로 반영
+        ApplyInteract();
         ApplyLayer();
-        UpdateAnimator();
+        UpdateAnim();
     }
 
     private void Update()
     {
-        // 디버그용
-        // 로컬 플레이어만 F1 입력을 받아서 서버에 피격 요청
+        // 디버그용 피격 테스트
+        // 로컬 플레이어만 F1 입력 가능
         if (!isLocalPlayer)
             return;
 
         if (Input.GetKeyDown(KeyCode.F1))
-        {
             CmdDebugTakeHit();
-        }
     }
 
     // 디버그용 피격 요청
@@ -92,7 +90,7 @@ public class SurvivorState : NetworkBehaviour
     [Server]
     public void TakeHit()
     {
-        // 이미 다운 연출 중이면 중복 실행 막기
+        // 이미 다운 연출 중이면 중복 실행 방지
         if (isToDowned)
             return;
 
@@ -100,15 +98,15 @@ public class SurvivorState : NetworkBehaviour
         if (currentCondition == SurvivorCondition.Healthy)
         {
             currentCondition = SurvivorCondition.Injured;
+            return;
         }
+
         // 부상 -> 다운
-        else if (currentCondition == SurvivorCondition.Injured)
-        {
-            StartCoroutine(DownedRoutine());
-        }
+        if (currentCondition == SurvivorCondition.Injured)
+            StartCoroutine(DownRoutine());
     }
 
-    // 서버에서만 완전 회복
+    // 서버에서만 부상 -> 정상 회복
     [Server]
     public void HealToHealthy()
     {
@@ -128,22 +126,21 @@ public class SurvivorState : NetworkBehaviour
         currentCondition = SurvivorCondition.Injured;
     }
 
-    // 서버에서만 힐 받는 중 상태 변경
-    // SurvivorHeal에서 힐 시작/취소/완료 시 이 함수를 호출한다.
+    // 서버에서만 힐받는 상태 변경
     [Server]
     public void SetBeingHealedServer(bool value)
     {
         isBeingHealed = value;
     }
 
-    // 서버에서만 다운 연출 시작
+    // 서버에서 다운 연출 시작
     [Server]
-    private IEnumerator DownedRoutine()
+    private IEnumerator DownRoutine()
     {
         isToDowned = true;
 
-        // 모든 클라이언트에서 다운 피격 애니메이션 재생
-        RpcPlayDownHit();
+        // 모든 클라이언트에서 다운 피격 애니메이션 실행
+        RpcDownHit();
 
         yield return new WaitForSeconds(downHitDuration);
 
@@ -153,66 +150,58 @@ public class SurvivorState : NetworkBehaviour
 
     // 모든 클라이언트에서 다운 피격 애니메이션 재생
     [ClientRpc]
-    private void RpcPlayDownHit()
+    private void RpcDownHit()
     {
         if (move != null)
         {
-            // 다운 피격 중에는 잠깐 이동 잠금
+            // 피격 연출 중 잠깐 이동 잠금
             move.SetMoveLock(true);
             move.StopAnimation();
         }
 
         if (animator != null)
-        {
             animator.SetTrigger("DownHit");
-        }
 
-        StartCoroutine(LocalDownHit());
+        StartCoroutine(LocalDown());
     }
 
-    // 각 클라이언트 로컬에서 다운 피격 애니메이션 시간만큼 잠깐 잠금 유지
-    private IEnumerator LocalDownHit()
+    // 각 클라이언트 로컬에서 피격 연출 시간만큼 잠금 유지
+    private IEnumerator LocalDown()
     {
         yield return new WaitForSeconds(downHitDuration);
 
-        // 다운 상태라면 잠금 해제
+        // 완전히 다운 상태가 됐다면 잠금 해제
+        // 이후 다운 상태 이동은 SurvivorMove 쪽에서 처리
         if (move != null && IsDowned)
-        {
             move.SetMoveLock(false);
-        }
     }
 
-    // 상태값이 바뀌면 자동 호출
-    private void OnConditionChanged(SurvivorCondition oldValue, SurvivorCondition newValue)
+    // 상태가 바뀌면 외형 / 상호작용 / 레이어 갱신
+    private void OnCondition(SurvivorCondition oldValue, SurvivorCondition newValue)
     {
-        ApplyInteractionState();
+        ApplyInteract();
         ApplyLayer();
-        UpdateAnimator();
+        UpdateAnim();
     }
 
-    // 다운 연출 중 여부가 바뀌면 자동 호출
-    private void OnBusyChanged(bool oldValue, bool newValue)
+    // 다운 연출 중 여부가 바뀌면 이동 잠금 반영
+    private void OnBusy(bool oldValue, bool newValue)
     {
         if (move != null)
-        {
             move.SetMoveLock(newValue);
-        }
     }
 
-    // 힐 받는 상태가 바뀌면 자동 호출
-    private void OnBeingHealedChanged(bool oldValue, bool newValue)
+    // 힐받는 상태가 바뀌면 상호작용 가능 여부 반영
+    private void OnHealed(bool oldValue, bool newValue)
     {
-        ApplyInteractionState();
+        ApplyInteract();
     }
 
-    // 상호작용 가능 여부 반영
-    // 다운 상태거나, 다른 생존자에게 힐을 받고 있으면 상호작용 막음
-    private void ApplyInteractionState()
+    // 다운 상태거나 힐받는 중이면 상호작용 막기
+    private void ApplyInteract()
     {
         if (interactor != null)
-        {
             interactor.enabled = !IsDowned && !IsBeingHealed;
-        }
     }
 
     // 상태에 따라 레이어 변경
@@ -221,38 +210,32 @@ public class SurvivorState : NetworkBehaviour
         int targetLayer = normalLayer;
 
         if (IsDowned)
-        {
             targetLayer = downedLayer;
-        }
 
         if (targetLayer == -1)
             return;
 
-        SetLayerRecursive(transform, targetLayer);
+        SetLayer(transform, targetLayer);
     }
 
     // 자기 자신 + 자식들 레이어까지 전부 변경
-    private void SetLayerRecursive(Transform target, int layer)
+    private void SetLayer(Transform target, int layer)
     {
-        // SurvivorHeal 오브젝트는 레이어 변경 제외
-        // 힐 트리거까지 같이 바뀌면 힐 판정이 꼬일 수 있어서 제외
+        // 힐 트리거는 레이어 변경 제외
+        // 같이 바뀌면 힐 판정이 꼬일 수 있음
         if (target.GetComponent<SurvivorHeal>() != null)
             return;
 
         target.gameObject.layer = layer;
 
         foreach (Transform child in target)
-        {
-            SetLayerRecursive(child, layer);
-        }
+            SetLayer(child, layer);
     }
 
-    // 애니메이터 파라미터 반영
-    private void UpdateAnimator()
+    // 현재 상태를 애니메이터 파라미터에 반영
+    private void UpdateAnim()
     {
-        if (animator == null)
-            return;
-
-        animator.SetInteger("Condition", (int)currentCondition);
+        if (animator != null)
+            animator.SetInteger("Condition", (int)currentCondition);
     }
 }
