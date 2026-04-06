@@ -1,14 +1,16 @@
 using System.Collections;
+using Mirror;
 using UnityEngine;
 
-public class Window : MonoBehaviour, IInteractable
+public class Window : NetworkBehaviour, IInteractable
 {
+    // 창틀은 버튼 1번 눌러서 실행하는 Press 타입
     public InteractType InteractType => InteractType.Press;
 
     [Header("참조")]
     [SerializeField] private Transform leftPoint;
     [SerializeField] private Transform rightPoint;
-    [SerializeField] private Vector3 upPoint = new Vector3(0, 0.5f, 0);
+    [SerializeField] private Vector3 upPoint = new Vector3(0f, 0.5f, 0f);
 
     [Header("이동/연출 설정")]
     [SerializeField] private float moveToPointSpeed = 5f;
@@ -16,215 +18,373 @@ public class Window : MonoBehaviour, IInteractable
     [SerializeField] private float killerVaultSpeed = 2.5f;
     [SerializeField] private float occupationRadius = 1.0f;
 
-    private SurvivorInteractor currentInteractor; // MonoBehaviour에서 구체적인 타입으로 변경 추천
-    private bool isVaulting;
-    private bool isLeftSide;
+    // 지금 누가 창틀을 사용 중인지 서버가 관리
+    [SyncVar] private bool isVaulting;
+    [SyncVar] private uint currentActorNetId;
 
+    // 상호작용 시작
+    // 로컬에서 호출되지만 실제 처리는 서버에서 한다
     public void BeginInteract(GameObject actor)
     {
-        if (isVaulting) return;
-
-        Transform myPoint = GetSidePointForActor(actor.transform);
-        string opponentTag = actor.CompareTag("Survivor") ? "Killer" : "Survivor";
-
-        if (IsOpponentAtPoint(myPoint, opponentTag))
-        {
-            Debug.Log("상대방이 반대편에 있어 넘을 수 없습니다.");
+        if (actor == null)
             return;
-        }
 
-        if (actor.CompareTag("Survivor"))
+        NetworkIdentity actorIdentity = actor.GetComponent<NetworkIdentity>();
+        if (actorIdentity == null)
+            actorIdentity = actor.GetComponentInParent<NetworkIdentity>();
+
+        if (actorIdentity == null)
+            return;
+
+        // 이미 창틀 사용 중이면 시작 불가
+        if (isVaulting)
+            return;
+
+        // 서버면 바로 처리
+        if (isServer)
         {
-            StartCoroutine(SurvivorVaultRoutine());
+            TryBeginVaultServer(actorIdentity);
         }
-        else if (actor.CompareTag("Killer"))
+        // 클라이언트면 서버에 요청
+        else
         {
-            StartCoroutine(KillerVaultRoutine(actor));
+            CmdBeginVault(actorIdentity.netId);
         }
     }
 
-    public void EndInteract() { }
-
-    // --- [루틴: 생존자 넘기] ---
-    private IEnumerator SurvivorVaultRoutine()
+    public void EndInteract()
     {
-        if (currentInteractor == null) yield break;
-
-        Transform sidePoint = GetSidePoint();
-        Transform oppositePoint = isLeftSide ? rightPoint : leftPoint;
-
-        LockMovement(true);
-        FaceToWindow();
-
-        CharacterController controller = currentInteractor.GetComponent<CharacterController>();
-        if (controller != null) controller.enabled = false;
-
-        Vector3 start = sidePoint.position + upPoint;
-        Vector3 arrive = oppositePoint.position + upPoint;
-
-        StopAnim();
-        yield return MoveToPoint(start, moveToPointSpeed);
-
-        SurvivorMove move = GetCurrentMove();
-        if (move != null) move.SetVaulting(true);
-
-        isVaulting = true;
-        PlayAnim("LeftVault"); // 애니메이션 이름 확인 필요
-
-        yield return MoveToPoint(arrive, survivorVaultSpeed);
-
-        if (controller != null) controller.enabled = true;
-        LockMovement(false);
-        isVaulting = false;
-        if (move != null) move.SetVaulting(false);
+        // Press 타입이라 따로 종료 처리 없음
     }
 
-    // --- [루틴: 살인마 넘기] ---
-    private IEnumerator KillerVaultRoutine(GameObject killer)
+    // 클라 -> 서버 : 창틀 넘기 요청
+    [Command(requiresAuthority = false)]
+    private void CmdBeginVault(uint actorNetId)
     {
+        if (!NetworkServer.spawned.TryGetValue(actorNetId, out NetworkIdentity actorIdentity))
+            return;
+
+        TryBeginVaultServer(actorIdentity);
+    }
+
+    // 서버에서 실제 시작 판정
+    [Server]
+    private void TryBeginVaultServer(NetworkIdentity actorIdentity)
+    {
+        if (actorIdentity == null)
+            return;
+
+        if (isVaulting)
+            return;
+
+        GameObject actor = actorIdentity.gameObject;
+        if (actor == null)
+            return;
+
+        // 생존자 / 살인마 둘 중 하나만 허용
+        bool isSurvivor = actor.CompareTag("Survivor");
+        bool isKiller = actor.CompareTag("Killer");
+
+        if (!isSurvivor && !isKiller)
+            return;
+
+        Transform sidePoint = GetSidePointForActor(actor.transform);
+        if (sidePoint == null)
+            return;
+
+        // 같은 쪽 포인트 근처에 상대가 있으면 못 넘게
+        string opponentTag = isSurvivor ? "Killer" : "Survivor";
+        if (IsOpponentAtPoint(sidePoint, opponentTag))
+            return;
+
+        // 범위 체크
+        if (!CanUse(actor.transform))
+            return;
+
         isVaulting = true;
+        currentActorNetId = actorIdentity.netId;
 
-        KillerState kState = killer.GetComponent<KillerState>();
-        CharacterController kController = killer.GetComponent<CharacterController>();
-        Animator kAnimator = killer.GetComponentInChildren<Animator>();
+        if (isSurvivor)
+            StartCoroutine(SurvivorVaultRoutine(actorIdentity));
+        else
+            StartCoroutine(KillerVaultRoutine(actorIdentity));
+    }
 
-        kState.ChangeState(KillerCondition.Vaulting);
-        if (kController != null) kController.enabled = false;
+    // 생존자 창틀 넘기
+    // 서버에서 실제 이동
+    [Server]
+    private IEnumerator SurvivorVaultRoutine(NetworkIdentity actorIdentity)
+    {
+        if (actorIdentity == null)
+        {
+            StopVaultServer();
+            yield break;
+        }
+
+        GameObject actor = actorIdentity.gameObject;
+        if (actor == null)
+        {
+            StopVaultServer();
+            yield break;
+        }
+
+        SurvivorMove move = actor.GetComponent<SurvivorMove>();
+        CharacterController controller = actor.GetComponent<CharacterController>();
+
+        Transform sidePoint = GetSidePointForActor(actor.transform);
+        Transform oppositePoint = GetOppositePoint(sidePoint);
+
+        if (sidePoint == null || oppositePoint == null)
+        {
+            StopVaultServer();
+            yield break;
+        }
+
+        // 이동 잠금
+        if (move != null)
+        {
+            move.SetMoveLock(true);
+
+            Vector3 lookDir = GetLookDirection(sidePoint);
+            if (lookDir.sqrMagnitude > 0.001f)
+                move.FaceDirection(lookDir.normalized);
+        }
+
+        // 컨트롤러 끄고 위치 이동
+        if (controller != null)
+            controller.enabled = false;
+
         yield return null;
 
-        // [중요] 여기서 sidePoint가 null이 아니어야 에러가 안 납니다!
-        Transform sidePoint = GetSidePointForActor(killer.transform);
-        Transform oppositePoint = (sidePoint == leftPoint) ? rightPoint : leftPoint;
+        Vector3 startPos = sidePoint.position + upPoint;
+        Vector3 endPos = oppositePoint.position + upPoint;
 
-        yield return MoveActorToPoint(killer.transform, sidePoint.position, moveToPointSpeed);
-        FaceActorToPallet(killer.transform, sidePoint == leftPoint);
+        if (move != null)
+            move.StopAnimation();
 
-        if (kAnimator != null) kAnimator.SetTrigger("Vault");
+        // 내 쪽 시작 포인트까지 이동
+        yield return MoveActorToPoint(actor.transform, startPos, moveToPointSpeed);
 
-        yield return MoveActorToPoint(killer.transform, oppositePoint.position, killerVaultSpeed);
+        // 볼트 애니메이션 시작
+        if (move != null)
+        {
+            move.SetVaulting(true);
 
-        if (kController != null) kController.enabled = true;
-        kState.ChangeState(KillerCondition.Idle);
-        isVaulting = false;
+            if (sidePoint == leftPoint)
+                move.PlayAnimation("LeftVault");
+            else
+                move.PlayAnimation("RightVault");
+        }
+
+        // 반대편으로 이동
+        yield return MoveActorToPoint(actor.transform, endPos, survivorVaultSpeed);
+
+        // 다시 원래 상태 복구
+        if (controller != null)
+            controller.enabled = true;
+
+        if (move != null)
+        {
+            move.SetVaulting(false);
+            move.SetMoveLock(false);
+        }
+
+        StopVaultServer();
     }
 
-    // --- [도움 함수들: 실제 구현부] ---
+    // 살인마 창틀 넘기
+    // 서버에서 실제 이동
+    [Server]
+    private IEnumerator KillerVaultRoutine(NetworkIdentity actorIdentity)
+    {
+        if (actorIdentity == null)
+        {
+            StopVaultServer();
+            yield break;
+        }
 
+        GameObject actor = actorIdentity.gameObject;
+        if (actor == null)
+        {
+            StopVaultServer();
+            yield break;
+        }
+
+        KillerState killerState = actor.GetComponent<KillerState>();
+        CharacterController controller = actor.GetComponent<CharacterController>();
+        Animator animator = actor.GetComponentInChildren<Animator>();
+
+        Transform sidePoint = GetSidePointForActor(actor.transform);
+        Transform oppositePoint = GetOppositePoint(sidePoint);
+
+        if (sidePoint == null || oppositePoint == null)
+        {
+            StopVaultServer();
+            yield break;
+        }
+
+        if (killerState != null)
+            killerState.ChangeState(KillerCondition.Vaulting);
+
+        if (controller != null)
+            controller.enabled = false;
+
+        yield return null;
+
+        // 내 쪽 포인트로 먼저 이동
+        yield return MoveActorToPoint(actor.transform, sidePoint.position, moveToPointSpeed);
+
+        Vector3 lookDir = GetLookDirection(sidePoint);
+        if (lookDir.sqrMagnitude > 0.001f)
+            actor.transform.rotation = Quaternion.LookRotation(lookDir.normalized);
+
+        if (animator != null)
+            animator.SetTrigger("Vault");
+
+        // 반대편으로 이동
+        yield return MoveActorToPoint(actor.transform, oppositePoint.position, killerVaultSpeed);
+
+        if (controller != null)
+            controller.enabled = true;
+
+        if (killerState != null)
+            killerState.ChangeState(KillerCondition.Idle);
+
+        StopVaultServer();
+    }
+
+    // 공통 종료
+    [Server]
+    private void StopVaultServer()
+    {
+        isVaulting = false;
+        currentActorNetId = 0;
+    }
+
+    // 어느 쪽 포인트인지 계산
     private Transform GetSidePointForActor(Transform actor)
     {
+        if (actor == null)
+            return null;
+
         Vector3 localPos = transform.InverseTransformPoint(actor.position);
-        isLeftSide = localPos.x < 0f;
-        return isLeftSide ? leftPoint : rightPoint;
+
+        if (localPos.x < 0f)
+            return leftPoint;
+        else
+            return rightPoint;
     }
 
-    private void FaceActorToPallet(Transform actor, bool isLeft)
+    // 반대편 포인트 반환
+    private Transform GetOppositePoint(Transform sidePoint)
     {
-        Vector3 lookDir = isLeft ? transform.right : -transform.right;
-        lookDir.y = 0f;
-        if (lookDir.sqrMagnitude > 0.001f)
-        {
-            actor.rotation = Quaternion.LookRotation(lookDir.normalized);
-        }
+        if (sidePoint == leftPoint)
+            return rightPoint;
+
+        if (sidePoint == rightPoint)
+            return leftPoint;
+
+        return null;
     }
 
-    private IEnumerator MoveActorToPoint(Transform actor, Vector3 target, float speed)
+    // 창틀을 바라보는 방향 계산
+    private Vector3 GetLookDirection(Transform sidePoint)
     {
-        while (Vector3.Distance(actor.position, target) > 0.001f)
+        if (sidePoint == leftPoint)
+            return transform.right;
+
+        if (sidePoint == rightPoint)
+            return -transform.right;
+
+        return Vector3.zero;
+    }
+
+    // 실제 위치 이동
+    [Server]
+    private IEnumerator MoveActorToPoint(Transform actor, Vector3 targetPos, float speed)
+    {
+        if (actor == null)
+            yield break;
+
+        while ((actor.position - targetPos).sqrMagnitude > 0.0001f)
         {
-            actor.position = Vector3.MoveTowards(actor.position, target, speed * Time.deltaTime);
+            actor.position = Vector3.MoveTowards(actor.position, targetPos, speed * Time.deltaTime);
             yield return null;
         }
-        actor.position = target;
+
+        actor.position = targetPos;
     }
 
+    // 상대가 같은 쪽 포인트 근처에 있는지 확인
     private bool IsOpponentAtPoint(Transform targetPoint, string opponentTag)
     {
-        if (targetPoint == null) return false;
+        if (targetPoint == null)
+            return false;
+
         Collider[] hits = Physics.OverlapSphere(targetPoint.position, occupationRadius);
-        foreach (var hit in hits)
+
+        for (int i = 0; i < hits.Length; i++)
         {
-            if (hit.CompareTag(opponentTag)) return true;
+            if (hits[i].CompareTag(opponentTag))
+                return true;
         }
+
         return false;
     }
 
-    // --- [나머지 유틸리티 함수들] ---
-
-    private Transform GetSidePoint()
+    // 너무 멀면 사용 못 하게
+    private bool CanUse(Transform actorTransform)
     {
-        Vector3 localPos = transform.InverseTransformPoint(currentInteractor.transform.position);
-        isLeftSide = localPos.x < 0f;
-        return isLeftSide ? leftPoint : rightPoint;
+        if (actorTransform == null)
+            return false;
+
+        Collider col = GetComponent<Collider>();
+        if (col == null)
+            col = GetComponentInChildren<Collider>();
+
+        if (col == null)
+            return false;
+
+        Vector3 closest = col.ClosestPoint(actorTransform.position);
+        float sqrDist = (closest - actorTransform.position).sqrMagnitude;
+
+        return sqrDist <= 4f;
     }
 
-    private void FaceToWindow()
-    {
-        if (currentInteractor == null) return;
-        Vector3 lookDir = isLeftSide ? transform.right : -transform.right;
-        lookDir.y = 0f;
-        SurvivorMove move = GetCurrentMove();
-        if (move != null) move.FaceDirection(lookDir.normalized);
-    }
-
-    private IEnumerator MoveToPoint(Vector3 targetPos, float speed)
-    {
-        if (currentInteractor == null) yield break;
-        Transform t = currentInteractor.transform;
-        while ((t.position - targetPos).sqrMagnitude > 0.0001f)
-        {
-            t.position = Vector3.MoveTowards(t.position, targetPos, speed * Time.deltaTime);
-            yield return null;
-        }
-        t.position = targetPos;
-    }
-
-    private void LockMovement(bool value)
-    {
-        SurvivorMove move = GetCurrentMove();
-        if (move != null) move.SetMoveLock(value);
-    }
-
-    private void PlayAnim(string triggerName)
-    {
-        SurvivorMove move = GetCurrentMove();
-        if (move != null) move.PlayAnimation(triggerName);
-    }
-
-    private void StopAnim()
-    {
-        SurvivorMove move = GetCurrentMove();
-        if (move != null) move.StopAnimation();
-    }
-
-    private SurvivorMove GetCurrentMove()
-    {
-        if (currentInteractor == null) return null;
-        return currentInteractor.GetComponent<SurvivorMove>() ?? currentInteractor.GetComponentInParent<SurvivorMove>();
-    }
-
+    // 생존자 상호작용 목록 등록
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Survivor"))
-        {
-            SurvivorInteractor interactor = other.GetComponentInParent<SurvivorInteractor>();
-            if (interactor != null)
-            {
-                currentInteractor = interactor;
-                interactor.SetInteractable(this);
-            }
-        }
+        if (!other.CompareTag("Survivor"))
+            return;
+
+        SurvivorInteractor interactor = other.GetComponent<SurvivorInteractor>();
+        if (interactor == null)
+            interactor = other.GetComponentInParent<SurvivorInteractor>();
+
+        if (interactor == null)
+            return;
+
+        if (!interactor.isLocalPlayer)
+            return;
+
+        interactor.SetInteractable(this);
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Survivor"))
-        {
-            SurvivorInteractor interactor = other.GetComponentInParent<SurvivorInteractor>();
-            if (interactor != null && currentInteractor == interactor)
-            {
-                interactor.ClearInteractable(this);
-                currentInteractor = null;
-            }
-        }
+        if (!other.CompareTag("Survivor"))
+            return;
+
+        SurvivorInteractor interactor = other.GetComponent<SurvivorInteractor>();
+        if (interactor == null)
+            interactor = other.GetComponentInParent<SurvivorInteractor>();
+
+        if (interactor == null)
+            return;
+
+        if (!interactor.isLocalPlayer)
+            return;
+
+        interactor.ClearInteractable(this);
     }
 }

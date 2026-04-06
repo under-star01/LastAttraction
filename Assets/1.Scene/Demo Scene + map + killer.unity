@@ -3919,6 +3919,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -498410663248104038, guid: dd5e2cc5be8c8b640b118ff0a9bd5c60, type: 3}
+      propertyPath: sceneId
+      value: 227157482
+      objectReference: {fileID: 0}
     - target: {fileID: 321564683795887707, guid: dd5e2cc5be8c8b640b118ff0a9bd5c60, type: 3}
       propertyPath: m_Name
       value: Window
@@ -3962,10 +3966,6 @@ PrefabInstance:
     - target: {fileID: 2991688947734913420, guid: dd5e2cc5be8c8b640b118ff0a9bd5c60, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7429210435836427537, guid: dd5e2cc5be8c8b640b118ff0a9bd5c60, type: 3}
-      propertyPath: killerVaultSpeed
-      value: 1.5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
