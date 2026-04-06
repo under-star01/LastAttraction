@@ -36,6 +36,12 @@ public class SurvivorState : NetworkBehaviour
     [SyncVar(hook = nameof(OnHealed))]
     private bool isBeingHealed;
 
+    // 추가:
+    // 현재 이 생존자가 "조사 / 힐하기 / 발전기" 같은 Hold 상호작용을 하고 있는지
+    // 이 값은 서버가 알고 있어야 다른 시스템(예: 힐 시작 차단)에서 신뢰할 수 있다
+    [SyncVar]
+    private bool isDoingInteraction;
+
     public SurvivorCondition CurrentCondition => currentCondition;
 
     public bool IsHealthy => currentCondition == SurvivorCondition.Healthy;
@@ -43,6 +49,10 @@ public class SurvivorState : NetworkBehaviour
     public bool IsDowned => currentCondition == SurvivorCondition.Downed;
     public bool IsBusy => isToDowned;
     public bool IsBeingHealed => isBeingHealed;
+
+    // 추가:
+    // 다른 스크립트가 "이 대상이 현재 상호작용 중인가?"를 확인할 때 사용
+    public bool IsDoingInteraction => isDoingInteraction;
 
     private void Awake()
     {
@@ -133,11 +143,23 @@ public class SurvivorState : NetworkBehaviour
         isBeingHealed = value;
     }
 
+    // 서버에서만 현재 상호작용 중 여부를 저장
+    // SurvivorInteractor가 상호작용 시작/종료할 때 호출한다
+    [Server]
+    public void SetDoingInteractionServer(bool value)
+    {
+        isDoingInteraction = value;
+    }
+
     // 서버에서 다운 연출 시작
     [Server]
     private IEnumerator DownRoutine()
     {
         isToDowned = true;
+
+        // 다운되면 현재 상호작용 상태도 강제로 해제
+        // 그래야 다운된 뒤에도 "상호작용 중"으로 남아 있지 않음
+        isDoingInteraction = false;
 
         // 모든 클라이언트에서 다운 피격 애니메이션 실행
         RpcDownHit();
@@ -222,7 +244,7 @@ public class SurvivorState : NetworkBehaviour
     private void SetLayer(Transform target, int layer)
     {
         // 힐 트리거는 레이어 변경 제외
-        // 같이 바뀌면 힐이 안댐
+        // 같이 바뀌면 힐이 안됨
         if (target.GetComponent<SurvivorHeal>() != null)
             return;
 

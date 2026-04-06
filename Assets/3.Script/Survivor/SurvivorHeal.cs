@@ -135,8 +135,8 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         if (!CanUse(healerInteractor.transform))
             return;
 
-        // 대상이 이미 다른 상호작용 중이면 힐 시작 불가
-        if (targetInteractor != null && targetInteractor.IsInteracting)
+        // 서버 기준으로 대상이 현재 상호작용 중이면 힐 시작 불가
+        if (targetState.IsDoingInteraction)
             return;
 
         isHealing = true;
@@ -338,8 +338,8 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         if (localHealerState == targetState)
             return false;
 
-        // 대상이 이미 다른 상호작용 중이면 힐 시작 불가
-        if (targetInteractor != null && targetInteractor.IsInteracting)
+        // 대상이 현재 다른 상호작용 중이면 힐 시작 불가
+        if (targetState.IsDoingInteraction)
             return false;
 
         return true;

@@ -84,8 +84,8 @@ public class SurvivorInteractor : NetworkBehaviour
         if (progressUI == null)
             BindUI();
 
-        // 다운 상태면 상호작용 강제 종료
-        if (state != null && state.IsDowned)
+        // 다운 상태이거나 다운 피격 연출 중이면 상호작용 강제 종료
+        if (state != null && (state.IsDowned || state.IsBusy))
         {
             ClearForce();
             return;
@@ -174,7 +174,13 @@ public class SurvivorInteractor : NetworkBehaviour
     {
         if (currentInteractable == null)
         {
-            isInteracting = false;
+            // 대상이 없어졌으면 현재 상호작용 상태도 정리
+            if (isInteracting)
+            {
+                isInteracting = false;
+                SetInteractionState(false);
+            }
+
             return;
         }
 
@@ -190,11 +196,19 @@ public class SurvivorInteractor : NetworkBehaviour
         if (input == null)
             return;
 
+        // 다운 상태 또는 다운 피격 연출 중이면 Hold 시작 금지
+        if (state != null && (state.IsDowned || state.IsBusy))
+            return;
+
         if (input.IsInteracting1)
         {
             if (!isInteracting && !input.IsCrouching)
             {
                 isInteracting = true;
+
+                // 서버에도 현재 상호작용 시작 전달
+                SetInteractionState(true);
+
                 currentInteractable.BeginInteract();
             }
         }
@@ -203,6 +217,10 @@ public class SurvivorInteractor : NetworkBehaviour
             if (isInteracting)
             {
                 isInteracting = false;
+
+                // 상호작용 종료를 서버에 전달
+                SetInteractionState(false);
+
                 currentInteractable.EndInteract();
             }
         }
@@ -215,6 +233,10 @@ public class SurvivorInteractor : NetworkBehaviour
             return;
 
         if (input.IsCrouching)
+            return;
+
+        // 다운 상태 또는 다운 피격 연출 중이면 Press도 막음
+        if (state != null && (state.IsDowned || state.IsBusy))
             return;
 
         if (input.IsInteracting2)
@@ -230,7 +252,8 @@ public class SurvivorInteractor : NetworkBehaviour
         if (!enabled)
             return;
 
-        if (state != null && state.IsDowned)
+        // 다운 상태이거나 다운 피격 연출 중이면 등록 금지
+        if (state != null && (state.IsDowned || state.IsBusy))
             return;
 
         if (progressUI == null)
@@ -251,6 +274,10 @@ public class SurvivorInteractor : NetworkBehaviour
         if (isInteracting)
         {
             isInteracting = false;
+
+            // 상호작용이 끊기면 서버 상태도 같이 false
+            SetInteractionState(false);
+
             currentInteractable.EndInteract();
         }
 
@@ -268,10 +295,43 @@ public class SurvivorInteractor : NetworkBehaviour
         if (isInteracting && currentInteractable != null)
         {
             isInteracting = false;
+
+            // 강제 종료여도 서버 상태를 false로 내려줘야 함
+            SetInteractionState(false);
+
             currentInteractable.EndInteract();
         }
 
         currentInteractable = null;
         ForceHideProgress();
+    }
+
+    // 현재 플레이어의 상호작용 중 여부를 서버 SurvivorState에 반영
+    private void SetInteractionState(bool value)
+    {
+        if (state == null)
+            return;
+
+        // 호스트/서버에서 직접 실행 중이면 바로 반영
+        if (isServer)
+        {
+            state.SetDoingInteractionServer(value);
+        }
+        // 일반 클라이언트면 Command로 서버에 전달
+        else if (isLocalPlayer)
+        {
+            CmdSetInteractionState(value);
+        }
+    }
+
+    // 클라이언트 -> 서버
+    // 현재 상호작용 중 여부를 서버 SurvivorState에 저장
+    [Command]
+    private void CmdSetInteractionState(bool value)
+    {
+        if (state == null)
+            return;
+
+        state.SetDoingInteractionServer(value);
     }
 }
