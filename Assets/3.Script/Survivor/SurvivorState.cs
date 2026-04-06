@@ -31,12 +31,18 @@ public class SurvivorState : NetworkBehaviour
     [SyncVar(hook = nameof(OnBusyChanged))]
     private bool isToDowned;
 
+    // 현재 "다른 생존자에게 힐을 받고 있는 중"인지 여부
+    // 이 값을 따로 둬야 힐 받는 대상이 다른 상호작용을 못 하게 막을 수 있다.
+    [SyncVar(hook = nameof(OnBeingHealedChanged))]
+    private bool isBeingHealed;
+
     public SurvivorCondition CurrentCondition => currentCondition;
 
     public bool IsHealthy => currentCondition == SurvivorCondition.Healthy;
     public bool IsInjured => currentCondition == SurvivorCondition.Injured;
     public bool IsDowned => currentCondition == SurvivorCondition.Downed;
     public bool IsBusy => isToDowned;
+    public bool IsBeingHealed => isBeingHealed;
 
     private void Awake()
     {
@@ -56,7 +62,7 @@ public class SurvivorState : NetworkBehaviour
     {
         base.OnStartClient();
 
-        // 접속 직후 현재 동기화된 상태를 외형에 반영
+        // 접속 직후 현재 동기화된 상태를 외형에 바로 반영
         ApplyInteractionState();
         ApplyLayer();
         UpdateAnimator();
@@ -76,7 +82,6 @@ public class SurvivorState : NetworkBehaviour
     }
 
     // 디버그용 피격 요청
-    // F1을 누른 로컬 플레이어가 서버에 "나 한 대 맞은 걸로 처리해줘" 라고 요청
     [Command]
     private void CmdDebugTakeHit()
     {
@@ -123,13 +128,21 @@ public class SurvivorState : NetworkBehaviour
         currentCondition = SurvivorCondition.Injured;
     }
 
+    // 서버에서만 힐 받는 중 상태 변경
+    // SurvivorHeal에서 힐 시작/취소/완료 시 이 함수를 호출한다.
+    [Server]
+    public void SetBeingHealedServer(bool value)
+    {
+        isBeingHealed = value;
+    }
+
     // 서버에서만 다운 연출 시작
     [Server]
     private IEnumerator DownedRoutine()
     {
         isToDowned = true;
 
-        // 다운 피격 애니메이션 재생
+        // 모든 클라이언트에서 다운 피격 애니메이션 재생
         RpcPlayDownHit();
 
         yield return new WaitForSeconds(downHitDuration);
@@ -154,16 +167,15 @@ public class SurvivorState : NetworkBehaviour
             animator.SetTrigger("DownHit");
         }
 
-        StartCoroutine(LocalUnlockAfterDownHit());
+        StartCoroutine(LocalDownHit());
     }
 
     // 각 클라이언트 로컬에서 다운 피격 애니메이션 시간만큼 잠깐 잠금 유지
-    private IEnumerator LocalUnlockAfterDownHit()
+    private IEnumerator LocalDownHit()
     {
         yield return new WaitForSeconds(downHitDuration);
 
-        // 이미 완전히 다운 상태가 됐다면 여기서 잠금 해제
-        // 다운 상태 이동은 SurvivorMove에서 별도로 처리됨
+        // 다운 상태라면 잠금 해제
         if (move != null && IsDowned)
         {
             move.SetMoveLock(false);
@@ -178,7 +190,7 @@ public class SurvivorState : NetworkBehaviour
         UpdateAnimator();
     }
 
-    // 바쁜 상태(다운 연출 중)가 바뀌면 자동 호출
+    // 다운 연출 중 여부가 바뀌면 자동 호출
     private void OnBusyChanged(bool oldValue, bool newValue)
     {
         if (move != null)
@@ -187,12 +199,19 @@ public class SurvivorState : NetworkBehaviour
         }
     }
 
-    // 다운 상태면 상호작용 막기
+    // 힐 받는 상태가 바뀌면 자동 호출
+    private void OnBeingHealedChanged(bool oldValue, bool newValue)
+    {
+        ApplyInteractionState();
+    }
+
+    // 상호작용 가능 여부 반영
+    // 다운 상태거나, 다른 생존자에게 힐을 받고 있으면 상호작용 막음
     private void ApplyInteractionState()
     {
         if (interactor != null)
         {
-            interactor.enabled = !IsDowned;
+            interactor.enabled = !IsDowned && !IsBeingHealed;
         }
     }
 

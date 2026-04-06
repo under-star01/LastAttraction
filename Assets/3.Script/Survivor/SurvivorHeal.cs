@@ -3,12 +3,12 @@ using UnityEngine;
 
 public class SurvivorHeal : NetworkBehaviour, IInteractable
 {
-    // 이 오브젝트는 Hold 타입 상호작용
+    // 힐은 누르고 있는 동안 진행되는 Hold 타입 상호작용
     public InteractType InteractType => InteractType.Hold;
 
     [Header("힐 설정")]
-    [SerializeField] private float healTime = 30f;
-    [SerializeField] private ProgressUI progressUI; // 현재 상호작용 중인 로컬 플레이어의 UI를 연결받음
+    [SerializeField] private float healTime = 30f;   // 힐 완료까지 걸리는 시간
+    [SerializeField] private ProgressUI progressUI;  // 힐하는 로컬 플레이어의 진행도 UI
 
     [Header("참조")]
     [SerializeField] private SurvivorState targetState; // 힐 받을 대상 상태
@@ -23,15 +23,18 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
     [SyncVar]
     private float progress; // 현재 힐 진행도
 
+    // 이 클라이언트 기준 로컬 힐러 정보
     private SurvivorInteractor localHealerInteractor;
     private SurvivorState localHealerState;
     private SurvivorMove localHealerMove;
 
     private void Awake()
     {
+        // targetState 자동 연결
         if (targetState == null)
             targetState = GetComponentInParent<SurvivorState>();
 
+        // targetMove 자동 연결
         if (targetMove == null && targetState != null)
             targetMove = targetState.GetComponent<SurvivorMove>();
     }
@@ -44,26 +47,29 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
             ServerUpdateHeal();
         }
 
-        // UI는 각 클라이언트 로컬에서만 표시
+        // UI는 각 클라이언트 로컬에서만 처리
         UpdateLocalUI();
     }
 
     // 로컬 플레이어가 힐 시작
     public void BeginInteract()
     {
+        // 로컬 기준으로 힐 가능한 상태인지 먼저 확인
         if (!CanHealLocal())
             return;
 
-        // 이미 다른 사람이 힐 중이면 시작 불가
+        // 이미 다른 플레이어가 힐 중이면 시작 불가
         if (IsBusyByOtherLocal())
             return;
 
         // 로컬 체감용 처리
+        // 힐러는 대상 쪽을 바라보고, 이동 잠금, 힐 애니메이션 시작
         FaceToTargetLocal();
-        LockMovementLocal(true);
+        LockHealerMovementLocal(true);
+        LockTargetMovementLocal(true);
         SetHealAnimationLocal(true);
 
-        // 실제 시작은 서버에 요청
+        // 실제 힐 시작 판정은 서버에 요청
         CmdBeginHeal();
     }
 
@@ -73,15 +79,19 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         if (localHealerInteractor == null)
             return;
 
-        LockMovementLocal(false);
+        // 로컬 효과 즉시 해제
+        LockHealerMovementLocal(false);
+        LockTargetMovementLocal(false);
         SetHealAnimationLocal(false);
 
         if (progressUI != null)
             progressUI.Hide();
 
+        // 실제 취소는 서버에 요청
         CmdEndHeal();
     }
 
+    // 클라이언트 -> 서버 : 힐 시작 요청
     [Command(requiresAuthority = false)]
     private void CmdBeginHeal(NetworkConnectionToClient sender = null)
     {
@@ -126,8 +136,13 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         isHealing = true;
         healerNetId = sender.identity.netId;
         progress = 0f;
+
+        // 힐 받는 대상은 다른 상호작용 불가 상태로 전환
+        if (targetState != null)
+            targetState.SetBeingHealedServer(true);
     }
 
+    // 클라이언트 -> 서버 : 힐 취소 요청
     [Command(requiresAuthority = false)]
     private void CmdEndHeal(NetworkConnectionToClient sender = null)
     {
@@ -157,6 +172,7 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
             return;
         }
 
+        // 현재 힐 중인 플레이어 찾기
         if (!NetworkServer.spawned.TryGetValue(healerNetId, out NetworkIdentity identity))
         {
             StopServerHeal();
@@ -177,29 +193,31 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
             return;
         }
 
-        // 대상이 이미 정상 상태가 되면 힐 종료
+        // 대상이 이미 정상 상태가 되면 종료
         if (targetState.IsHealthy)
         {
             StopServerHeal();
             return;
         }
 
-        // 힐러가 다운되면 힐 종료
+        // 힐러가 다운되면 종료
         if (healerState.IsDowned)
         {
             StopServerHeal();
             return;
         }
 
-        // 범위 벗어나면 힐 종료
+        // 범위를 벗어나면 종료
         if (!CanHealerUseThis(healerInteractor.transform))
         {
             StopServerHeal();
             return;
         }
 
+        // 진행도 증가
         progress += Time.deltaTime;
 
+        // 완료되면 힐 처리
         if (progress >= healTime)
         {
             CompleteHealServer();
@@ -214,6 +232,11 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         healerNetId = 0;
         progress = 0f;
 
+        // 힐 받는 상태 해제
+        if (targetState != null)
+            targetState.SetBeingHealedServer(false);
+
+        // 모든 클라이언트 로컬 효과 정리
         RpcForceStopLocalEffects();
     }
 
@@ -231,6 +254,9 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
             return;
         }
 
+        // 힐 완료 시 힐 받는 상태 해제
+        targetState.SetBeingHealedServer(false);
+
         // 다운 상태면 부상 상태까지 회복
         if (targetState.IsDowned)
         {
@@ -244,6 +270,7 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
             Debug.Log($"{name} : 부상 상태 힐 완료 -> 정상 상태로 회복");
         }
 
+        // 완료 후 진행도 리셋
         progress = 0f;
 
         RpcForceStopLocalEffects();
@@ -253,17 +280,23 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
     [ClientRpc]
     private void RpcForceStopLocalEffects()
     {
+        // 힐하는 쪽 로컬 효과 해제
         if (localHealerMove != null)
         {
             localHealerMove.SetMoveLock(false);
             localHealerMove.SetSearching(false);
         }
 
+        // 힐 받는 쪽도 이동 잠금 해제
+        // 여기서 중요한 점:
+        // SetMoveLock은 이동만 막고 시점 회전은 원래 막지 않는다.
         if (targetMove != null)
         {
             targetMove.SetMoveLock(false);
+            targetMove.StopAnimation();
         }
 
+        // 진행도 UI 정리
         if (progressUI != null)
         {
             progressUI.SetProgress(0f);
@@ -303,6 +336,7 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         if (targetState == null)
             return false;
 
+        // 정상 상태는 힐 대상이 아님
         if (targetState.IsHealthy)
             return false;
 
@@ -376,14 +410,27 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         localHealerMove.FaceDirection(lookDir.normalized);
     }
 
-    // 로컬에서 힐러/대상 둘 다 이동 잠금
-    private void LockMovementLocal(bool value)
+    // 힐하는 쪽은 이동 잠금
+    private void LockHealerMovementLocal(bool value)
     {
         if (localHealerMove != null)
             localHealerMove.SetMoveLock(value);
+    }
 
+    // 힐 받는 쪽도 이동만 잠금
+    // SurvivorMove에서 SetMoveLock은 이동만 막고,
+    // 로컬 카메라 회전 처리(UpdateLocalLook)는 그대로 돌아가므로
+    // 힐 받는 대상은 시점 회전은 가능하다.
+    private void LockTargetMovementLocal(bool value)
+    {
         if (targetMove != null)
+        {
             targetMove.SetMoveLock(value);
+
+            // 이동이 잠기는 동안 걷기 애니메이션이 남지 않도록 정지
+            if (value)
+                targetMove.StopAnimation();
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -414,7 +461,7 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         localHealerState = state;
         localHealerMove = move;
 
-        // 이 로컬 플레이어가 들고 있는 ProgressUI를 연결
+        // 이 로컬 플레이어가 사용하는 ProgressUI 연결
         progressUI = interactor.ProgressUI;
 
         // 자기 자신 힐 방지
@@ -450,11 +497,14 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         if (!interactor.isLocalPlayer)
             return;
 
+        // 현재 상호작용 대상 해제
         interactor.ClearInteractable(this);
 
         if (localHealerInteractor == interactor)
         {
-            LockMovementLocal(false);
+            // 로컬 효과 정리
+            LockHealerMovementLocal(false);
+            LockTargetMovementLocal(false);
             SetHealAnimationLocal(false);
 
             if (progressUI != null)
@@ -463,6 +513,7 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
                 progressUI.Hide();
             }
 
+            // 실제 힐 종료는 서버에 요청
             CmdEndHeal();
 
             localHealerInteractor = null;

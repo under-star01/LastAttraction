@@ -961,6 +961,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  progressUI: {fileID: 0}
 --- !u!114 &2491799505081291953
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -978,7 +979,7 @@ MonoBehaviour:
   syncInterval: 0
   animator: {fileID: 7436738972924962348}
   interactor: {fileID: 0}
-  downHitDuration: 1.2
+  downHitDuration: 3
 --- !u!95 &7436738972924962348
 Animator:
   serializedVersion: 7
