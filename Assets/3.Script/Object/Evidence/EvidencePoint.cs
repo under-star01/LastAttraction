@@ -8,7 +8,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
 
     [Header("조사 설정")]
     [SerializeField] private float interactTime = 10f;
-    [SerializeField] private ProgressUI progressUI; // 현재 상호작용 중인 로컬 플레이어의 UI를 연결받음
 
     private EvidenceZone zone;
 
@@ -27,8 +26,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
     [SyncVar]
     private uint currentInteractorNetId; // 현재 조사 중인 플레이어 netId
 
-    private SurvivorInteractor localInteractor; // 이 클라이언트 기준 로컬 플레이어
-    private SurvivorMove localMove;             // 로컬 플레이어 이동 제어용
+    // 이 클라이언트 기준 로컬 플레이어 참조
+    private SurvivorInteractor localInteractor;
+    private SurvivorMove localMove;
 
     public void SetZone(EvidenceZone evidenceZone)
     {
@@ -67,12 +67,12 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             return;
 
         // 로컬 체감용 처리
-        // 바로 증거 쪽을 바라보고, 움직임을 잠그고, 조사 애니메이션 시작
+        // 바로 증거 쪽을 바라보고, 움직임 잠그고, 조사 애니메이션 시작
         FaceToEvidenceLocal();
         LockMovementLocal(true);
         SetSearchingLocal(true);
 
-        // 실제 시작 판정은 서버에 요청
+        // 실제 시작은 서버에 요청
         CmdBeginInteract();
     }
 
@@ -86,11 +86,8 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         LockMovementLocal(false);
         SetSearchingLocal(false);
 
-        if (progressUI != null)
-        {
-            progressUI.SetProgress(0f);
-            progressUI.Hide();
-        }
+        // UI는 로컬 플레이어의 Interactor만 만지게 함
+        localInteractor.HideProgress(this, true);
 
         // 실제 취소는 서버에 요청
         CmdEndInteract();
@@ -123,6 +120,8 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
 
         isInteracting = true;
         currentInteractorNetId = sender.identity.netId;
+
+        // 조사 시작할 때 0부터 시작
         progress = 0f;
     }
 
@@ -141,9 +140,10 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
 
         isInteracting = false;
         currentInteractorNetId = 0;
+
+        // 진행도를 0으로 초기화
         progress = 0f;
 
-        // 각 클라이언트의 로컬 효과 정리
         RpcForceStopLocalEffects();
     }
 
@@ -189,6 +189,8 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
     {
         isInteracting = false;
         currentInteractorNetId = 0;
+
+        // 중단 시 진행도 0 초기화
         progress = 0f;
 
         RpcForceStopLocalEffects();
@@ -229,10 +231,10 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             localMove.SetSearching(false);
         }
 
-        if (progressUI != null)
+        // UI 직접 제어하지 말고 Interactor를 통해 정리
+        if (localInteractor != null)
         {
-            progressUI.SetProgress(0f);
-            progressUI.Hide();
+            localInteractor.HideProgress(this, true);
         }
     }
 
@@ -241,28 +243,17 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         if (!newValue)
             return;
 
-        if (progressUI != null)
-            progressUI.Hide();
+        // 완료되면 내 로컬 UI도 정리
+        if (localInteractor != null)
+        {
+            localInteractor.HideProgress(this, true);
+        }
     }
 
     // 현재 로컬 플레이어가 조사 중일 때만 UI 표시
     private void UpdateLocalUI()
     {
-        if (progressUI == null && localInteractor != null)
-        {
-            progressUI = localInteractor.ProgressUI;
-        }
-
-        if (progressUI == null)
-            return;
-
         if (localInteractor == null)
-            return;
-
-        // 현재 로컬 플레이어가 실제로 잡고 있는 상호작용 대상이
-        // 이 EvidencePoint가 아니면 UI를 건드리지 않는다.
-        // 다른 상호작용 오브젝트가 같은 ProgressUI를 쓰고 있을 수 있기 때문.
-        if (!localInteractor.IsCurrentInteractable(this) && !isInteracting)
             return;
 
         bool isMyInteract =
@@ -272,17 +263,12 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
 
         if (isMyInteract)
         {
-            progressUI.Show();
-            progressUI.SetProgress(progress / interactTime);
+            localInteractor.ShowProgress(this, progress / interactTime);
         }
         else
         {
-            // 이 오브젝트가 실제 상호작용 대상일 때만 Hide
-            // 그래야 다른 오브젝트 UI를 덮어쓰지 않음
-            if (localInteractor.IsCurrentInteractable(this))
-            {
-                progressUI.Hide();
-            }
+            // 단순 숨김
+            localInteractor.HideProgress(this, false);
         }
     }
 
@@ -358,8 +344,7 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         if (interactor == null)
             return;
 
-        // 로컬 플레이어만 자기 UI를 연결해야 하므로
-        // 내 플레이어가 아니면 무시
+        // 로컬 플레이어만 등록
         if (!interactor.isLocalPlayer)
             return;
 
@@ -368,9 +353,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         localMove = interactor.GetComponent<SurvivorMove>();
         if (localMove == null)
             localMove = interactor.GetComponentInParent<SurvivorMove>();
-
-        // 이 로컬 플레이어가 들고 있는 ProgressUI를 연결
-        progressUI = interactor.ProgressUI;
 
         // 이미 다른 플레이어가 조사 중이면 등록하지 않음
         if (IsBusyByOtherLocal())
@@ -405,11 +387,8 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             LockMovementLocal(false);
             SetSearchingLocal(false);
 
-            if (progressUI != null)
-            {
-                progressUI.SetProgress(0f);
-                progressUI.Hide();
-            }
+            // UI도 Interactor를 통해 정리
+            localInteractor.HideProgress(this, true);
 
             CmdEndInteract();
 

@@ -931,7 +931,7 @@ MonoBehaviour:
   cameraYawRoot: {fileID: 8308895304835925812}
   cameraPitchRoot: {fileID: 2859212466978346225}
   playerCamera: {fileID: 4220329845384900408}
-  playerListener: {fileID: 0}
+  playerListener: {fileID: 8661341603311887797}
   modelRoot: {fileID: 8174374209964335500}
   animator: {fileID: 7436738972924962348}
   walkSpeed: 2.3
@@ -2332,7 +2332,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8547063442043571428}
-  m_Enabled: 0
+  m_Enabled: 1
 --- !u!114 &5867427728781714388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2449,9 +2449,9 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   healTime: 5
-  progressUI: {fileID: 0}
   targetState: {fileID: 2491799505081291953}
   targetMove: {fileID: 0}
+  targetInteractor: {fileID: 0}
 --- !u!1 &8771985788226487456
 GameObject:
   m_ObjectHideFlags: 0

@@ -13,10 +13,12 @@ public class SurvivorInteractor : NetworkBehaviour
     [Header("UI")]
     [SerializeField] private ProgressUI progressUI; // 이 로컬 플레이어가 사용할 진행도 UI
 
+    // 현재 ProgressUI를 사용 중인 오브젝트
+    // 예: EvidencePoint, SurvivorHeal
+    private object progressOwner;
+
     public bool IsInteracting => isInteracting;
 
-    // 다른 상호작용 스크립트가 ProgressUI를 가져갈 때
-    // 혹시 아직 연결이 안 되어 있으면 다시 시도하고 반환
     public ProgressUI ProgressUI
     {
         get
@@ -44,7 +46,7 @@ public class SurvivorInteractor : NetworkBehaviour
     {
         base.OnStartClient();
 
-        // 씬이 바뀔 때마다 UI를 다시 연결할 수 있게 등록
+        // 씬이 바뀔 때마다 UI를 다시 연결
         SceneManager.sceneLoaded += OnScene;
     }
 
@@ -58,8 +60,9 @@ public class SurvivorInteractor : NetworkBehaviour
     {
         base.OnStartLocalPlayer();
 
-        // 로컬 플레이어 생성 시 1차 연결
+        // 로컬 플레이어 생성 시 UI 연결
         BindUI();
+        ForceHideProgress();
     }
 
     private void OnScene(Scene scene, LoadSceneMode mode)
@@ -67,8 +70,9 @@ public class SurvivorInteractor : NetworkBehaviour
         if (!isLocalPlayer)
             return;
 
-        // 씬 전환 후 다시 UI 연결
+        // 씬 전환 후 다시 연결
         BindUI();
+        ForceHideProgress();
     }
 
     private void Update()
@@ -104,11 +108,66 @@ public class SurvivorInteractor : NetworkBehaviour
             progressUI = LobbySceneBinder.Instance.GetProgressUI();
         }
 
-        // 2순위: 아직 없으면 현재 씬에서 직접 찾기
+        // 2순위: 씬에서 직접 찾기
         if (progressUI == null)
         {
             progressUI = FindFirstObjectByType<ProgressUI>(FindObjectsInactive.Include);
         }
+    }
+
+    // 진행도 UI 표시/업데이트
+    // owner가 같을 때만 갱신하게 해서
+    // 다른 상호작용이 UI를 덮어쓰는 문제를 줄임
+    public void ShowProgress(object owner, float value)
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (progressUI == null)
+            BindUI();
+
+        if (progressUI == null)
+            return;
+
+        // 이미 다른 오브젝트가 사용 중이면 무시
+        if (progressOwner != null && progressOwner != owner)
+            return;
+
+        progressOwner = owner;
+
+        progressUI.Show();
+        progressUI.SetProgress(value);
+    }
+
+    // 진행도 UI 숨기기
+    // reset = true 일 때만 게이지를 0으로 초기화
+    public void HideProgress(object owner, bool reset)
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (progressUI == null)
+            return;
+
+        // 현재 owner가 아니면 숨기지 않음
+        if (progressOwner != owner)
+            return;
+
+        progressOwner = null;
+
+        if (reset)
+            progressUI.ResetUI();
+        else
+            progressUI.Hide();
+    }
+
+    // 강제로 UI 정리
+    public void ForceHideProgress()
+    {
+        progressOwner = null;
+
+        if (progressUI != null)
+            progressUI.ResetUI();
     }
 
     // 현재 상호작용 대상 타입에 따라 처리
@@ -175,7 +234,6 @@ public class SurvivorInteractor : NetworkBehaviour
         if (state != null && state.IsDowned)
             return;
 
-        // 상호작용 등록 전에 UI도 다시 한 번 보정
         if (progressUI == null)
             BindUI();
 
@@ -215,5 +273,6 @@ public class SurvivorInteractor : NetworkBehaviour
         }
 
         currentInteractable = null;
+        ForceHideProgress();
     }
 }
