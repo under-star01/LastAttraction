@@ -1454,7 +1454,6 @@ MonoBehaviour:
   spawnPrefabs:
   - {fileID: 1259102208159664560, guid: eed0311fd466def4485fbef09acaae03, type: 3}
   - {fileID: 3325040267953218945, guid: 63c20eccf90c6844aadab5e4b9b03a0a, type: 3}
-  - {fileID: 5227220300957955537, guid: aaae556fdcf6eb94c9feddcaa86fcdd3, type: 3}
   - {fileID: 4072989509792940907, guid: 69959e905f33b2f4ba6e3241b66b0c30, type: 3}
   - {fileID: 2948879085556891257, guid: 6a846bf8956fc22459bd034cee3bb808, type: 3}
   - {fileID: 4541725823791181778, guid: 53d28a4617461e141a996f85cdfab0c6, type: 3}
@@ -3272,14 +3271,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: df3a75a8cbc5c284bb42cb940c0ec630, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SQLManager
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
   server: 127.0.0.1
   port: 3306
-  database: last_attraction_db
-  user: root
-  password: 1234
+  database: lastattraction
+  user: understar
+  password: Under7200!
+  testConnectionOnStart: 1
 --- !u!1 &4271583785173468279
 GameObject:
   m_ObjectHideFlags: 0
@@ -3290,7 +3287,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6514467134466493659}
   - component: {fileID: 4170204232724634070}
-  - component: {fileID: 8332804374719391444}
   m_Layer: 0
   m_Name: SQLManager
   m_TagString: Untagged
@@ -3313,23 +3309,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8332804374719391444
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4271583785173468279}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
-  sceneId: 1592595320
-  _assetId: 1479153912
-  serverOnly: 0
-  visibility: 0
-  hasSpawned: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

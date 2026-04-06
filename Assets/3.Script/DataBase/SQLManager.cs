@@ -4,7 +4,7 @@ using Mirror;
 using MySql.Data.MySqlClient;
 using UnityEngine;
 
-// 회원가입 상태
+// 회원가입 결과
 public enum RegisterResult
 {
     Success,
@@ -14,7 +14,7 @@ public enum RegisterResult
     Failed
 }
 
-// 로그인 상태
+// 로그인 결과
 public enum LoginResult
 {
     Success,
@@ -24,7 +24,7 @@ public enum LoginResult
     Failed
 }
 
-public class SQLManager : NetworkBehaviour
+public class SQLManager : MonoBehaviour
 {
     public static SQLManager Instance;
 
@@ -35,10 +35,16 @@ public class SQLManager : NetworkBehaviour
     [SerializeField] private string user = "root";
     [SerializeField] private string password = "";
 
+    [Header("Debug")]
+    [SerializeField] private bool testConnectionOnStart = true;
+
     private string connectionString;
+    private bool isInitialized = false;
 
     private void Awake()
     {
+        Debug.Log("[SQLManager] Awake 호출");
+
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -48,33 +54,75 @@ public class SQLManager : NetworkBehaviour
         Instance = this;
     }
 
-    public override void OnStartServer()
+    private void Start()
     {
-        base.OnStartServer();
+        Debug.Log("[SQLManager] Start 호출");
 
-        connectionString = $"Server={server};Port={port};Database={database};User ID={user};Password={password};";
+        if (!NetworkServer.active)
+        {
+            Debug.Log("[SQLManager] 서버 상태가 아니므로 DB 초기화를 생략합니다.");
+            return;
+        }
 
-        TestConnection(); 
+        Initialize();
+
+        if (testConnectionOnStart)
+        {
+            TestConnection();
+        }
     }
 
-    [Server]
-    private void TestConnection()
+    private void Initialize()
     {
+        connectionString =
+            $"Server={server};Port={port};Database={database};User ID={user};Password={password};";
+
+        isInitialized = true;
+
+        Debug.Log("[SQLManager] DB 초기화 완료");
+    }
+
+    private bool IsServerReady()
+    {
+        if (!NetworkServer.active)
+        {
+            Debug.LogWarning("[SQLManager] 서버 상태가 아니므로 DB 작업을 수행할 수 없습니다.");
+            return false;
+        }
+
+        if (!isInitialized)
+        {
+            Debug.LogWarning("[SQLManager] DB가 아직 초기화되지 않았습니다.");
+            return false;
+        }
+
+        return true;
+    }
+
+    public void TestConnection()
+    {
+        if (!IsServerReady())
+            return;
+
         try
         {
-            var connection = new MySqlConnection(connectionString);
-            connection.Open();
-            Debug.Log("[SQLManager] DB 연결 성공");
+            using (var connection = new MySqlConnection(connectionString))
+            {
+                connection.Open();
+                Debug.Log("[SQLManager] DB 연결 성공");
+            }
         }
         catch (Exception e)
         {
-            Debug.LogError($"[SQLManager] DB 연결 실패: {e.Message}");
+            Debug.LogError($"[SQLManager] DB 연결 실패: {e}");
         }
     }
 
-    [Server]
     public RegisterResult Register(string loginId, string rawPassword, string nickname)
     {
+        if (!IsServerReady())
+            return RegisterResult.Failed;
+
         if (string.IsNullOrWhiteSpace(loginId) ||
             string.IsNullOrWhiteSpace(rawPassword) ||
             string.IsNullOrWhiteSpace(nickname))
@@ -84,76 +132,85 @@ public class SQLManager : NetworkBehaviour
 
         try
         {
+            using (var connection = new MySqlConnection(connectionString))
+            {
+                connection.Open();
 
-            using var connection = new MySqlConnection(connectionString);
-            connection.Open();
+                if (IsLoginIdExists(connection, loginId))
+                    return RegisterResult.DuplicateLoginId;
 
-            if (IsLoginIdExists(connection, loginId))
-                return RegisterResult.DuplicateLoginId;
+                if (IsNicknameExists(connection, nickname))
+                    return RegisterResult.DuplicateNickname;
 
-            if (IsNicknameExists(connection, nickname))
-                return RegisterResult.DuplicateNickname;
+                string passwordHash = HashPassword(rawPassword);
 
-            string passwordHash = HashPassword(rawPassword);
+                const string query = @"
+                    INSERT INTO users (login_id, password_hash, nickname)
+                    VALUES (@loginId, @passwordHash, @nickname);
+                ";
 
-            const string query = @"
-                INSERT INTO users (login_id, password_hash, nickname)
-                VALUES (@loginId, @passwordHash, @nickname);
-            ";
+                using (var cmd = new MySqlCommand(query, connection))
+                {
+                    cmd.Parameters.AddWithValue("@loginId", loginId);
+                    cmd.Parameters.AddWithValue("@passwordHash", passwordHash);
+                    cmd.Parameters.AddWithValue("@nickname", nickname);
 
-            using var cmd = new MySqlCommand(query, connection);
-            cmd.Parameters.AddWithValue("@loginId", loginId);
-            cmd.Parameters.AddWithValue("@passwordHash", passwordHash);
-            cmd.Parameters.AddWithValue("@nickname", nickname);
-
-            int result = cmd.ExecuteNonQuery();
-
-            return result > 0 ? RegisterResult.Success : RegisterResult.Failed;
+                    int result = cmd.ExecuteNonQuery();
+                    return result > 0 ? RegisterResult.Success : RegisterResult.Failed;
+                }
+            }
         }
         catch (Exception e)
         {
-            Debug.LogError($"[SQLManager] 회원가입 실패: {e.Message}");
+            Debug.LogError($"[SQLManager] 회원가입 실패: {e}");
             return RegisterResult.Failed;
         }
     }
 
-    [Server]
     public LoginResult Login(string loginId, string rawPassword, out string nickname)
     {
         nickname = string.Empty;
+
+        if (!IsServerReady())
+            return LoginResult.Failed;
 
         if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(rawPassword))
             return LoginResult.InvalidInput;
 
         try
         {
-            using var connection = new MySqlConnection(connectionString);
-            connection.Open();
+            using (var connection = new MySqlConnection(connectionString))
+            {
+                connection.Open();
 
-            const string query = @"
-                SELECT password_hash, nickname
-                FROM users
-                WHERE login_id = @loginId
-                LIMIT 1;
-            ";
+                const string query = @"
+                    SELECT password_hash, nickname
+                    FROM users
+                    WHERE login_id = @loginId
+                    LIMIT 1;
+                ";
 
-            using var cmd = new MySqlCommand(query, connection);
-            cmd.Parameters.AddWithValue("@loginId", loginId);
+                using (var cmd = new MySqlCommand(query, connection))
+                {
+                    cmd.Parameters.AddWithValue("@loginId", loginId);
 
-            using var reader = cmd.ExecuteReader();
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (!reader.Read())
+                            return LoginResult.UserNotFound;
 
-            if (!reader.Read())
-                return LoginResult.UserNotFound;
+                        string savedHash = reader.GetString("password_hash");
+                        nickname = reader.GetString("nickname");
 
-            string savedHash = reader.GetString("password_hash");
-            nickname = reader.GetString("nickname");
-
-            bool isValid = VerifyPassword(rawPassword, savedHash);
-            return isValid ? LoginResult.Success : LoginResult.WrongPassword;
+                        bool isValid = VerifyPassword(rawPassword, savedHash);
+                        return isValid ? LoginResult.Success : LoginResult.WrongPassword;
+                    }
+                }
+            }
         }
         catch (Exception e)
         {
-            Debug.LogError($"[SQLManager] 로그인 실패: {e.Message}");
+            Debug.LogError($"[SQLManager] 로그인 실패: {e}");
             return LoginResult.Failed;
         }
     }
@@ -166,11 +223,15 @@ public class SQLManager : NetworkBehaviour
             WHERE login_id = @loginId;
         ";
 
-        using var cmd = new MySqlCommand(query, connection);
-        cmd.Parameters.AddWithValue("@loginId", loginId);
+        using (var cmd = new MySqlCommand(query, connection))
+        {
+            cmd.Parameters.AddWithValue("@loginId", loginId);
 
-        long count = (long)cmd.ExecuteScalar();
-        return count > 0;
+            object result = cmd.ExecuteScalar();
+            long count = Convert.ToInt64(result);
+
+            return count > 0;
+        }
     }
 
     private bool IsNicknameExists(MySqlConnection connection, string nickname)
@@ -181,29 +242,42 @@ public class SQLManager : NetworkBehaviour
             WHERE nickname = @nickname;
         ";
 
-        using var cmd = new MySqlCommand(query, connection);
-        cmd.Parameters.AddWithValue("@nickname", nickname);
+        using (var cmd = new MySqlCommand(query, connection))
+        {
+            cmd.Parameters.AddWithValue("@nickname", nickname);
 
-        long count = (long)cmd.ExecuteScalar();
-        return count > 0;
+            object result = cmd.ExecuteScalar();
+            long count = Convert.ToInt64(result);
+
+            return count > 0;
+        }
     }
 
-    private string HashPassword(string password)
+    private string HashPassword(string rawPassword)
     {
         byte[] salt = new byte[16];
 
-        using var pbkdf2 = new Rfc2898DeriveBytes(
-            password,
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(salt);
+        }
+
+        using (var pbkdf2 = new Rfc2898DeriveBytes(
+            rawPassword,
             salt,
             100_000,
-            HashAlgorithmName.SHA256);
+            HashAlgorithmName.SHA256))
+        {
+            byte[] hash = pbkdf2.GetBytes(32);
 
-        byte[] hash = pbkdf2.GetBytes(32);
+            string saltBase64 = Convert.ToBase64String(salt);
+            string hashBase64 = Convert.ToBase64String(hash);
 
-        return $"{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+            return $"{saltBase64}:{hashBase64}";
+        }
     }
 
-    private bool VerifyPassword(string password, string storedValue)
+    private bool VerifyPassword(string rawPassword, string storedValue)
     {
         string[] parts = storedValue.Split(':');
         if (parts.Length != 2)
@@ -212,14 +286,24 @@ public class SQLManager : NetworkBehaviour
         byte[] salt = Convert.FromBase64String(parts[0]);
         byte[] savedHash = Convert.FromBase64String(parts[1]);
 
-        using var pbkdf2 = new Rfc2898DeriveBytes(
-            password,
+        using (var pbkdf2 = new Rfc2898DeriveBytes(
+            rawPassword,
             salt,
             100_000,
-            HashAlgorithmName.SHA256);
+            HashAlgorithmName.SHA256))
+        {
+            byte[] computedHash = pbkdf2.GetBytes(32);
 
-        byte[] computedHash = pbkdf2.GetBytes(32);
+            if (savedHash.Length != computedHash.Length)
+                return false;
 
-        return CryptographicOperations.FixedTimeEquals(savedHash, computedHash);
+            for (int i = 0; i < savedHash.Length; i++)
+            {
+                if (savedHash[i] != computedHash[i])
+                    return false;
+            }
+
+            return true;
+        }
     }
 }
