@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 558598395523839174}
   - component: {fileID: 4862970796217135275}
   - component: {fileID: 1566212700409150236}
+  - component: {fileID: 4682443243613662239}
+  - component: {fileID: 5564287450219369936}
   m_Layer: 0
   m_Name: Pallet
   m_TagString: Untagged
@@ -136,16 +138,56 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af7ac04e5c28617408ff91a255b5b882, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Pallet
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   animator: {fileID: 8715250381579912605}
   standingCollider: {fileID: 5362085558317491334}
   droppedCollider: {fileID: 558598395523839174}
   leftPoint: {fileID: 3809310533888025628}
   rightPoint: {fileID: 9112308028019181740}
-  upPoint: {x: 0, y: 0.2, z: 0}
+  vaultOffset: {x: 0, y: 0.2, z: 0}
   moveToPointSpeed: 5
   dropActionTime: 0.5
-  vaultTime: 4
-  pushDistance: 1.2
+  survivorVaultSpeed: 4
+  breakActionTime: 2
+  useDistance: 2
+  occupationRadius: 1
+  stunTime: 1.2
+--- !u!114 &4682443243613662239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2267120541990146072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
+  sceneId: 0
+  _assetId: 833564776
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0
+--- !u!114 &5564287450219369936
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2267120541990146072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f6f3bf89aa97405989c802ba270f815, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkAnimator
+  syncDirection: 1
+  syncMode: 0
+  syncInterval: 0
+  clientAuthority: 0
+  animator: {fileID: 8715250381579912605}
 --- !u!1 &3037625827884435423
 GameObject:
   m_ObjectHideFlags: 0
