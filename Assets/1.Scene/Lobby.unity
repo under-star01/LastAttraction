@@ -165,7 +165,7 @@ GameObject:
   - component: {fileID: 61349715}
   m_Layer: 10
   m_Name: Plane.001
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -747,7 +747,7 @@ GameObject:
   - component: {fileID: 318154129}
   m_Layer: 10
   m_Name: Plane.004
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1081,7 +1081,7 @@ GameObject:
   - component: {fileID: 361019415}
   m_Layer: 10
   m_Name: Plane.010
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1326,7 +1326,7 @@ GameObject:
   - component: {fileID: 400707467}
   m_Layer: 10
   m_Name: Plane.005
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1867,7 +1867,7 @@ GameObject:
   - component: {fileID: 492148954}
   m_Layer: 10
   m_Name: Plane.002
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2001,7 +2001,7 @@ GameObject:
   - component: {fileID: 570619340}
   m_Layer: 10
   m_Name: Plane (1)
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2162,7 +2162,7 @@ GameObject:
   - component: {fileID: 619377954}
   m_Layer: 10
   m_Name: Plane.006
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2553,7 +2553,7 @@ GameObject:
   - component: {fileID: 839275241}
   m_Layer: 10
   m_Name: Plane.008
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3849,7 +3849,7 @@ GameObject:
   - component: {fileID: 1628650544}
   m_Layer: 10
   m_Name: Plane.003
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3961,7 +3961,7 @@ GameObject:
   - component: {fileID: 1635961749}
   m_Layer: 10
   m_Name: Plane.009
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4141,7 +4141,7 @@ GameObject:
   - component: {fileID: 1700739603}
   m_Layer: 10
   m_Name: Plane.011
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4470,7 +4470,7 @@ GameObject:
   - component: {fileID: 1869350531}
   m_Layer: 10
   m_Name: Plane.007
-  m_TagString: Untagged
+  m_TagString: Pallet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
