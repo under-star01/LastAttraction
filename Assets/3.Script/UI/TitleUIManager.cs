@@ -37,7 +37,7 @@ public class TitleUIManager : MonoBehaviour
         }
         else
         {
-            SetLog("인증 네트워크 매니저가 없습니다.", true);
+            SetLog("Auth network manager is missing.", true);
         }
     }
 
@@ -47,6 +47,8 @@ public class TitleUIManager : MonoBehaviour
     {
         loginPanel.SetActive(true);
         registerPanel.SetActive(false);
+
+        ClearInputs();
         SetLog(string.Empty, false);
     }
 
@@ -54,7 +56,21 @@ public class TitleUIManager : MonoBehaviour
     {
         loginPanel.SetActive(false);
         registerPanel.SetActive(true);
+
+        ClearInputs();
         SetLog(string.Empty, false);
+    }
+
+    private void ClearInputs()
+    {
+        if (inputId != null)
+            inputId.text = string.Empty;
+
+        if (inputPassword != null)
+            inputPassword.text = string.Empty;
+
+        if (inputNickname != null)
+            inputNickname.text = string.Empty;
     }
 
     // 버튼 이벤트
@@ -66,17 +82,17 @@ public class TitleUIManager : MonoBehaviour
 
         if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
         {
-            SetLog("아이디와 비밀번호를 입력해주세요.", true);
+            SetLog("Please enter ID and password.", true);
             return;
         }
 
         if (AuthPlayer.Local == null)
         {
-            SetLog("인증 서버와 아직 연결되지 않았습니다.", true);
+            SetLog("Not connected to auth server.", true);
             return;
         }
 
-        SetLog("로그인 요청 중...", true);
+        SetLog("Login request sent...", true);
         AuthPlayer.Local.RequestLogin(loginId, password);
     }
 
@@ -100,17 +116,17 @@ public class TitleUIManager : MonoBehaviour
             string.IsNullOrWhiteSpace(password) ||
             string.IsNullOrWhiteSpace(nickname))
         {
-            SetLog("아이디, 비밀번호, 닉네임을 모두 입력해주세요.", true);
+            SetLog("Please fill in all fields.", true);
             return;
         }
 
         if (AuthPlayer.Local == null)
         {
-            SetLog("인증 서버와 아직 연결되지 않았습니다.", true);
+            SetLog("Not connected to auth server.", true);
             return;
         }
 
-        SetLog("회원가입 요청 중...", true);
+        SetLog("Register request sent...", true);
         AuthPlayer.Local.RequestRegister(loginId, password, nickname);
     }
 
@@ -121,25 +137,25 @@ public class TitleUIManager : MonoBehaviour
         switch (result)
         {
             case RegisterResult.Success:
-                SetLog("회원가입이 완료되었습니다. 로그인해주세요.", true);
+                SetLog("Register success. Please log in.", true);
                 inputNickname.text = string.Empty;
                 ShowLoginUI();
                 break;
 
             case RegisterResult.InvalidInput:
-                SetLog("입력값을 다시 확인해주세요.", true);
+                SetLog("Invalid input.", true);
                 break;
 
             case RegisterResult.DuplicateLoginId:
-                SetLog("이미 사용 중인 아이디입니다.", true);
+                SetLog("ID already exists.", true);
                 break;
 
             case RegisterResult.DuplicateNickname:
-                SetLog("이미 사용 중인 닉네임입니다.", true);
+                SetLog("Nickname already exists.", true);
                 break;
 
             default:
-                SetLog("회원가입에 실패했습니다.", true);
+                SetLog("Register failed.", true);
                 break;
         }
     }
@@ -149,26 +165,26 @@ public class TitleUIManager : MonoBehaviour
         switch (result)
         {
             case LoginResult.InvalidInput:
-                SetLog("아이디와 비밀번호를 확인해주세요.", true);
+                SetLog("Please check ID and password.", true);
                 break;
 
             case LoginResult.UserNotFound:
-                SetLog("존재하지 않는 아이디입니다.", true);
+                SetLog("User not found.", true);
                 break;
 
             case LoginResult.WrongPassword:
-                SetLog("비밀번호가 올바르지 않습니다.", true);
+                SetLog("Wrong password.", true);
                 break;
 
             default:
-                SetLog("로그인에 실패했습니다.", true);
+                SetLog("Login failed.", true);
                 break;
         }
     }
 
     public void OnLoginSuccess(LoginUserData userData)
     {
-        SetLog("로그인 성공", true);
+        SetLog("Login success.", true);
 
         if (GameSession.Instance != null)
         {
