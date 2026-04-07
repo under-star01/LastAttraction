@@ -1,3 +1,5 @@
+using UnityEngine;
+
 // 상호작용 종류
 public enum InteractType
 {
@@ -12,7 +14,7 @@ public interface IInteractable
     InteractType InteractType { get; }
 
     // 상호작용 시작
-    void BeginInteract();
+    void BeginInteract(GameObject actor);
 
     // 상호작용 종료 Press는 안씀
     void EndInteract();

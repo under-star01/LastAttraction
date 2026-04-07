@@ -40,12 +40,21 @@ public class KillerMove : MonoBehaviour
 
     private void HandleMovement()
     {
+        // [추가] 컨트롤러가 꺼져 있다면(판자 상호작용 중 등) 이동 로직을 실행하지 않음
+    if (controller == null || !controller.enabled) 
+    {
+        return; 
+    }
         float speed = moveSpeed;
         if (state.CurrentCondition == KillerCondition.Lunging) speed *= lungeMultiplier;
         else if (state.CurrentCondition == KillerCondition.Recovering) speed *= penaltyMultiplier;
 
         Vector3 move = transform.right * input.Move.x + transform.forward * input.Move.y;
-        controller.Move(move * speed * Time.deltaTime);
+        // 이동 방향 벡터가 0이 아닐 때만 실제 이동 수행
+        if (move.sqrMagnitude > 0.001f)
+        {
+            controller.Move(move * speed * Time.deltaTime);
+        }
     }
 
     private void HandleLook()
@@ -63,9 +72,15 @@ public class KillerMove : MonoBehaviour
     {
         if (animator == null) return;
 
-        // 입력 값의 크기(0~1)를 Speed 파라미터에 전달합니다.
-        // SurvivorMove처럼 부드러운 전환을 위해 dampTime(0.1f)을 줄 수 있습니다.
-        float targetSpeed = input.Move.magnitude;
+        float targetSpeed = 0f;
+
+        // 평상시나 런지 중일 때만 WASD 입력을 애니메이션에 반영
+        if (state.CurrentCondition == KillerCondition.Idle ||
+            state.CurrentCondition == KillerCondition.Lunging)
+        {
+            targetSpeed = input.Move.magnitude;
+        }
+        // 그 외(Hit, Breaking, Vaulting)에는 강제로 0을 전달하여 걷기 모션 차단
         animator.SetFloat("Speed", targetSpeed, 0.1f, Time.deltaTime);
     }
 }

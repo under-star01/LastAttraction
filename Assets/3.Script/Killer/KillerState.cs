@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum KillerCondition { Idle, Lunging, Recovering, Stunned, Vaulting, Breaking, Carrying }
+public enum KillerCondition { Idle, Lunging, Recovering, Hit, Vaulting, Breaking, Carrying }
 
 public class KillerState : MonoBehaviour
 {
@@ -16,8 +16,8 @@ public class KillerState : MonoBehaviour
 
     // 스턴 상태가 아닐 때만 마우스 회전(시야) 가능
     public bool CanLook => 
-        CurrentCondition != KillerCondition.Stunned ||
-        CurrentCondition != KillerCondition.Vaulting ||
+        CurrentCondition != KillerCondition.Hit &&
+        CurrentCondition != KillerCondition.Vaulting &&
         CurrentCondition != KillerCondition.Breaking;
 
     // --- [KillerCombat에서 사용하는 프로퍼티] ---

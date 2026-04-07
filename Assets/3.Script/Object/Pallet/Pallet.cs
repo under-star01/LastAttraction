@@ -3,433 +3,276 @@ using UnityEngine;
 
 public class Pallet : MonoBehaviour, IInteractable
 {
-    // Space 1번 눌러서 실행되는 상호작용
     public InteractType InteractType => InteractType.Press;
 
     [Header("참조")]
     [SerializeField] private Animator animator;
-    [SerializeField] private Collider standingCollider; // 세워진 판자 콜라이더
-    [SerializeField] private Collider droppedCollider;  // 넘어진 판자 콜라이더
-    [SerializeField] private Transform leftPoint;       // 판자 왼쪽 포인트
-    [SerializeField] private Transform rightPoint;      // 판자 오른쪽 포인트
+    [SerializeField] private Collider standingCollider;
+    [SerializeField] private Collider droppedCollider;
+    [SerializeField] private Transform leftPoint;
+    [SerializeField] private Transform rightPoint;
     [SerializeField] private Vector3 upPoint = new Vector3(0, 0.2f, 0);
 
-    [Header("이동/연출")]
-    [SerializeField] private float moveToPointSpeed = 5f; // 포인트까지 걸어가는 속도
-    [SerializeField] private float dropActionTime = 0.5f; // 판자 내리는 연출 시간
-    [SerializeField] private float vaultSpeed = 4f;      // 반대편으로 넘어가는 시간
+    [Header("이동/연출 설정")]
+    [SerializeField] private float moveToPointSpeed = 5f;
+    [SerializeField] private float dropActionTime = 0.5f;
+    [SerializeField] private float vaultSpeed = 4f;
+    [SerializeField] private float breakActionTime = 2.0f;
 
-    [Header("밀어내기")]
-    [SerializeField] private float pushDistance = 1.2f;   // 겹친 대상 밀어내는 거리
+    [Header("판정 및 예외 처리")]
+    [SerializeField] private float occupationRadius = 1.0f; // 포인트 점유 반경
+    [SerializeField] private float stunTime = 1.2f;
 
-    private bool isDropped;   // 판자가 이미 내려갔는지
-    private bool isDropping;  // 현재 판자 내리는 중인지
-    private bool isVaulting;  // 현재 판자 넘는 중인지
-    private bool isLeftSide;  // 플레이어가 현재 왼쪽에 있는지
+    private bool isDropped;
+    private bool isDropping;
+    private bool isVaulting;
+    private bool isBreaking;
+    private bool isLeftSide;
 
-    private SurvivorInteractor currentInteractor; // 현재 범위 안 플레이어
+    private SurvivorInteractor currentInteractor;
 
     private void Awake()
     {
-        // Animator 자동 찾기
-        if (animator == null)
-        {
-            animator = GetComponentInChildren<Animator>();
-        }
-
-        // 시작할 때는 세워진 상태
-        if (standingCollider != null)
-        {
-            standingCollider.enabled = true;
-        }
-
-        if (droppedCollider != null)
-        {
-            droppedCollider.enabled = false;
-        }
+        if (animator == null) animator = GetComponentInChildren<Animator>();
+        if (standingCollider != null) standingCollider.enabled = true;
+        if (droppedCollider != null) droppedCollider.enabled = false;
     }
 
-    // Space 눌렀을 때 실행
-    public void BeginInteract()
+    // --- [상호작용 시작] ---
+    public void BeginInteract(GameObject actor)
     {
-        if (isDropping)
+        if (isDropping || isVaulting || isBreaking) return;
+
+        Transform myPoint = GetSidePointForActor(actor.transform);
+
+        string opponentTag = actor.CompareTag("Survivor") ? "Killer" : "Survivor";
+        if (IsOpponentAtPoint(myPoint, opponentTag))
         {
+            Debug.Log($"{opponentTag}가 근처에 있어 상호작용이 불가능합니다.");
             return;
         }
 
-        if (isVaulting)
+        if (!isDropped)
         {
-            return;
+            if (actor.CompareTag("Survivor")) StartCoroutine(DropRoutine());
         }
-
-        // 아직 안 내려간 판자는 드롭
-        if (isDropped == false)
-        {
-            StartCoroutine(DropRoutine());
-        }
-        // 이미 내려간 판자는 넘기
         else
         {
-            StartCoroutine(VaultRoutine());
+            if (actor.CompareTag("Killer")) StartCoroutine(BreakRoutine(actor));
+            else if (actor.CompareTag("Survivor")) StartCoroutine(VaultRoutine());
         }
     }
 
-    public void EndInteract()
-    {
-        // Press 타입은 비움
-    }
+    public void EndInteract() { }
 
-    // 판자 내리기
+    // --- [루틴: 생존자 판자 내리기] ---
     private IEnumerator DropRoutine()
     {
-        // 현재 플레이어가 서있는 쪽 포인트 구하기
-        Transform sidePoint = GetSidePoint();
-
         isDropping = true;
+        Transform sidePoint = GetSidePointForActor(currentInteractor.transform);
 
-        // 이동 막음
         LockMovement(true);
+        FaceActorToPallet(currentInteractor.transform, sidePoint == leftPoint);
 
-        // 판자 내리는 방향 보게 만들기
-        FaceToPallet();
-
-        // CharacterController 켜진 상태에서 위치를 직접 바꾸면 충돌 문제가 날 수 있어서 잠깐 끔
         CharacterController controller = currentInteractor.GetComponent<CharacterController>();
-        controller.enabled = false;
+        if (controller != null) controller.enabled = false;
 
-        // 걷는 모션 끄고
         StopAnim();
+        yield return MoveActorToPoint(currentInteractor.transform, sidePoint.position, moveToPointSpeed);
 
-        // 먼저 자기 쪽 포인트로 이동
-        yield return MoveToPoint(sidePoint.position, moveToPointSpeed);
-
-        // 드롭 애니메이션 실행
         PlayAnim("Drop");
+        if (animator != null) animator.SetTrigger("Drop");
 
-        // 판자 애니메이션 실행
-        animator.SetTrigger("Drop");
-
-        // 연출 시간만큼 대기
         yield return new WaitForSeconds(dropActionTime);
 
-        // 실제 상태 변경
-        Drop();
+        Drop(); // 상태 변경 및 살인마 정렬 체크 실행
 
-        controller.enabled = true;
-
+        if (controller != null) controller.enabled = true;
         LockMovement(false);
         isDropping = false;
     }
 
-    // 실제 판자 상태를 내려진 상태로 변경
-    private void Drop()
+    // --- [루틴: 살인마 판자 파괴] ---
+    private IEnumerator BreakRoutine(GameObject killer)
     {
-        isDropped = true;
+        isBreaking = true;
+        KillerState kState = killer.GetComponent<KillerState>();
+        CharacterController kController = killer.GetComponent<CharacterController>();
+        Animator kAnimator = killer.GetComponentInChildren<Animator>();
 
-        // 세워진 콜라이더 끄기
-        standingCollider.enabled = false;
+        kState.ChangeState(KillerCondition.Breaking);
 
-        // 넘어진 콜라이더 켜기
-        droppedCollider.enabled = true;
+        if (kController != null) kController.enabled = false;
+        yield return null; // 물리 연산 동기화를 위해 한 프레임 대기
 
-        // 내려진 뒤 겹친 대상 밀어내기
-        PushOut();
+        Transform sidePoint = GetSidePointForActor(killer.transform);
+        yield return MoveActorToPoint(killer.transform, sidePoint.position, moveToPointSpeed);
+        FaceActorToPallet(killer.transform, sidePoint == leftPoint);
+
+        if (kAnimator != null) kAnimator.SetTrigger("Break");
+        if (animator != null) animator.SetTrigger("Break");
+
+        yield return new WaitForSeconds(breakActionTime);
+
+        if (kController != null) kController.enabled = true;
+        kState.ChangeState(KillerCondition.Idle);
+        Destroy(gameObject);
     }
 
-    // 판자 넘기
+    // --- [루틴: 살인마 판자에 맞았을 때 정렬] ---
+    private IEnumerator KillerHitAlignRoutine(GameObject killer, KillerInteractor kInteract)
+    {
+        CharacterController kController = killer.GetComponent<CharacterController>();
+        if (kController == null) kController = killer.GetComponentInParent<CharacterController>();
+
+        // 물리 제어를 끄고 정해진 포인트로 정렬
+        if (kController != null) kController.enabled = false;
+        yield return null;
+
+        Transform sidePoint = GetSidePointForActor(killer.transform);
+        yield return MoveActorToPoint(killer.transform, sidePoint.position, moveToPointSpeed);
+        FaceActorToPallet(killer.transform, sidePoint == leftPoint);
+
+        // 정렬 완료 후 스턴 애니메이션 및 상태 적용
+        kInteract.ApplyHitStun(stunTime);
+
+        yield return new WaitForSeconds(stunTime);
+        if (kController != null) kController.enabled = true;
+    }
+
+    // --- [루틴: 생존자 판자 넘기] ---
     private IEnumerator VaultRoutine()
     {
-        // 현재 플레이어가 있는 쪽 포인트
-        Transform sidePoint = GetSidePoint();
-        // 반대편 포인트
-        Transform oppositePoint = null;
+        isVaulting = true;
+        Transform sidePoint = GetSidePointForActor(currentInteractor.transform);
+        Transform oppositePoint = (sidePoint == leftPoint) ? rightPoint : leftPoint;
 
-        if (isLeftSide)
-        {
-            oppositePoint = rightPoint;
-        }
-        else
-        {
-            oppositePoint = leftPoint;
-        }
-
-
-        // 이동 막음
         LockMovement(true);
+        FaceActorToPallet(currentInteractor.transform, sidePoint == leftPoint);
 
-        // 넘는 방향 보게 만들기
-        FaceToPallet();
-
-        // CharacterController 켜진 상태에서 위치를 직접 바꾸면 충돌 문제가 날 수 있어서 잠깐 끔
         CharacterController controller = currentInteractor.GetComponent<CharacterController>();
-        controller.enabled = false;
+        if (controller != null) controller.enabled = false;
 
         Vector3 start = sidePoint.position + upPoint;
         Vector3 arrive = oppositePoint.position + upPoint;
 
-        // 모션 끄고
         StopAnim();
-
-        // 먼저 현재 쪽 포인트로 이동
-        yield return MoveToPoint(start, moveToPointSpeed);
+        yield return MoveActorToPoint(currentInteractor.transform, start, moveToPointSpeed);
 
         SurvivorMove move = GetCurrentMove();
-        if (move != null)
-        {
-            move.SetVaulting(true);
-        }
+        if (move != null) move.SetVaulting(true);
 
-        isVaulting = true;
+        if (sidePoint == leftPoint) PlayAnim("LeftVault");
+        else PlayAnim("RightVault");
 
-        // Vault 트리거 실행
-        if (isLeftSide)
-        {
-            PlayAnim("LeftVault");
-        }
-        else
-        {
-            PlayAnim("RightVault");
-        }
+        yield return MoveActorToPoint(currentInteractor.transform, arrive, vaultSpeed);
 
-        // 반대편 포인트로 부드럽게 이동
-        yield return MoveToPoint(arrive, vaultSpeed);
-
-        controller.enabled = true;
-
+        if (controller != null) controller.enabled = true;
         LockMovement(false);
+        if (move != null) move.SetVaulting(false);
         isVaulting = false;
-
-        if (move != null)
-        {
-            move.SetVaulting(false);
-        }
     }
 
-    // 포인트/방향
-    // 현재 플레이어가 서 있는 쪽 포인트 구하기
-    private Transform GetSidePoint()
+    // --- [핵심 로직: 실제 상태 변경 및 스턴] ---
+    private void Drop()
     {
-        // 플레이어 위치를 판자 기준 로컬좌표로 바꿈
-        Vector3 localPos = transform.InverseTransformPoint(currentInteractor.transform.position);
+        isDropped = true;
+        standingCollider.enabled = false;
+        droppedCollider.enabled = true;
 
-        // x가 0보다 작으면 왼쪽
-        if (localPos.x < 0f)
-        {
-            isLeftSide = true;
-            return leftPoint;
-        }
-        else
-        {
-            isLeftSide = false;
-            return rightPoint;
-        }
+        // 밀어내기(PushOut)는 제거하고, 스턴 시 포인트로 정렬시킵니다.
+        CheckKillerStun();
     }
 
-    // 현재 액션 방향을 바라보게 함
-    private void FaceToPallet()
+    private void CheckKillerStun()
     {
-        if (currentInteractor == null)
+        Collider[] hits = Physics.OverlapBox(droppedCollider.bounds.center, droppedCollider.bounds.extents, transform.rotation);
+        foreach (var hit in hits)
         {
-            return;
+            if (hit.CompareTag("Killer"))
+            {
+                var kInteract = hit.GetComponentInParent<KillerInteractor>();
+                if (kInteract != null)
+                {
+                    // 단순 힛이 아니라, 포인트로 정렬하는 루틴을 실행합니다.
+                    StartCoroutine(KillerHitAlignRoutine(hit.gameObject, kInteract));
+                }
+            }
         }
-
-        Vector3 lookDir = Vector3.zero;
-
-        // 왼쪽에 있으면 오른쪽 방향 보고
-        // 오른쪽에 있으면 왼쪽 방향 봄
-        if (isLeftSide)
-        {
-            lookDir = transform.right;
-        }
-        else
-        {
-            lookDir = -transform.right;
-        }
-
-        lookDir.y = 0f;
-
-        SurvivorMove move = GetCurrentMove();
-        if (move == null)
-        {
-            return;
-        }
-
-        if (lookDir.sqrMagnitude <= 0.001f)
-        {
-            return;
-        }
-
-        move.FaceDirection(lookDir.normalized);
     }
 
-    // 이동
-    // 일정한 속도로 특정 위치까지 이동
-    private IEnumerator MoveToPoint(Vector3 targetPos, float speed)
-    {
-        if (currentInteractor == null)
-        {
-            yield break;
-        }
-
-        Transform t = currentInteractor.transform;
-
-        while ((t.position - targetPos).sqrMagnitude > 0.0001f)
-        {
-            t.position = Vector3.MoveTowards(t.position, targetPos, speed * Time.deltaTime);
-            yield return null;
-        }
-
-        t.position = targetPos;
-    }
-
-    // 생존자 제어
-    // 이동 잠금/해제
+    // --- [제어 및 도움 함수들] ---
     private void LockMovement(bool value)
     {
         SurvivorMove move = GetCurrentMove();
-
-        if (move != null)
-        {
-            move.SetMoveLock(value);
-        }
+        if (move != null) move.SetMoveLock(value);
     }
 
-    // 생존자 애니메이션 Trigger 실행
     private void PlayAnim(string triggerName)
     {
         SurvivorMove move = GetCurrentMove();
-
-        if (move != null)
-        {
-            move.PlayAnimation(triggerName);
-        }
+        if (move != null) move.PlayAnimation(triggerName);
     }
 
-    // 걷기/뛰기 애니메이션 멈춤
     private void StopAnim()
     {
         SurvivorMove move = GetCurrentMove();
-
-        if (move != null)
-        {
-            move.StopAnimation();
-        }
+        if (move != null) move.StopAnimation();
     }
 
-    // 현재 SurvivorMove 찾기
     private SurvivorMove GetCurrentMove()
     {
+        if (currentInteractor == null) return null;
         SurvivorMove move = currentInteractor.GetComponent<SurvivorMove>();
-
-        if (move == null)
-        {
-            move = currentInteractor.GetComponentInParent<SurvivorMove>();
-        }
-
+        if (move == null) move = currentInteractor.GetComponentInParent<SurvivorMove>();
         return move;
     }
 
-    // 판자 내려간 뒤 겹친 대상 밀어내기
-    private void PushOut()
+    private Transform GetSidePointForActor(Transform actor)
     {
-        if (droppedCollider == null)
-        {
-            return;
-        }
-
-        Collider[] hits = Physics.OverlapBox(
-            droppedCollider.bounds.center,
-            droppedCollider.bounds.extents,
-            droppedCollider.transform.rotation
-        );
-
-        foreach (Collider hit in hits)
-        {
-            // 자기 자신 무시
-            if (hit == droppedCollider)
-            {
-                continue;
-            }
-
-            // 생존자/살인마만 처리
-            if (hit.CompareTag("Survivor") == false && hit.CompareTag("Killer") == false)
-            {
-                continue;
-            }
-
-            PushSingleActor(hit.transform);
-        }
+        Vector3 localPos = transform.InverseTransformPoint(actor.position);
+        isLeftSide = localPos.x < 0f;
+        return isLeftSide ? leftPoint : rightPoint;
     }
 
-    // 대상 1명을 판자 밖으로 밀어냄
-    private void PushSingleActor(Transform target)
+    private void FaceActorToPallet(Transform actor, bool isLeft)
     {
-        Vector3 toTarget = target.position - transform.position;
-        float dot = Vector3.Dot(transform.forward, toTarget);
-
-        Vector3 pushDir = Vector3.zero;
-
-        if (dot >= 0f)
-        {
-            pushDir = transform.forward;
-        }
-        else
-        {
-            pushDir = -transform.forward;
-        }
-
-        pushDir.y = 0f;
-        pushDir.Normalize();
-
-        CharacterController controller = target.GetComponent<CharacterController>();
-
-        if (controller == null)
-        {
-            controller = target.GetComponentInParent<CharacterController>();
-        }
-
-        if (controller != null)
-        {
-            controller.enabled = false;
-        }
-
-        target.position += pushDir * pushDistance;
-
-        if (controller != null)
-        {
-            controller.enabled = true;
-        }
+        Vector3 lookDir = isLeft ? transform.right : -transform.right;
+        lookDir.y = 0f;
+        if (lookDir.sqrMagnitude > 0.001f) actor.rotation = Quaternion.LookRotation(lookDir.normalized);
     }
 
-    // 트리거
-    // 범위 안에 들어오면 상호작용 등록
+    private IEnumerator MoveActorToPoint(Transform actor, Vector3 target, float speed)
+    {
+        while (Vector3.Distance(actor.position, target) > 0.001f)
+        {
+            actor.position = Vector3.MoveTowards(actor.position, target, speed * Time.deltaTime);
+            yield return null;
+        }
+        actor.position = target;
+    }
+
+    private bool IsOpponentAtPoint(Transform targetPoint, string opponentTag)
+    {
+        Collider[] hits = Physics.OverlapSphere(targetPoint.position, occupationRadius);
+        foreach (var hit in hits) if (hit.CompareTag(opponentTag)) return true;
+        return false;
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Survivor") == false)
+        if (other.CompareTag("Survivor"))
         {
-            return;
+            currentInteractor = other.GetComponent<SurvivorInteractor>();
+            currentInteractor.SetInteractable(this);
         }
-
-        SurvivorInteractor interactor = other.GetComponent<SurvivorInteractor>();
-
-        currentInteractor = interactor;
-        interactor.SetInteractable(this);
     }
 
-    // 범위를 나가면 상호작용 해제
     private void OnTriggerExit(Collider other)
     {
-        if (other.CompareTag("Survivor") == false)
+        if (other.CompareTag("Survivor") && currentInteractor?.gameObject == other.gameObject)
         {
-            return;
-        }
-
-        SurvivorInteractor interactor = other.GetComponent<SurvivorInteractor>();
-
-        interactor.ClearInteractable(this);
-
-        if (currentInteractor == interactor)
-        {
+            currentInteractor.ClearInteractable(this);
             currentInteractor = null;
         }
     }

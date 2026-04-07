@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections;
 
-public class KillerInteract : MonoBehaviour
+public class KillerInteractor : MonoBehaviour
 {
     [Header("Interaction Settings")]
     public float interactRange = 2.0f;
@@ -10,6 +10,7 @@ public class KillerInteract : MonoBehaviour
     private KillerInput input;
     private KillerState state;
     private Animator animator;
+    private IInteractable currentTarget;
 
     void Awake()
     {
@@ -20,61 +21,42 @@ public class KillerInteract : MonoBehaviour
 
     void Update()
     {
-        // 공격 중이 아닐 때만 상호작용 체크
-        if (state.CurrentCondition == KillerCondition.Idle)
-        {
-            TryInteract();
-        }
-    }
+        // 1. 앞에 상호작용 대상이 있는지 탐색
+        SearchTarget();
 
-    private void TryInteract()
-    {
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position, transform.forward, out hit, interactRange, interactLayer))
+        // 2. Hit 상태가 아닐 때만 상호작용 시도
+        if (state.CurrentCondition == KillerCondition.Idle && input.IsInteractPressed)
         {
-            string tag = hit.collider.tag;
-
-            switch (tag)
+            if (currentTarget != null)
             {
-                case "Window": StartVault(hit.collider); break;
-                case "Pallet": StartBreakPallet(hit.collider); break;
-                case "DownedSurvivor": StartPickUp(hit.collider.gameObject); break;
+                // 오브젝트의 기능을 호출 (창틀 넘기, 판자 부수기 등 실행)
+                currentTarget.BeginInteract(this.gameObject);
             }
         }
     }
 
-    // ① 창틀 넘기
-    private void StartVault(Collider window)
+    private void SearchTarget()
     {
-        state.ChangeState(KillerCondition.Vaulting);
-        animator.SetTrigger("Vault");
-        // 애니메이션 길이에 맞춰 상태 복구 (예시: 1.2초 후 Idle)
-        StartCoroutine(ResetStateRoutine(1.2f));
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, transform.forward, out hit, interactRange, interactLayer))
+        {
+            currentTarget = hit.collider.GetComponent<IInteractable>();
+        }
+        else
+        {
+            currentTarget = null;
+        }
     }
 
-    // ② 판자에 맞음 (외부에서 호출됨)
-    public void GetStunned(float duration)
+    // [중요] 판자가 살인마를 때릴 때 호출하는 함수
+    public void ApplyHitStun(float duration)
     {
-        state.ChangeState(KillerCondition.Stunned);
-        animator.SetTrigger("Stunned");
+        if (state.CurrentCondition == KillerCondition.Hit) return;
+
+        state.ChangeState(KillerCondition.Hit);
+        if (animator != null) animator.SetTrigger("Hit");
+
         StartCoroutine(ResetStateRoutine(duration));
-    }
-
-    // ③ 내려진 판자 파괴
-    private void StartBreakPallet(Collider pallet)
-    {
-        state.ChangeState(KillerCondition.Breaking);
-        animator.SetTrigger("BreakPallet");
-        // 파괴 완료 시점 근처에서 오브젝트 제거 로직
-        StartCoroutine(ResetStateRoutine(2.0f));
-    }
-
-    // ④ 생존자 들기
-    private void StartPickUp(GameObject survivor)
-    {
-        state.ChangeState(KillerCondition.Carrying);
-        animator.SetTrigger("PickUp");
-        // survivor.transform.SetParent(shoulderSocket); 로직 추가
     }
 
     private IEnumerator ResetStateRoutine(float delay)
