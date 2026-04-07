@@ -11366,7 +11366,7 @@ GameObject:
   - component: {fileID: 4930780877601674375}
   m_Layer: 0
   m_Name: KillerClown
-  m_TagString: Untagged
+  m_TagString: Killer
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -11426,9 +11426,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a68cb53d11eea4a4bbfbfd6f02c0602f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TrapHandler
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   trapPrefab: {fileID: 2647317376667800383, guid: e1ea0471b3c6e0b48b92bcc5f0bd32db, type: 3}
   maxInstallDist: 3
-  buildTime: 2
   groundMask:
     serializedVersion: 2
     m_Bits: 512
@@ -11500,12 +11502,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c9364b03b421f743aef9a0e0789d946, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KillerMove
-  moveSpeed: 4
-  lookSensitivity: 0.2
-  lungeMultiplier: 1.6
-  penaltyMultiplier: 0.4
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   killerCamera: {fileID: 6045872689445835082}
   cameraTarget: {fileID: 5939102808237091577}
+  animator: {fileID: 0}
+  audioListener: {fileID: 0}
+  moveSpeed: 4
+  lungeMultiplier: 1.6
+  penaltyMultiplier: 0.4
+  lookSensitivity: 0.2
   followSpeed: 25
 --- !u!114 &8367404895667104180
 MonoBehaviour:
@@ -11548,7 +11555,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkTransformReliable
-  syncDirection: 1
+  syncDirection: 0
   syncMode: 0
   syncInterval: 0
   target: {fileID: 7051962520796777059}
@@ -11560,7 +11567,7 @@ MonoBehaviour:
   interpolatePosition: 1
   interpolateRotation: 1
   interpolateScale: 1
-  coordinateSpace: 0
+  coordinateSpace: 1
   timelineOffset: 1
   showGizmos: 0
   showOverlay: 0
@@ -11582,7 +11589,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f6f3bf89aa97405989c802ba270f815, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkAnimator
-  syncDirection: 1
+  syncDirection: 0
   syncMode: 0
   syncInterval: 0
   clientAuthority: 0
