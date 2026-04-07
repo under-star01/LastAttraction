@@ -1,86 +1,200 @@
+using Mirror;
 using UnityEngine;
 
-public class KillerMove : MonoBehaviour
+public class KillerMove : NetworkBehaviour
 {
-    [Header("Settings")]
-    public float moveSpeed = 5f;
-    public float lookSensitivity = 0.2f;
-    public float lungeMultiplier = 1.6f;
-    public float penaltyMultiplier = 0.4f;
+    [Header("참조")]
+    [SerializeField] private Transform killerCamera;       // 상하 회전용 카메라
+    [SerializeField] private Transform cameraTarget;       // 카메라가 따라갈 위치
+    [SerializeField] private Animator animator;
+    [SerializeField] private AudioListener audioListener;
 
-    [Header("Camera")]
-    public Transform killerCamera;
-    public Transform cameraTarget;
-    public float followSpeed = 25f;
+    [Header("속도 설정")]
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float lungeMultiplier = 1.6f;
+    [SerializeField] private float penaltyMultiplier = 0.4f;
+    [SerializeField] private float lookSensitivity = 0.2f;
+    [SerializeField] private float followSpeed = 25f;
 
     private CharacterController controller;
     private KillerInput input;
     private KillerState state;
-    private Animator animator; // 애니메이터 참조 추가
-    private float cameraPitch;
 
-    void Awake()
+    // 로컬 카메라 회전값
+    private float localYaw;
+    private float localPitch;
+    private float yVelocity;
+
+    // 서버 입력 저장용
+    private Vector2 serverMoveInput;
+    private float serverYaw;
+
+    // 동기화 변수
+    [SyncVar] private float syncedYaw;
+    [SyncVar] private float syncedPitch;
+    [SyncVar] private float syncedMoveSpeed;
+
+    private void Awake()
     {
         controller = GetComponent<CharacterController>();
         input = GetComponent<KillerInput>();
         state = GetComponent<KillerState>();
 
-        // 자식 오브젝트에서 애니메이터를 찾아옵니다.
-        animator = GetComponentInChildren<Animator>();
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+        // 초기 상태에서 카메라/오디오 리스너 비활성화
+        if (killerCamera != null) killerCamera.gameObject.SetActive(false);
+        if (audioListener != null) audioListener.enabled = false;
     }
 
-    void Update()
+    public override void OnStartLocalPlayer()
     {
-        if (state.CanMove) HandleMovement();
-        if (state.CanLook) HandleLook();
+        base.OnStartLocalPlayer();
 
-        // 매 프레임 애니메이션 파라미터를 업데이트합니다.
-        UpdateAnimation();
+        // 내 킬러만 카메라와 리스너 활성화
+        if (killerCamera != null) killerCamera.gameObject.SetActive(true);
+        if (audioListener != null) audioListener.enabled = true;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
-    private void HandleMovement()
+    private void Update()
     {
-        // [추가] 컨트롤러가 꺼져 있다면(판자 상호작용 중 등) 이동 로직을 실행하지 않음
-    if (controller == null || !controller.enabled) 
-    {
-        return; 
-    }
-        float speed = moveSpeed;
-        if (state.CurrentCondition == KillerCondition.Lunging) speed *= lungeMultiplier;
-        else if (state.CurrentCondition == KillerCondition.Recovering) speed *= penaltyMultiplier;
-
-        Vector3 move = transform.right * input.Move.x + transform.forward * input.Move.y;
-        // 이동 방향 벡터가 0이 아닐 때만 실제 이동 수행
-        if (move.sqrMagnitude > 0.001f)
+        if (isLocalPlayer)
         {
-            controller.Move(move * speed * Time.deltaTime);
+            // 1. 로컬 시야 회전 처리 (CanLook 상태일 때만)
+            if (state.CanLook)
+            {
+                UpdateLocalLook();
+                ApplyLocalCamera();
+            }
+
+            // 2. 입력값 서버 전송
+            SendInputToServer();
+        }
+        else
+        {
+            // 3. 원격 플레이어 동기화
+            ApplyRemoteLook();
+            ApplyRemoteAnimator();
         }
     }
 
-    private void HandleLook()
+    private void FixedUpdate()
     {
-        transform.Rotate(Vector3.up * input.Look.x * lookSensitivity);
-        cameraPitch = Mathf.Clamp(cameraPitch - input.Look.y * lookSensitivity, -80f, 80f);
-        killerCamera.localRotation = Quaternion.Euler(cameraPitch, 0, 0);
+        // 실제 물리 이동은 서버에서만 처리
+        if (isServer)
+        {
+            ServerTickMovement();
+        }
+    }
+
+    private void UpdateLocalLook()
+    {
+        Vector2 lookInput = input.Look;
+        localYaw += lookInput.x * lookSensitivity;
+        localPitch = Mathf.Clamp(localPitch - lookInput.y * lookSensitivity, -80f, 80f);
+    }
+
+    private void ApplyLocalCamera()
+    {
+        // 킬러는 몸체가 Yaw에 따라 회전함
+        transform.rotation = Quaternion.Euler(0f, localYaw, 0f);
+        // 카메라는 Pitch만 담당
+        killerCamera.localRotation = Quaternion.Euler(localPitch, 0f, 0f);
 
         if (cameraTarget != null)
             killerCamera.position = Vector3.Lerp(killerCamera.position, cameraTarget.position, Time.deltaTime * followSpeed);
     }
 
-    // --- [추가된 부분] ---
-    private void UpdateAnimation()
+    private void ApplyRemoteLook()
     {
-        if (animator == null) return;
+        // 타인 화면에서는 동기화된 값 적용
+        transform.rotation = Quaternion.Euler(0f, syncedYaw, 0f);
+        killerCamera.localRotation = Quaternion.Euler(syncedPitch, 0f, 0f);
+    }
 
-        float targetSpeed = 0f;
+    private void ApplyRemoteAnimator()
+    {
+        if (animator != null)
+            animator.SetFloat("Speed", syncedMoveSpeed, 0.1f, Time.deltaTime);
+    }
 
-        // 평상시나 런지 중일 때만 WASD 입력을 애니메이션에 반영
-        if (state.CurrentCondition == KillerCondition.Idle ||
-            state.CurrentCondition == KillerCondition.Lunging)
+    private void SendInputToServer()
+    {
+        CmdSetMoveInput(input.Move, localYaw, localPitch);
+    }
+
+    [Command]
+    private void CmdSetMoveInput(Vector2 moveInput, float yaw, float pitch)
+    {
+        serverMoveInput = moveInput;
+        serverYaw = yaw;
+
+        // 동기화 변수 갱신
+        syncedYaw = yaw;
+        syncedPitch = pitch;
+    }
+
+    [Server]
+    private void ServerTickMovement()
+    {
+        if (controller == null || !controller.enabled) return;
+
+        // 이동 가능 상태가 아니면 중력만 적용
+        if (!state.CanMove)
         {
-            targetSpeed = input.Move.magnitude;
+            ApplyGravityOnlyServer();
+            UpdateAnimatorServer(0f);
+            return;
         }
-        // 그 외(Hit, Breaking, Vaulting)에는 강제로 0을 전달하여 걷기 모션 차단
-        animator.SetFloat("Speed", targetSpeed, 0.1f, Time.deltaTime);
+
+        MoveServer(serverMoveInput, serverYaw);
+    }
+
+    [Server]
+    private void MoveServer(Vector2 moveInput, float yaw)
+    {
+        // 킬러의 현재 상태에 따른 속도 계산
+        float speed = moveSpeed;
+        if (state.CurrentCondition == KillerCondition.Lunging) speed *= lungeMultiplier;
+        else if (state.CurrentCondition == KillerCondition.Recovering) speed *= penaltyMultiplier;
+
+        // 회전값 적용
+        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
+
+        if (move.magnitude > 1f) move.Normalize();
+
+        // 중력 처리
+        if (controller.isGrounded) yVelocity = -1f;
+        else yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
+
+        Vector3 finalMove = move * speed;
+        finalMove.y = yVelocity;
+
+        controller.Move(finalMove * Time.fixedDeltaTime);
+
+        // 애니메이션 속도 동기화
+        UpdateAnimatorServer(moveInput.magnitude);
+    }
+
+    [Server]
+    private void ApplyGravityOnlyServer()
+    {
+        if (controller.isGrounded) yVelocity = -1f;
+        else yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
+
+        controller.Move(new Vector3(0, yVelocity, 0) * Time.fixedDeltaTime);
+    }
+
+    [Server]
+    private void UpdateAnimatorServer(float targetSpeed)
+    {
+        syncedMoveSpeed = targetSpeed;
+        if (animator != null)
+            animator.SetFloat("Speed", targetSpeed, 0.1f, Time.fixedDeltaTime);
     }
 }
