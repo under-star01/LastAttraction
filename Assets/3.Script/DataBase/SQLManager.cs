@@ -64,16 +64,20 @@ public class SQLManager : MonoBehaviour
             return;
         }
 
+        // -----서버에서만 실행-----
+        
         Initialize();
 
         if (testConnectionOnStart)
         {
+            // Debug 출력용 메소드
             TestConnection();
         }
     }
 
     private void Initialize()
     {
+        // 서버에 전달할 connectionString 준비
         connectionString =
             $"Server={server};Port={port};Database={database};User ID={user};Password={password};";
 
@@ -82,6 +86,7 @@ public class SQLManager : MonoBehaviour
         Debug.Log("[SQLManager] DB 초기화 완료");
     }
 
+    // 서버 준비 상태 반환 메소드
     private bool IsServerReady()
     {
         if (!NetworkServer.active)
@@ -99,6 +104,7 @@ public class SQLManager : MonoBehaviour
         return true;
     }
 
+    // 서버 연결 상태 디버그 표시 메소드
     public void TestConnection()
     {
         if (!IsServerReady())
@@ -106,6 +112,7 @@ public class SQLManager : MonoBehaviour
 
         try
         {
+            // using : 블록처리된 객체를 잠시 만들고, 블록이 끝나면 정리함.
             using (var connection = new MySqlConnection(connectionString))
             {
                 connection.Open();
@@ -118,11 +125,14 @@ public class SQLManager : MonoBehaviour
         }
     }
 
+    // 회원가입 메소드
     public RegisterResult Register(string loginId, string rawPassword, string nickname)
     {
+        // 서버 준비 상태x -> 실패
         if (!IsServerReady())
             return RegisterResult.Failed;
 
+        // 입력값 문제o -> 실패
         if (string.IsNullOrWhiteSpace(loginId) ||
             string.IsNullOrWhiteSpace(rawPassword) ||
             string.IsNullOrWhiteSpace(nickname))
@@ -134,16 +144,21 @@ public class SQLManager : MonoBehaviour
         {
             using (var connection = new MySqlConnection(connectionString))
             {
+                // DB 연결
                 connection.Open();
 
+                // 아이디 중복 검사
                 if (IsLoginIdExists(connection, loginId))
                     return RegisterResult.DuplicateLoginId;
-
+                
+                // 닉네임 중복 검사
                 if (IsNicknameExists(connection, nickname))
                     return RegisterResult.DuplicateNickname;
 
+                // 비밀번호 해시 형태로 변경 (암호화)
                 string passwordHash = HashPassword(rawPassword);
 
+                // 새 유저 추가 Query문
                 const string query = @"
                     INSERT INTO users (login_id, password_hash, nickname)
                     VALUES (@loginId, @passwordHash, @nickname);
@@ -151,11 +166,13 @@ public class SQLManager : MonoBehaviour
 
                 using (var cmd = new MySqlCommand(query, connection))
                 {
+                    // 파라미터 값 추가
                     cmd.Parameters.AddWithValue("@loginId", loginId);
                     cmd.Parameters.AddWithValue("@passwordHash", passwordHash);
                     cmd.Parameters.AddWithValue("@nickname", nickname);
 
-                    int result = cmd.ExecuteNonQuery();
+                    // Query 문 실행
+                    int result = cmd.ExecuteNonQuery(); // 1이상 -> 성공, 0 -> 실패
                     return result > 0 ? RegisterResult.Success : RegisterResult.Failed;
                 }
             }
@@ -167,10 +184,12 @@ public class SQLManager : MonoBehaviour
         }
     }
 
+    // 로그인 메소드
     public LoginResult Login(string loginId, string rawPassword, out string nickname)
     {
         nickname = string.Empty;
 
+        // 서버 준비 및 입력 검사
         if (!IsServerReady())
             return LoginResult.Failed;
 
@@ -181,8 +200,10 @@ public class SQLManager : MonoBehaviour
         {
             using (var connection = new MySqlConnection(connectionString))
             {
+                // DB 연결
                 connection.Open();
 
+                // 입력 내용 검색 Query문 작성
                 const string query = @"
                     SELECT password_hash, nickname
                     FROM users
@@ -192,16 +213,21 @@ public class SQLManager : MonoBehaviour
 
                 using (var cmd = new MySqlCommand(query, connection))
                 {
+                    // 파라미터 값 추가
                     cmd.Parameters.AddWithValue("@loginId", loginId);
 
+                    // Query문 실행 후 Select 결과 읽기
                     using (var reader = cmd.ExecuteReader())
                     {
+                        // 결과x -> 실패
                         if (!reader.Read())
                             return LoginResult.UserNotFound;
 
+                        // DB 저장값 저장
                         string savedHash = reader.GetString("password_hash");
                         nickname = reader.GetString("nickname");
 
+                        // 비밀번호 확인 후 결과 반환
                         bool isValid = VerifyPassword(rawPassword, savedHash);
                         return isValid ? LoginResult.Success : LoginResult.WrongPassword;
                     }
@@ -253,15 +279,19 @@ public class SQLManager : MonoBehaviour
         }
     }
 
+    // 비밀번호 암호화 메소드
     private string HashPassword(string rawPassword)
     {
+        // 비밀번호에 섞을 랜덤 값
         byte[] salt = new byte[16];
 
+        // 랜덤값 설정
         using (var rng = RandomNumberGenerator.Create())
         {
             rng.GetBytes(salt);
         }
 
+        // 비밀번호 해시 알고리즘 적용 (이건 더 공부해야할 것 같아.)
         using (var pbkdf2 = new Rfc2898DeriveBytes(
             rawPassword,
             salt,
@@ -273,12 +303,15 @@ public class SQLManager : MonoBehaviour
             string saltBase64 = Convert.ToBase64String(salt);
             string hashBase64 = Convert.ToBase64String(hash);
 
+            // 최종 저장 형태로 반환
             return $"{saltBase64}:{hashBase64}";
         }
     }
 
+    // 비밀번호 검증 메소드
     private bool VerifyPassword(string rawPassword, string storedValue)
     {
+        // salt, hash 분리
         string[] parts = storedValue.Split(':');
         if (parts.Length != 2)
             return false;
@@ -286,6 +319,7 @@ public class SQLManager : MonoBehaviour
         byte[] salt = Convert.FromBase64String(parts[0]);
         byte[] savedHash = Convert.FromBase64String(parts[1]);
 
+        // 비밀번호 비교 후 결과 반환
         using (var pbkdf2 = new Rfc2898DeriveBytes(
             rawPassword,
             salt,
