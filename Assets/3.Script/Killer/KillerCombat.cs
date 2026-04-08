@@ -38,19 +38,23 @@ public class KillerCombat : NetworkBehaviour
 
     void Update()
     {
-        if (!isLocalPlayer) return; // 내 화면의 킬러만 입력을 처리합니다.
-
-        // 1. 후딜레이 타이머 처리 (로컬)
-        if (state.CurrentCondition == KillerCondition.Recovering)
+        if (animator != null)
         {
-            currentPenaltyTime -= Time.deltaTime;
-            if (currentPenaltyTime <= 0)
+            // 공격 후딜레이(Recovering)나 피격(Hit) 중에는 이동 파라미터를 건드리지 않습니다.
+            // 이렇게 해야 공격 애니메이션이 도중에 캔슬되지 않습니다. [cite: 2026-04-06]
+            bool isBusy = state.CurrentCondition == KillerCondition.Recovering ||
+                          state.CurrentCondition == KillerCondition.Hit ||
+                          state.CurrentCondition == KillerCondition.Breaking;
+
+            if (!isBusy)
             {
-                // 타이머 종료 후 서버에 상태 복구 요청
-                ResetToIdle();
+                animator.SetBool("isLunging", state.CurrentCondition == KillerCondition.Lunging);
+                // 필요하다면 Speed(걷기/대기) 값도 여기서 함께 처리 가능합니다.
             }
-            return;
         }
+
+        // [중요 2] 로컬 입력 및 타이머 처리 (내 화면에서만 실행)
+        if (!isLocalPlayer) return;
 
         // 2. 공격 처리
         if (state.CanAttack || state.CurrentCondition == KillerCondition.Lunging)

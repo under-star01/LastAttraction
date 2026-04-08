@@ -13,11 +13,14 @@ public class KillerInteractor : NetworkBehaviour
     private Animator animator;
     private IInteractable currentTarget;
 
+    private NetworkAnimator networkAnimator;
+
     void Awake()
     {
         input = GetComponent<KillerInput>();
         state = GetComponent<KillerState>();
         animator = GetComponentInChildren<Animator>();
+        networkAnimator = GetComponent<NetworkAnimator>(); // 추가
     }
 
     void Update()
@@ -57,8 +60,7 @@ public class KillerInteractor : NetworkBehaviour
         if (state.CurrentCondition == KillerCondition.Hit) return;
 
         state.ChangeState(KillerCondition.Hit);
-        if (animator != null) animator.SetTrigger("Hit");
-
+        if (networkAnimator != null) networkAnimator.SetTrigger("Hit");
         StartCoroutine(ResetStateRoutine(duration));
     }
 
@@ -74,6 +76,12 @@ public class KillerInteractor : NetworkBehaviour
         IInteractable interactable = target.GetComponent<IInteractable>();
         if (interactable != null)
         {
+            // 1. 살인마 상태 변경 (예: Breaking)
+            state.ChangeState(KillerCondition.Breaking);
+
+            // 2. 네트워크 애니메이터로 트리거 실행 (모든 클라 동기화) [cite: 2026-04-06]
+            networkAnimator.SetTrigger("Break"); // 애니메이터의 판자부수기 트리거 이름 확인 필요
+
             interactable.BeginInteract(this.gameObject);
         }
     }

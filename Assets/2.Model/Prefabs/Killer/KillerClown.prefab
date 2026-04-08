@@ -2062,7 +2062,7 @@ GameObject:
   m_Component:
   - component: {fileID: 714818898096137941}
   - component: {fileID: 4573657519681590933}
-  m_Layer: 11
+  m_Layer: 3
   m_Name: Hair
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2706,7 +2706,7 @@ Transform:
   m_GameObject: {fileID: 2383060795224604532}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 2, z: 0.4}
+  m_LocalPosition: {x: 0, y: 1.6, z: 0.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -11449,6 +11449,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 099aa012859b8e04cb28fddb7be59187, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KillerCombat
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   maxLungeDuration: 1.2
   hitFailPenalty: 2
   hitSuccessPenalty: 2.5
@@ -11486,6 +11489,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 02214e377dd18c045baf282d3aa16b6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KillerInteract
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   interactRange: 2
   interactLayer:
     serializedVersion: 2
@@ -11526,6 +11532,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f33651f30eab9c4f9cfab1a39611469, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KillerState
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!114 &8329270682292632505
 MonoBehaviour:
   m_ObjectHideFlags: 0
