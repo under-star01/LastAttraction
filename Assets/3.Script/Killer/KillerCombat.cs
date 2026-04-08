@@ -31,6 +31,10 @@ public class KillerCombat : NetworkBehaviour
     // 이번 공격에서 실제로 맞은 생존자 netId 저장
     private uint hitSurvivorNetId;
 
+    // 추가:
+    // 같은 공격 종료가 여러 번 호출되는 것 방지
+    private bool isEndingAttack;
+
     void Awake()
     {
         input = GetComponent<KillerInput>();
@@ -44,7 +48,6 @@ public class KillerCombat : NetworkBehaviour
         if (animator != null)
         {
             // 공격 후딜레이(Recovering)나 피격(Hit) 중에는 이동 파라미터를 건드리지 않습니다.
-            // 이렇게 해야 공격 애니메이션이 도중에 캔슬되지 않습니다. [cite: 2026-04-06]
             bool isBusy = state.CurrentCondition == KillerCondition.Recovering ||
                           state.CurrentCondition == KillerCondition.Hit ||
                           state.CurrentCondition == KillerCondition.Breaking;
@@ -52,14 +55,27 @@ public class KillerCombat : NetworkBehaviour
             if (!isBusy)
             {
                 animator.SetBool("isLunging", state.CurrentCondition == KillerCondition.Lunging);
-                // 필요하다면 Speed(걷기/대기) 값도 여기서 함께 처리 가능합니다.
             }
         }
 
-        // [중요 2] 로컬 입력 및 타이머 처리 (내 화면에서만 실행)
+        // 내 화면의 킬러만 입력 처리
         if (!isLocalPlayer) return;
 
-        // 2. 공격 처리
+        // 후딜레이 시간 종료 시 Idle 복귀
+        if (state.CurrentCondition == KillerCondition.Recovering)
+        {
+            currentPenaltyTime -= Time.deltaTime;
+
+            if (currentPenaltyTime <= 0f)
+            {
+                isEndingAttack = false;
+                ResetToIdle();
+            }
+
+            return;
+        }
+
+        // 공격 처리
         if (state.CanAttack || state.CurrentCondition == KillerCondition.Lunging)
         {
             HandleAttackInput();
@@ -80,8 +96,13 @@ public class KillerCombat : NetworkBehaviour
                 hasHitTarget = false;
                 currentLungeTime = 0f;
                 hitSurvivorNetId = 0;
+                isEndingAttack = false;
                 StartLunge();
             }
+
+            // 이미 종료 요청된 공격이면 더 처리 안 함
+            if (isEndingAttack)
+                return;
 
             // 런지 진행 중 로직
             currentLungeTime += Time.deltaTime;
@@ -92,12 +113,17 @@ public class KillerCombat : NetworkBehaviour
             // 최대 도달 혹은 타격 성공 시 종료
             if (currentLungeTime >= maxLungeDuration || hasHitTarget)
             {
-                // 맞은 생존자 netId까지 같이 서버에 넘김
+                isEndingAttack = true;
                 EndLunge(currentLungeTime, hasHitTarget, currentPenaltyTime, hitSurvivorNetId);
             }
         }
         else if (state.CurrentCondition == KillerCondition.Lunging)
         {
+            // 이미 종료 요청했으면 중복 호출 금지
+            if (isEndingAttack)
+                return;
+
+            isEndingAttack = true;
             EndLunge(currentLungeTime, hasHitTarget, currentPenaltyTime, hitSurvivorNetId);
         }
     }
@@ -164,10 +190,15 @@ public class KillerCombat : NetworkBehaviour
     [Command]
     private void EndLunge(float lungeTime, bool isHit, float penalty, uint survivorNetId)
     {
+        // 이미 회복 상태면 중복 종료 무시
+        if (state.CurrentCondition == KillerCondition.Recovering)
+            return;
+
         state.ChangeState(KillerCondition.Recovering);
 
         // 서버에서 최종 페널티 시간 재계산
         float finalPenalty = isHit ? penalty : Mathf.Max(1.2f, lungeTime * hitFailPenalty);
+        currentPenaltyTime = finalPenalty;
 
         // 실제 생존자 피격 적용
         if (isHit && survivorNetId != 0)
@@ -204,7 +235,6 @@ public class KillerCombat : NetworkBehaviour
         if (animator != null)
         {
             animator.SetFloat("AttackSpeed", Mathf.Clamp(speed, 1.0f, 3.0f));
-            // 트리거는 이미 CmdStartLunge에서 실행되었거나, 여기서 한 번 더 보정 가능
         }
     }
 
