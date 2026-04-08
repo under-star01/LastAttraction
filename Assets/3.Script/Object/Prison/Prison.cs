@@ -466,9 +466,18 @@ public class Prison : NetworkBehaviour, IInteractable
         if (doorBlocker != null)
             doorBlocker.enabled = !open;
 
-        // 문 애니메이션
-        if (animator != null)
-            animator.SetBool("IsOpen", open);
+        if (animator == null)
+            return;
+
+        // 이전 트리거 꼬임 방지용으로 반대 트리거 리셋
+        animator.ResetTrigger("Open");
+        animator.ResetTrigger("Close");
+
+        // 열기 / 닫기 트리거 실행
+        if (open)
+            animator.SetTrigger("Open");
+        else
+            animator.SetTrigger("Close");
     }
 
     // 로컬 UI 갱신
