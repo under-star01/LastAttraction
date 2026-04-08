@@ -310,9 +310,11 @@ public class SurvivorMove : NetworkBehaviour
 
         bool isDowned = state != null && state.IsDowned;
         bool isBusy = state != null && state.IsBusy;
+        bool isImprisoned = state != null && state.IsImprisoned;
 
-        // 이동 잠김 상태거나 다운 연출 중이면 이동 금지
-        if (isMoveLocked || isBusy)
+        // 이동 잠김 상태거나 다운 연출 중이거나 감옥 상태면 이동 금지
+        // 이동만 막고 마우스는 됨
+        if (isMoveLocked || isBusy || isImprisoned)
         {
             ApplyGravityOnlyServer();
             UpdateAnimatorServer(0f, false, isDowned);
