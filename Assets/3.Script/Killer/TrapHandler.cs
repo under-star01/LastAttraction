@@ -1,5 +1,6 @@
 using UnityEngine;
 using Mirror;
+using System.Collections.Generic;
 
 public class TrapHandler : NetworkBehaviour
 {
@@ -15,6 +16,9 @@ public class TrapHandler : NetworkBehaviour
     private Animator animator;
     private Camera cam;
 
+    // 서버에서 설치된 함정들을 관리할 리스트 (서버 전용) [cite: 2026-04-06]
+    private readonly List<GameObject> spawnedTraps = new List<GameObject>();
+
     void Awake()
     {
         animator = GetComponent<Animator>();
@@ -23,22 +27,18 @@ public class TrapHandler : NetworkBehaviour
 
     void Update()
     {
-        // 내 로컬 캐릭터가 아닐 경우 인풋 처리를 하지 않음
         if (!isLocalPlayer || TestMng.inputSys == null) return;
 
-        // 1. 트랩 모드 토글 (우클릭)
         if (TestMng.inputSys.Killer.TrapMode.WasPressedThisFrame())
         {
             ToggleTrapMode();
         }
 
-        // 2. 설치 확정 (좌클릭)
         if (isBuildMode && TestMng.inputSys.Killer.Attack.WasPressedThisFrame())
         {
             ConfirmInstallation();
         }
 
-        // 3. 고스트 위치 업데이트 (로컬에서만 수행)
         if (isBuildMode && ghostInstance != null)
         {
             UpdateGhostPosition();
@@ -68,24 +68,41 @@ public class TrapHandler : NetworkBehaviour
     {
         if (CanPlace(out Vector3 installPos))
         {
-            // 즉시 설치
-            Instantiate(trapPrefab, installPos, Quaternion.identity);
+            // [수정] 로컬 생성이 아닌 서버 명령(Command)을 반드시 호출해야 합니다. [cite: 2026-04-06]
+            CmdSpawnTrap(installPos);
 
-            // 설치 후 모드 종료 (연속 설치를 원하면 이 줄을 주석 처리하세요)
             ToggleTrapMode();
         }
     }
 
-    [Command]
+    [Command] // 클라이언트가 요청하면 서버에서 실행 [cite: 2026-04-06]
     private void CmdSpawnTrap(Vector3 pos)
     {
-        // 1. 서버에서 함정 프리팹 생성
+        // 1. 개수 제한 체크 (FIFO 로직) [cite: 2026-04-06]
+        // 리스트에 이미 5개가 있다면 가장 오래된 것(0번)을 제거합니다.
+        while (spawnedTraps.Count >= 5)
+        {
+            GameObject oldestTrap = spawnedTraps[0];
+            spawnedTraps.RemoveAt(0);
+
+            if (oldestTrap != null)
+            {
+                // 서버와 모든 클라이언트 화면에서 동시에 삭제합니다. [cite: 2026-04-06]
+                NetworkServer.Destroy(oldestTrap);
+            }
+        }
+
+        // 2. 서버에서 새 함정 물리적 생성
         GameObject trap = Instantiate(trapPrefab, pos, Quaternion.identity);
 
-        // 2. 네트워크상의 모든 클라이언트에게 이 오브젝트를 생성(동기화)하라고 명령 [cite: 2026-04-06]
+        // 3. 네트워크 상의 모든 클라이언트에게 이 오브젝트를 보이게 함 (Spawn) [cite: 2026-04-06]
         NetworkServer.Spawn(trap);
+
+        // 4. 관리를 위해 리스트에 추가
+        spawnedTraps.Add(trap);
     }
 
+    // --- 이하 Ghost 및 예외 처리 로직 (로컬 전용이므로 수정 불필요) ---
     private void UpdateGhostPosition()
     {
         Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
@@ -93,9 +110,7 @@ public class TrapHandler : NetworkBehaviour
         {
             ghostInstance.SetActive(true);
             ghostInstance.transform.position = hit.point;
-
-            bool canPlace = CanPlace(out _);
-            UpdateGhostColor(canPlace);
+            UpdateGhostColor(CanPlace(out _));
         }
         else
         {
@@ -110,7 +125,6 @@ public class TrapHandler : NetworkBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, maxInstallDist, groundMask))
         {
             pos = hit.point;
-            // 지면 위 0.1m 지점에서 박스 체크로 장애물 확인 (obstacleMask 레이어만 감지)
             bool isBlocked = Physics.CheckBox(pos + Vector3.up * 0.1f, new Vector3(0.3f, 0.1f, 0.3f), Quaternion.identity, obstacleMask);
             return !isBlocked;
         }
@@ -119,12 +133,10 @@ public class TrapHandler : NetworkBehaviour
 
     private void SetGhostVisual(GameObject target, float alpha)
     {
-        Renderer[] renderers = target.GetComponentsInChildren<Renderer>();
-        foreach (Renderer r in renderers)
+        foreach (Renderer r in target.GetComponentsInChildren<Renderer>())
         {
             foreach (Material mat in r.materials)
             {
-                // 투명 처리가 가능한 셰이더인 경우 알파값 조절
                 if (mat.HasProperty("_BaseColor"))
                 {
                     Color color = mat.GetColor("_BaseColor");
@@ -139,9 +151,7 @@ public class TrapHandler : NetworkBehaviour
     {
         Color feedbackColor = canPlace ? Color.green : Color.red;
         feedbackColor.a = 0.4f;
-
-        Renderer[] renderers = ghostInstance.GetComponentsInChildren<Renderer>();
-        foreach (Renderer r in renderers)
+        foreach (Renderer r in ghostInstance.GetComponentsInChildren<Renderer>())
         {
             foreach (Material mat in r.materials)
             {

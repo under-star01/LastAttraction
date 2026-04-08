@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections;
+using Mirror;
 
-public class KillerInteractor : MonoBehaviour
+public class KillerInteractor : NetworkBehaviour
 {
     [Header("Interaction Settings")]
     public float interactRange = 2.0f;
@@ -12,15 +13,19 @@ public class KillerInteractor : MonoBehaviour
     private Animator animator;
     private IInteractable currentTarget;
 
+    private NetworkAnimator networkAnimator;
+
     void Awake()
     {
         input = GetComponent<KillerInput>();
         state = GetComponent<KillerState>();
         animator = GetComponentInChildren<Animator>();
+        networkAnimator = GetComponent<NetworkAnimator>(); // 추가
     }
 
     void Update()
     {
+        if (!isLocalPlayer) return;
         // 1. 앞에 상호작용 대상이 있는지 탐색
         SearchTarget();
 
@@ -29,8 +34,9 @@ public class KillerInteractor : MonoBehaviour
         {
             if (currentTarget != null)
             {
-                // 오브젝트의 기능을 호출 (창틀 넘기, 판자 부수기 등 실행)
-                currentTarget.BeginInteract(this.gameObject);
+                // currentTarget.gameObject 대신, 인터페이스를 구현하고 있는 실제 컴포넌트의 gameObject를 찾습니다.
+                GameObject targetObj = ((MonoBehaviour)currentTarget).gameObject;
+                CmdInteract(targetObj);
             }
         }
     }
@@ -54,8 +60,7 @@ public class KillerInteractor : MonoBehaviour
         if (state.CurrentCondition == KillerCondition.Hit) return;
 
         state.ChangeState(KillerCondition.Hit);
-        if (animator != null) animator.SetTrigger("Hit");
-
+        if (networkAnimator != null) networkAnimator.SetTrigger("Hit");
         StartCoroutine(ResetStateRoutine(duration));
     }
 
@@ -63,5 +68,21 @@ public class KillerInteractor : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         state.ChangeState(KillerCondition.Idle);
+    }
+
+    [Command]
+    private void CmdInteract(GameObject target)
+    {
+        IInteractable interactable = target.GetComponent<IInteractable>();
+        if (interactable != null)
+        {
+            // 1. 살인마 상태 변경 (예: Breaking)
+            state.ChangeState(KillerCondition.Breaking);
+
+            // 2. 네트워크 애니메이터로 트리거 실행 (모든 클라 동기화) [cite: 2026-04-06]
+            networkAnimator.SetTrigger("Break"); // 애니메이터의 판자부수기 트리거 이름 확인 필요
+
+            interactable.BeginInteract(this.gameObject);
+        }
     }
 }

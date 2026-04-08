@@ -1,6 +1,7 @@
 using UnityEngine;
+using Mirror;
 
-public class KillerCombat : MonoBehaviour
+public class KillerCombat : NetworkBehaviour
 {
     [Header("Lunge Settings")]
     public float maxLungeDuration = 1.2f;
@@ -15,44 +16,73 @@ public class KillerCombat : MonoBehaviour
     public LayerMask obstacleLayer;
 
     [Header("Animation Settings")]
-    public float baseAttackAnimationLength = 3.333f; // 실제 공격 애니메이션 파일의 재생 시간(초)
+    public float baseAttackAnimationLength = 3.333f;
 
     private KillerInput input;
     private KillerState state;
     private Animator animator;
+    private NetworkAnimator networkAnimator;
 
+    // [클라이언트 전용] 로컬 상태 관리
     private float currentLungeTime;
     private float currentPenaltyTime;
     private bool hasHitTarget;
+    private bool isEndingAttack;
+    private uint hitSurvivorNetId;
+
+    // [서버 전용] 패널티 타이머 (서버에서만 시간을 계산) [cite: 2026-04-06]
+    private float serverPenaltyTimer;
 
     void Awake()
     {
         input = GetComponent<KillerInput>();
         state = GetComponent<KillerState>();
         animator = GetComponentInChildren<Animator>();
+        networkAnimator = GetComponent<NetworkAnimator>();
     }
 
     void Update()
     {
-        // 1. 후딜레이(Recovery) 타이머 처리
-        if (state.CurrentCondition == KillerCondition.Recovering)
+        // 1. 애니메이션 동기화 (모든 클라이언트 공통) [cite: 2026-04-06]
+        UpdateAnimationState();
+
+        // 2. 서버 로직: 서버가 직접 시간을 재고 상태를 Idle로 변경 [cite: 2026-04-06]
+        if (isServer && state.CurrentCondition == KillerCondition.Recovering)
         {
-            currentPenaltyTime -= Time.deltaTime;
-            if (currentPenaltyTime <= 0)
+            serverPenaltyTimer -= Time.deltaTime;
+            if (serverPenaltyTimer <= 0f)
             {
                 state.ChangeState(KillerCondition.Idle);
             }
+        }
+
+        // 3. 로컬 플레이어 로직: 입력 및 런지 판정
+        if (!isLocalPlayer) return;
+
+        // 로컬 패널티 타이머 (UI 연동이나 내부 플래그 초기화용)
+        if (state.CurrentCondition == KillerCondition.Recovering)
+        {
+            currentPenaltyTime -= Time.deltaTime;
+            if (currentPenaltyTime <= 0f) isEndingAttack = false;
             return;
         }
 
-        // 2. 공격 가능 상태일 때 입력 처리
         if (state.CanAttack || state.CurrentCondition == KillerCondition.Lunging)
         {
             HandleAttackInput();
         }
+    }
 
-        // 애니메이터 동기화 (기존의 isLunging 파라미터)
-        if (animator != null)
+    private void UpdateAnimationState()
+    {
+        if (animator == null) return;
+
+        bool isBusy = state.CurrentCondition == KillerCondition.Recovering ||
+                      state.CurrentCondition == KillerCondition.Hit ||
+                      state.CurrentCondition == KillerCondition.Breaking;
+
+        // 후딜레이나 피격 중에는 이동 애니메이션 파라미터를 갱신하지 않음 [cite: 2026-04-06]
+        if (!isBusy)
         {
             animator.SetBool("isLunging", state.CurrentCondition == KillerCondition.Lunging);
         }
@@ -62,75 +92,119 @@ public class KillerCombat : MonoBehaviour
     {
         if (input.IsAttackPressed)
         {
-            if (state.CurrentCondition != KillerCondition.Lunging) StartLunge();
+            if (state.CurrentCondition != KillerCondition.Lunging)
+            {
+                hasHitTarget = false;
+                currentLungeTime = 0f;
+                hitSurvivorNetId = 0;
+                isEndingAttack = false;
+                CmdStartLunge();
+            }
 
-            // 런지 진행 중 로직
+            if (isEndingAttack) return;
+
             currentLungeTime += Time.deltaTime;
             currentLungeTime = Mathf.Clamp(currentLungeTime, 0.1f, maxLungeDuration);
 
             CheckHitDetection();
 
-            // 최대 시간에 도달하거나 타격 시 종료
-            if (currentLungeTime >= maxLungeDuration || hasHitTarget) EndLunge();
+            if (currentLungeTime >= maxLungeDuration || hasHitTarget)
+            {
+                isEndingAttack = true;
+                CmdEndLunge(currentLungeTime, hasHitTarget, hitSurvivorNetId);
+            }
         }
         else if (state.CurrentCondition == KillerCondition.Lunging)
         {
-            EndLunge();
+            if (isEndingAttack) return;
+            isEndingAttack = true;
+            CmdEndLunge(currentLungeTime, hasHitTarget, hitSurvivorNetId);
         }
-    }
-
-    private void StartLunge()
-    {
-        state.ChangeState(KillerCondition.Lunging);
-        hasHitTarget = false;
-        currentLungeTime = 0f;
-        Debug.Log("런지 시작!");
     }
 
     private void CheckHitDetection()
     {
-        if (hasHitTarget) return;
+        if (hasHitTarget || attackPoint == null) return;
 
-        // 1. 벽 충돌 체크
         if (Physics.CheckSphere(attackPoint.position, attackRadius * 0.5f, obstacleLayer))
         {
             hasHitTarget = true;
-            currentPenaltyTime = wallHitPenalty;
-            Debug.Log("벽 충돌!");
+            hitSurvivorNetId = 0;
             return;
         }
 
-        // 2. 생존자 타격 체크
         Collider[] hitSurvivors = Physics.OverlapSphere(attackPoint.position, attackRadius, survivorLayer);
         if (hitSurvivors.Length > 0)
         {
-            hasHitTarget = true;
-            currentPenaltyTime = hitSuccessPenalty;
-            Debug.Log("생존자 타격 성공!");
+            foreach (Collider hit in hitSurvivors)
+            {
+                if (hit == null) continue;
+                NetworkIdentity identity = hit.GetComponentInParent<NetworkIdentity>();
+                if (identity != null)
+                {
+                    hasHitTarget = true;
+                    hitSurvivorNetId = identity.netId;
+                    return;
+                }
+            }
         }
     }
 
-    private void EndLunge()
+    [Command]
+    private void CmdStartLunge()
     {
+        state.ChangeState(KillerCondition.Lunging);
+        if (networkAnimator != null) networkAnimator.SetTrigger("Attack");
+    }
+
+    [Command]
+    private void CmdEndLunge(float lungeTime, bool isHit, uint survivorNetId)
+    {
+        if (state.CurrentCondition == KillerCondition.Recovering) return;
+
         state.ChangeState(KillerCondition.Recovering);
 
-        // 1. 페널티 시간 계산 (기존 로직)
-        if (!hasHitTarget)
+        // [핵심] 서버에서 페널티 시간을 직접 계산하고 타이머를 시작합니다. [cite: 2026-04-06]
+        float finalPenalty;
+        if (isHit)
         {
-            currentPenaltyTime = Mathf.Max(1.2f, currentLungeTime * hitFailPenalty);
+            finalPenalty = (survivorNetId != 0) ? hitSuccessPenalty : wallHitPenalty;
         }
-        // 타격 성공 시에는 hitSuccessPenalty가 이미 할당되어 있음
+        else
+        {
+            finalPenalty = Mathf.Max(1.2f, lungeTime * hitFailPenalty);
+        }
 
-        // 2. 애니메이션 재생 속도 계산
-        // 페널티 시간이 길수록 속도는 느려집니다.
-        float animSpeed = baseAttackAnimationLength / currentPenaltyTime;
+        serverPenaltyTimer = finalPenalty;
 
-        // 3. 파라미터 전달 및 트리거 실행
+        // 생존자 타격 적용
+        if (isHit && survivorNetId != 0)
+        {
+            if (NetworkServer.spawned.TryGetValue(survivorNetId, out NetworkIdentity identity))
+            {
+                SurvivorState survivorState = identity.GetComponentInParent<SurvivorState>();
+                if (survivorState != null) survivorState.TakeHit();
+            }
+        }
+
+        // 애니메이션 속도 동기화
+        float animSpeed = baseAttackAnimationLength / finalPenalty;
+        SyncAttackEffect(animSpeed);
+    }
+
+    [ClientRpc]
+    private void SyncAttackEffect(float speed)
+    {
         if (animator != null)
         {
-            // 속도가 너무 빠르거나 느려져서 기괴해지는 것을 방지 (1배 ~ 2.5배 사이로 고정)
-            animator.SetFloat("AttackSpeed", Mathf.Clamp(animSpeed, 1.0f, 3.0f));
-            animator.SetTrigger("Attack");
+            animator.SetFloat("AttackSpeed", Mathf.Clamp(speed, 1.0f, 3.0f));
         }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (attackPoint == null) return;
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(attackPoint.position, attackRadius);
     }
 }
