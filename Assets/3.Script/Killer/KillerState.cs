@@ -1,13 +1,15 @@
 using UnityEngine;
+using Mirror;
 
 public enum KillerCondition { Idle, Lunging, Recovering, Hit, Vaulting, Breaking, Carrying }
 
-public class KillerState : MonoBehaviour
+public class KillerState : NetworkBehaviour
 {
-    // 현재 상태를 외부에서 읽을 수만 있게 설정
-    public KillerCondition CurrentCondition { get; private set; } = KillerCondition.Idle;
+    // [SyncVar]를 붙여야 서버에서 바꾼 상태가 모든 클라이언트에게 전달됩니다.
+    [SyncVar(hook = nameof(OnConditionChanged))]
+    private KillerCondition currentCondition = KillerCondition.Idle;
 
-    // --- [KillerMove에서 사용하는 프로퍼티] ---
+    public KillerCondition CurrentCondition => currentCondition;
     // 런지 중이거나 평상시일 때만 이동 가능
     public bool CanMove => 
         CurrentCondition == KillerCondition.Idle || 
@@ -28,11 +30,16 @@ public class KillerState : MonoBehaviour
     public bool IsInAttackAnimation => CurrentCondition == KillerCondition.Recovering;
 
     // 상태 변경 함수
+    [Server]
     public void ChangeState(KillerCondition newState)
     {
-        if (CurrentCondition == newState) return;
+        if (currentCondition == newState) return;
+        currentCondition = newState;
+    }
 
-        CurrentCondition = newState;
-        Debug.Log($"[KillerState] 상태 변경: {newState}");
+    // 상태가 변했을 때 로그를 찍거나 특정 처리를 하고 싶다면 훅(Hook)을 사용합니다.
+    private void OnConditionChanged(KillerCondition oldState, KillerCondition newState)
+    {
+        Debug.Log($"[KillerState] 상태 변경: {oldState} -> {newState}");
     }
 }
