@@ -310,11 +310,12 @@ public class SurvivorMove : NetworkBehaviour
 
         bool isDowned = state != null && state.IsDowned;
         bool isBusy = state != null && state.IsBusy;
-        bool isImprisoned = state != null && state.IsImprisoned;
+        bool isDead = state != null && state.IsDead;
 
-        // 이동 잠김 상태거나 다운 연출 중이거나 감옥 상태면 이동 금지
-        // 이동만 막고 마우스는 됨
-        if (isMoveLocked || isBusy || isImprisoned)
+        // 이동 잠김 상태거나 다운 연출 중이거나 사망 상태면 이동 금지
+        // 감옥 상태는 여기서 막지 않는다.
+        // 감옥에서는 "이동은 되지만, 감옥 콜라이더 때문에 못 나감" 구조로 간다.
+        if (isMoveLocked || isBusy || isDead)
         {
             ApplyGravityOnlyServer();
             UpdateAnimatorServer(0f, false, isDowned);
@@ -332,7 +333,6 @@ public class SurvivorMove : NetworkBehaviour
         bool canCrouch = interactor == null || !interactor.IsInteracting;
         bool isCrouching = canCrouch && serverWantsCrouch;
 
-        // 현재 자세에 맞게 컨트롤러 높이 변경
         if (isCrouching)
             SetSizeServer(crouchHeight, crouchCenter);
         else

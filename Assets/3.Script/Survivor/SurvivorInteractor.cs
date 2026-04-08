@@ -15,7 +15,6 @@ public class SurvivorInteractor : NetworkBehaviour
     private IInteractable currentInteractable;
 
     // 현재 실제로 진행 중인 상호작용 대상
-    // 한번 Hold를 시작하면 끝날 때까지 이 대상을 유지한다
     private IInteractable activeInteractable;
 
     // Hold 타입 상호작용 중인지
@@ -87,8 +86,8 @@ public class SurvivorInteractor : NetworkBehaviour
         if (progressUI == null)
             BindUI();
 
-        // 다운 상태 / 다운 피격 연출 중이면 상호작용 강제 종료
-        if (state != null && (state.IsDowned || state.IsBusy))
+        // 다운 / 다운 피격 연출 / 사망이면 상호작용 강제 종료
+        if (state != null && (state.IsDowned || state.IsBusy || state.IsDead))
         {
             ClearForce();
             return;
@@ -122,7 +121,6 @@ public class SurvivorInteractor : NetworkBehaviour
         if (progressUI == null)
             return;
 
-        // 이미 다른 오브젝트가 UI를 쓰고 있으면 무시
         if (progressOwner != null && progressOwner != owner)
             return;
 
@@ -131,7 +129,6 @@ public class SurvivorInteractor : NetworkBehaviour
         progressUI.SetProgress(value);
     }
 
-    // reset 파라미터는 기존 코드 호환용으로 남겨둠
     public void HideProgress(object owner, bool reset)
     {
         if (!isLocalPlayer)
@@ -192,6 +189,10 @@ public class SurvivorInteractor : NetworkBehaviour
                 continue;
             }
 
+            // 감옥 상태면 내 감옥만 허용
+            if (!CanUseThis(interactable))
+                continue;
+
             int priority = GetPriority(interactable);
             float sqrDistance = (behaviour.transform.position - transform.position).sqrMagnitude;
 
@@ -222,9 +223,12 @@ public class SurvivorInteractor : NetworkBehaviour
         currentInteractable = best;
     }
 
-    // 우선순위
+    // 높을수록 우선순위
     private int GetPriority(IInteractable interactable)
     {
+        if (interactable is Prison)
+            return 1000;
+
         if (interactable is SurvivorHeal)
             return 300;
 
@@ -238,6 +242,22 @@ public class SurvivorInteractor : NetworkBehaviour
             return 100;
 
         return 0;
+    }
+
+    // 감옥 상태일 때는 현재 감옥만 상호작용 허용
+    private bool CanUseThis(IInteractable interactable)
+    {
+        if (state == null)
+            return true;
+
+        if (!state.IsImprisoned)
+            return true;
+
+        Prison prison = interactable as Prison;
+        if (prison == null)
+            return false;
+
+        return prison.netId == state.CurrentPrisonId;
     }
 
     private void HandleInteract()
@@ -269,7 +289,7 @@ public class SurvivorInteractor : NetworkBehaviour
         if (input == null)
             return;
 
-        if (state != null && (state.IsDowned || state.IsBusy))
+        if (state != null && (state.IsDowned || state.IsBusy || state.IsDead))
             return;
 
         if (input.IsInteracting1)
@@ -280,8 +300,6 @@ public class SurvivorInteractor : NetworkBehaviour
                     return;
 
                 isInteracting = true;
-
-                // 시작 순간의 대상을 고정
                 activeInteractable = currentInteractable;
 
                 SetInteractionState(true);
@@ -311,7 +329,7 @@ public class SurvivorInteractor : NetworkBehaviour
         if (input.IsCrouching)
             return;
 
-        if (state != null && (state.IsDowned || state.IsBusy))
+        if (state != null && (state.IsDowned || state.IsBusy || state.IsDead))
             return;
 
         if (input.IsInteracting2)
@@ -326,7 +344,7 @@ public class SurvivorInteractor : NetworkBehaviour
         if (!enabled)
             return;
 
-        if (state != null && (state.IsDowned || state.IsBusy))
+        if (state != null && (state.IsDowned || state.IsBusy || state.IsDead))
             return;
 
         if (interactable == null)
@@ -346,7 +364,6 @@ public class SurvivorInteractor : NetworkBehaviour
 
         nearbyInteractables.Remove(interactable);
 
-        // 현재 진행 중인 대상이 사라졌으면 강제 종료
         if (activeInteractable == interactable)
         {
             if (isInteracting)
@@ -383,7 +400,6 @@ public class SurvivorInteractor : NetworkBehaviour
         ForceHideProgress();
     }
 
-    // 현재 생존자가 Hold 상호작용 중인지 서버에 저장
     private void SetInteractionState(bool value)
     {
         if (state == null)
