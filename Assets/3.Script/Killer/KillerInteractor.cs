@@ -57,10 +57,11 @@ public class KillerInteractor : NetworkBehaviour
     // [중요] 판자가 살인마를 때릴 때 호출하는 함수
     public void ApplyHitStun(float duration)
     {
+        if (!isServer) return;
         if (state.CurrentCondition == KillerCondition.Hit) return;
 
         state.ChangeState(KillerCondition.Hit);
-        if (networkAnimator != null) networkAnimator.SetTrigger("Hit");
+        //if (networkAnimator != null) networkAnimator.SetTrigger("Hit");
         StartCoroutine(ResetStateRoutine(duration));
     }
 
@@ -80,7 +81,7 @@ public class KillerInteractor : NetworkBehaviour
             state.ChangeState(KillerCondition.Breaking);
 
             // 2. 네트워크 애니메이터로 트리거 실행 (모든 클라 동기화) [cite: 2026-04-06]
-            networkAnimator.SetTrigger("Break"); // 애니메이터의 판자부수기 트리거 이름 확인 필요
+            //networkAnimator.SetTrigger("Break"); // 애니메이터의 판자부수기 트리거 이름 확인 필요
 
             interactable.BeginInteract(this.gameObject);
         }

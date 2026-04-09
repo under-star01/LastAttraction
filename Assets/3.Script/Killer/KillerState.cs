@@ -5,15 +5,11 @@ public enum KillerCondition { Idle, Lunging, Recovering, Hit, Vaulting, Breaking
 
 public class KillerState : NetworkBehaviour
 {
-<<<<<<< HEAD
     private NetworkAnimator networkAnimator;
     private Animator animator;
     private KillerMove move;
 
     [Header("Sync Variables")]
-=======
-    // [SyncVar]를 붙여야 서버에서 바꾼 상태가 모든 클라이언트에게 전달됩니다.
->>>>>>> parent of f190c4c (0409_killer_server1)
     [SyncVar(hook = nameof(OnConditionChanged))]
     private KillerCondition currentCondition = KillerCondition.Idle;
 
@@ -54,7 +50,6 @@ public class KillerState : NetworkBehaviour
         currentCondition = newState;
     }
 
-<<<<<<< HEAD
     // 트리거 전용 헬퍼 함수
     private void TriggerAnimationEvent(KillerCondition condition)
     {
@@ -72,12 +67,6 @@ public class KillerState : NetworkBehaviour
                 networkAnimator.SetTrigger("Break");
                 break;
         }
-=======
-    // 상태가 변했을 때 로그를 찍거나 특정 처리를 하고 싶다면 훅(Hook)을 사용합니다.
-    private void OnConditionChanged(KillerCondition oldState, KillerCondition newState)
-    {
-        Debug.Log($"[KillerState] 상태 변경: {oldState} -> {newState}");
->>>>>>> parent of f190c4c (0409_killer_server1)
     }
 
     // SyncVar 훅은 이제 시각적 보정이나 로그용으로만 사용합니다. [cite: 2026-04-06]
