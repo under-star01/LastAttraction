@@ -1454,10 +1454,12 @@ MonoBehaviour:
   autoCreatePlayer: 0
   playerSpawnMethod: 0
   spawnPrefabs:
+  - {fileID: 4927261843557937582, guid: 470a07f3f0fd0274ea04be167aa0f731, type: 3}
   - {fileID: 1259102208159664560, guid: eed0311fd466def4485fbef09acaae03, type: 3}
   - {fileID: 3325040267953218945, guid: 63c20eccf90c6844aadab5e4b9b03a0a, type: 3}
   - {fileID: 9199881581034011608, guid: 46d143b9a00f94443a11aafd2467486d, type: 3}
   - {fileID: 2267120541990146072, guid: 464b89d658834834ea5abed8d7bb6ee7, type: 3}
+  - {fileID: 4049048245582396780, guid: 9de506a33e3fece4c94fe8254ef8952c, type: 3}
   - {fileID: 4072989509792940907, guid: 69959e905f33b2f4ba6e3241b66b0c30, type: 3}
   - {fileID: 2948879085556891257, guid: 6a846bf8956fc22459bd034cee3bb808, type: 3}
   - {fileID: 4541725823791181778, guid: 53d28a4617461e141a996f85cdfab0c6, type: 3}
