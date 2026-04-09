@@ -75,7 +75,10 @@ public class KillerCombat : NetworkBehaviour
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> parent of 7a73d10 (0409_killer_server2)
 =======
 >>>>>>> parent of 7a73d10 (0409_killer_server2)
     private void UpdateAnimationState()
@@ -86,6 +89,7 @@ public class KillerCombat : NetworkBehaviour
                       state.CurrentCondition == KillerCondition.Hit ||
                       state.CurrentCondition == KillerCondition.Breaking;
 <<<<<<< HEAD
+<<<<<<< HEAD
 
         // 후딜레이나 피격 중에는 이동 애니메이션 파라미터를 갱신하지 않음 [cite: 2026-04-06]
         if (!isBusy)
@@ -95,6 +99,10 @@ public class KillerCombat : NetworkBehaviour
     }
 
 >>>>>>> parent of f190c4c (0409_killer_server1)
+=======
+    }
+
+>>>>>>> parent of 7a73d10 (0409_killer_server2)
 =======
     }
 

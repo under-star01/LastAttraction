@@ -8,6 +8,7 @@ public class KillerState : NetworkBehaviour
 <<<<<<< HEAD
     private NetworkAnimator networkAnimator;
 <<<<<<< HEAD
+<<<<<<< HEAD
     private Animator animator;
     private KillerMove move;
 
@@ -15,6 +16,9 @@ public class KillerState : NetworkBehaviour
 =======
     // [SyncVar]를 붙여야 서버에서 바꾼 상태가 모든 클라이언트에게 전달됩니다.
 >>>>>>> parent of f190c4c (0409_killer_server1)
+=======
+    // [SyncVar]를 붙여야 서버에서 바꾼 상태가 모든 클라이언트에게 전달됩니다.
+>>>>>>> parent of 7a73d10 (0409_killer_server2)
 =======
     // [SyncVar]를 붙여야 서버에서 바꾼 상태가 모든 클라이언트에게 전달됩니다.
 >>>>>>> parent of 7a73d10 (0409_killer_server2)
@@ -28,6 +32,7 @@ public class KillerState : NetworkBehaviour
         CurrentCondition == KillerCondition.Lunging ||
         CurrentCondition == KillerCondition.Recovering;
 
+<<<<<<< HEAD
 <<<<<<< HEAD
     public bool CanMove =>
         currentCondition == KillerCondition.Idle ||
@@ -56,6 +61,21 @@ public class KillerState : NetworkBehaviour
     public bool IsInAttackAnimation => CurrentCondition == KillerCondition.Recovering;
 >>>>>>> parent of 7a73d10 (0409_killer_server2)
 
+=======
+    // 스턴 상태가 아닐 때만 마우스 회전(시야) 가능
+    public bool CanLook => 
+        CurrentCondition != KillerCondition.Hit &&
+        CurrentCondition != KillerCondition.Vaulting &&
+        CurrentCondition != KillerCondition.Breaking;
+
+    // --- [KillerCombat에서 사용하는 프로퍼티] ---
+    // 아무것도 안 하는 평상시에만 공격 시작 가능
+    public bool CanAttack => CurrentCondition == KillerCondition.Idle;
+
+    // 공격 후딜레이(Recovering) 상태인지 확인
+    public bool IsInAttackAnimation => CurrentCondition == KillerCondition.Recovering;
+
+>>>>>>> parent of 7a73d10 (0409_killer_server2)
     // 상태 변경 함수
     [Server]
     public void ChangeState(KillerCondition newState)
@@ -70,6 +90,7 @@ public class KillerState : NetworkBehaviour
         currentCondition = newState;
     }
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     // 트리거 전용 헬퍼 함수
@@ -88,6 +109,8 @@ public class KillerState : NetworkBehaviour
             case KillerCondition.Breaking:
                 networkAnimator.SetTrigger("Break");
 =======
+=======
+>>>>>>> parent of 7a73d10 (0409_killer_server2)
     private void OnConditionChanged(KillerCondition oldState, KillerCondition newState)
     {
         if (networkAnimator == null) networkAnimator = GetComponent<NetworkAnimator>();
@@ -103,6 +126,9 @@ public class KillerState : NetworkBehaviour
                 break;
             case KillerCondition.Breaking:
                 networkAnimator.SetTrigger("Break"); // 판자 파괴
+<<<<<<< HEAD
+>>>>>>> parent of 7a73d10 (0409_killer_server2)
+=======
 >>>>>>> parent of 7a73d10 (0409_killer_server2)
                 break;
         }
@@ -113,6 +139,7 @@ public class KillerState : NetworkBehaviour
         Debug.Log($"[KillerState] 상태 변경: {oldState} -> {newState}");
 >>>>>>> parent of f190c4c (0409_killer_server1)
     }
+<<<<<<< HEAD
 
     // SyncVar 훅은 이제 시각적 보정이나 로그용으로만 사용합니다. [cite: 2026-04-06]
     private void OnConditionChanged(KillerCondition oldState, KillerCondition newState)
@@ -157,6 +184,8 @@ public class KillerState : NetworkBehaviour
             animator.SetBool("isLunging", false);
         }
     }
+=======
+>>>>>>> parent of 7a73d10 (0409_killer_server2)
 =======
 >>>>>>> parent of 7a73d10 (0409_killer_server2)
 }
