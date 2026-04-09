@@ -8,6 +8,7 @@ public class Prison : NetworkBehaviour, IInteractable
 
     [Header("참조")]
     [SerializeField] private Transform prisonerPoint;      // 죄수를 감옥 안에 둘 위치
+    [SerializeField] private Transform lookPoint;          // 상호작용할 때 바라볼 위치(문 쪽)
     [SerializeField] private Animator animator;            // 감옥 문 애니메이터
     [SerializeField] private Collider doorBlocker;         // 문이 닫혀 있을 때 막는 콜라이더
 
@@ -547,20 +548,31 @@ public class Prison : NetworkBehaviour, IInteractable
         if (localMove == null)
             return;
 
-        Vector3 lookDir = transform.position - localMove.transform.position;
+        // 상호작용 중에는 이동 불가
+        localMove.SetMoveLock(true);
+
+        // 문 쪽 바라보기
+        Transform target = lookPoint != null ? lookPoint : transform;
+
+        Vector3 lookDir = target.position - localMove.transform.position;
         lookDir.y = 0f;
 
         if (lookDir.sqrMagnitude > 0.001f)
             localMove.FaceDirection(lookDir.normalized);
 
+        // Searching 애니메이션 시작
         localMove.SetSearching(true);
     }
 
     // 로컬 Searching 종료
     private void StopLocalInteractFx()
     {
-        if (localMove != null)
-            localMove.SetSearching(false);
+        if (localMove == null)
+            return;
+
+        // 상호작용 종료 시 다시 이동 가능
+        localMove.SetMoveLock(false);
+        localMove.SetSearching(false);
     }
 
     private void OnTriggerEnter(Collider other)
