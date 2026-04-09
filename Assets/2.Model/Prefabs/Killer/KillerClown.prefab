@@ -11364,7 +11364,7 @@ GameObject:
   - component: {fileID: 8329270682292632505}
   - component: {fileID: 1429254782650784602}
   - component: {fileID: 4930780877601674375}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: KillerClown
   m_TagString: Killer
   m_Icon: {fileID: 0}

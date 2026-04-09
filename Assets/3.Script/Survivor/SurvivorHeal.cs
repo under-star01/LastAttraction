@@ -62,7 +62,6 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         RefreshLocalAvailability();
     }
 
-    // BeginInteract(GameObject actor) 시그니처는 머지 후 인터페이스에 맞춤
     public void BeginInteract(GameObject actor)
     {
         if (!CanHeal())
@@ -83,9 +82,16 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         if (localHealerInteractor == null)
             return;
 
+        // 실제 현재 힐러 본인일 때만 종료
+        bool isMyHeal = isHealing && healer == localHealerInteractor.netId;
+
+        if (!isMyHeal)
+            return;
+
         SetHealerLock(false);
         SetHealAnim(false);
 
+        // UI만 숨기고 진행도는 유지
         localHealerInteractor.HideProgress(this, false);
 
         CmdEndHeal();
@@ -111,12 +117,12 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         if (targetState.IsHealthy)
             return;
 
-        // 힐러가 다운 상태면 불가
-        if (healerState.IsDowned)
+        // 감옥 상태면 힐 불가
+        if (targetState.IsImprisoned)
             return;
 
-        // 감옥 상태는 힐 불가
-        if (targetState.IsImprisoned)
+        // 힐러가 다운 상태면 불가
+        if (healerState.IsDowned)
             return;
 
         // 자기 자신 힐 방지
@@ -137,6 +143,9 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
 
         isHealing = true;
         healer = sender.identity.netId;
+
+        // progress는 유지
+        // 끊겼다가 다시 힐할 때 이어서 진행
 
         // 힐받는 대상은 다른 상호작용 못 하게
         targetState.SetBeingHealedServer(true);
@@ -190,6 +199,13 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
             return;
         }
 
+        // 감옥 상태가 되면 힐 중단
+        if (targetState.IsImprisoned)
+        {
+            StopHeal();
+            return;
+        }
+
         // 범위 밖이면 종료
         if (!CanUse(healerInteractor.transform))
         {
@@ -206,22 +222,31 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
     [Server]
     private void StopHeal()
     {
+        uint stoppedHealer = healer;
+
         isHealing = false;
         healer = 0;
+
+        // progress는 유지
+        // 끊겨도 다음에 이어서 힐 가능
 
         targetState.SetBeingHealedServer(false);
 
         if (targetState.connectionToClient != null)
             TargetLockTarget(targetState.connectionToClient, false);
 
-        RpcStopHeal();
+        RpcStopHeal(stoppedHealer);
     }
 
     [Server]
     private void CompleteHeal()
     {
+        uint stoppedHealer = healer;
+
         isHealing = false;
         healer = 0;
+
+        // 완전히 회복됐을 때만 진행도 초기화
         progress = 0f;
 
         targetState.SetBeingHealedServer(false);
@@ -234,20 +259,23 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         else if (targetState.IsInjured)
             targetState.HealToHealthy();
 
-        RpcStopHeal();
+        RpcStopHeal(stoppedHealer);
     }
 
     [ClientRpc]
-    private void RpcStopHeal()
+    private void RpcStopHeal(uint stoppedHealer)
     {
-        // 힐러 쪽 로컬
-        if (localHealerMove != null)
+        // 실제 힐러 본인 로컬에서만 힐 애니메이션 종료
+        if (localHealerMove != null && localHealerInteractor != null)
         {
-            localHealerMove.SetMoveLock(false);
-            localHealerMove.SetSearching(false);
+            if (localHealerInteractor.netId == stoppedHealer)
+            {
+                localHealerMove.SetMoveLock(false);
+                localHealerMove.SetSearching(false);
+            }
         }
 
-        // 대상 쪽 애니메이션 정지
+        // 힐받는 대상 쪽 애니메이션 정지
         if (targetMove != null)
             targetMove.StopAnimation();
 
@@ -289,8 +317,6 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         }
     }
 
-    // 범위 안에 서 있는 로컬 플레이어가
-    // 다른 사람이 힐을 끊었을 때 자동으로 다시 후보 등록되게 함
     private void RefreshLocalAvailability()
     {
         if (!isLocalInside)
@@ -314,15 +340,15 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         if (targetState.IsHealthy)
             return false;
 
+        // 감옥 상태는 힐 불가
+        if (targetState.IsImprisoned)
+            return false;
+
         if (localHealerInteractor == null || localHealerState == null)
             return false;
 
         // 다운된 생존자는 힐 불가
         if (localHealerState.IsDowned)
-            return false;
-
-        // 감옥 상태는 힐 불가
-        if (targetState.IsImprisoned)
             return false;
 
         // 자기 자신 힐 방지
@@ -440,11 +466,16 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         if (localHealerInteractor != interactor)
             return;
 
-        SetHealerLock(false);
-        SetHealAnim(false);
-        localHealerInteractor.HideProgress(this, false);
+        // 내가 실제 현재 힐러일 때만 애니메이션/힐 종료
+        bool isMyHeal = isHealing && healer == interactor.netId;
 
-        CmdEndHeal();
+        if (isMyHeal)
+        {
+            SetHealerLock(false);
+            SetHealAnim(false);
+            localHealerInteractor.HideProgress(this, false);
+            CmdEndHeal();
+        }
 
         localHealerInteractor = null;
         localHealerState = null;
