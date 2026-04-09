@@ -552,7 +552,7 @@ GameObject:
   - component: {fileID: 8050589770482445942}
   - component: {fileID: 8053616905637082402}
   - component: {fileID: 5011544511096184759}
-  m_Layer: 0
+  m_Layer: 12
   m_Name: gate_GEO
   m_TagString: Untagged
   m_Icon: {fileID: 0}

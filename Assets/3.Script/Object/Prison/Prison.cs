@@ -340,11 +340,14 @@ public class Prison : NetworkBehaviour, IInteractable
     [Server]
     private void StopInteract()
     {
+        // 누가 끊겼는지 먼저 기억
+        uint stoppedUserId = currentUserId;
+
         isInteracting = false;
         currentUserId = 0;
         progress = 0f;
 
-        RpcStopLocalUI();
+        RpcStopLocalUI(stoppedUserId);
     }
 
     // Hold 완료 시 처리
@@ -416,16 +419,16 @@ public class Prison : NetworkBehaviour, IInteractable
     private void DoRescue(SurvivorState prisonerState)
     {
         OpenDoor();
-        ReleasePrisoner(prisonerState);
+        ReleasePrisoner(prisonState: prisonerState);
         StopInteract();
     }
 
     // 죄수 해제
     [Server]
-    private void ReleasePrisoner(SurvivorState prisonerState)
+    private void ReleasePrisoner(SurvivorState prisonState)
     {
-        if (prisonerState != null && !prisonerState.IsDead)
-            prisonerState.LeavePrison(remainTime);
+        if (prisonState != null && !prisonState.IsDead)
+            prisonState.LeavePrison(remainTime);
 
         prisonerId = 0;
     }
@@ -637,8 +640,14 @@ public class Prison : NetworkBehaviour, IInteractable
 
         if (localInteractor == interactor)
         {
-            StopLocalInteractFx();
-            CmdEnd();
+            // 내가 현재 실제 상호작용 중인 플레이어일 때만 종료 요청
+            bool isMyInteract = isInteracting && currentUserId == interactor.netId;
+
+            if (isMyInteract)
+            {
+                StopLocalInteractFx();
+                CmdEnd();
+            }
 
             localInteractor = null;
             localMove = null;
@@ -648,11 +657,16 @@ public class Prison : NetworkBehaviour, IInteractable
 
     // 진행도 UI / Searching 강제 종료
     [ClientRpc]
-    private void RpcStopLocalUI()
+    private void RpcStopLocalUI(uint stoppedUserId)
     {
-        StopLocalInteractFx();
+        if (localInteractor == null)
+            return;
 
-        if (localInteractor != null)
+        // 실제로 끊긴 플레이어 본인 로컬에서만 애니메이션/UI 정리
+        if (localInteractor.netId == stoppedUserId)
+        {
+            StopLocalInteractFx();
             localInteractor.HideProgress(this, true);
+        }
     }
 }
