@@ -74,14 +74,23 @@ public class KillerInteractor : NetworkBehaviour
     private void CmdInteract(GameObject target)
     {
         IInteractable interactable = target.GetComponent<IInteractable>();
+
         if (interactable != null)
         {
-            // 1. 살인마 상태 변경 (예: Breaking)
-            state.ChangeState(KillerCondition.Breaking);
+            // 1. 대상이 판자인지 창틀인지 판별합니다.
+            if (target.CompareTag("Pallet")) // 판자일 때
+            {
+                state.ChangeState(KillerCondition.Breaking);
+                networkAnimator.SetTrigger("Break");
+            }
+            else if (target.CompareTag("Window")) // 창틀일 때
+            {
+                // KillerCondition에 Vaulting 상태가 있으므로 이를 활용합니다.
+                state.ChangeState(KillerCondition.Vaulting);
+                networkAnimator.SetTrigger("Vault"); // 창틀 넘기 트리거 실행
+            }
 
-            // 2. 네트워크 애니메이터로 트리거 실행 (모든 클라 동기화) [cite: 2026-04-06]
-            networkAnimator.SetTrigger("Break"); // 애니메이터의 판자부수기 트리거 이름 확인 필요
-
+            // 2. 상호작용 시작
             interactable.BeginInteract(this.gameObject);
         }
     }
