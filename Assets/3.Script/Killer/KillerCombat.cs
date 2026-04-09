@@ -43,9 +43,6 @@ public class KillerCombat : NetworkBehaviour
 
     void Update()
     {
-        // 1. 애니메이션 동기화 (모든 클라이언트 공통) [cite: 2026-04-06]
-        UpdateAnimationState();
-
         // 2. 서버 로직: 서버가 직접 시간을 재고 상태를 Idle로 변경 [cite: 2026-04-06]
         if (isServer && state.CurrentCondition == KillerCondition.Recovering)
         {
@@ -74,10 +71,7 @@ public class KillerCombat : NetworkBehaviour
     }
 
 <<<<<<< HEAD
-<<<<<<< HEAD
 =======
-=======
->>>>>>> parent of 7a73d10 (0409_killer_server2)
     private void UpdateAnimationState()
     {
         if (animator == null) return;
@@ -85,7 +79,6 @@ public class KillerCombat : NetworkBehaviour
         bool isBusy = state.CurrentCondition == KillerCondition.Recovering ||
                       state.CurrentCondition == KillerCondition.Hit ||
                       state.CurrentCondition == KillerCondition.Breaking;
-<<<<<<< HEAD
 
         // 후딜레이나 피격 중에는 이동 애니메이션 파라미터를 갱신하지 않음 [cite: 2026-04-06]
         if (!isBusy)
@@ -95,10 +88,6 @@ public class KillerCombat : NetworkBehaviour
     }
 
 >>>>>>> parent of f190c4c (0409_killer_server1)
-=======
-    }
-
->>>>>>> parent of 7a73d10 (0409_killer_server2)
     private void HandleAttackInput()
     {
         if (input.IsAttackPressed)
