@@ -115,6 +115,10 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         if (healerState.IsDowned)
             return;
 
+        // 감옥 상태는 힐 불가
+        if (targetState.IsImprisoned)
+            return;
+
         // 자기 자신 힐 방지
         if (healerState == targetState)
             return;
@@ -315,6 +319,10 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
 
         // 다운된 생존자는 힐 불가
         if (localHealerState.IsDowned)
+            return false;
+
+        // 감옥 상태는 힐 불가
+        if (targetState.IsImprisoned)
             return false;
 
         // 자기 자신 힐 방지
