@@ -86,7 +86,7 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         SetHealerLock(false);
         SetHealAnim(false);
 
-        localHealerInteractor.HideProgress(this, true);
+        localHealerInteractor.HideProgress(this, false);
 
         CmdEndHeal();
     }
@@ -133,7 +133,6 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
 
         isHealing = true;
         healer = sender.identity.netId;
-        progress = 0f;
 
         // 힐받는 대상은 다른 상호작용 못 하게
         targetState.SetBeingHealedServer(true);
@@ -205,7 +204,6 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
     {
         isHealing = false;
         healer = 0;
-        progress = 0f;
 
         targetState.SetBeingHealedServer(false);
 
@@ -250,10 +248,10 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
             targetMove.StopAnimation();
 
         if (localHealerInteractor != null)
-            localHealerInteractor.HideProgress(this, true);
+            localHealerInteractor.HideProgress(this, false);
 
         if (localTargetInteractor != null)
-            localTargetInteractor.HideProgress(this, true);
+            localTargetInteractor.HideProgress(this, false);
     }
 
     private void UpdateUI()
@@ -436,7 +434,7 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
 
         SetHealerLock(false);
         SetHealAnim(false);
-        localHealerInteractor.HideProgress(this, true);
+        localHealerInteractor.HideProgress(this, false);
 
         CmdEndHeal();
 

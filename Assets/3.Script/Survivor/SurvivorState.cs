@@ -5,11 +5,11 @@ using UnityEngine;
 // 생존자 상태 종류
 public enum SurvivorCondition
 {
-    Healthy,      // 정상
-    Injured,      // 부상
-    Downed,       // 다운
-    Imprisoned,   // 감옥
-    Dead          // 사망
+    Healthy,      // 정상0
+    Injured,      // 부상1
+    Downed,       // 다운2
+    Imprisoned,   // 감옥3
+    Dead          // 사망4
 }
 
 public class SurvivorState : NetworkBehaviour
@@ -245,6 +245,9 @@ public class SurvivorState : NetworkBehaviour
     [Server]
     public void Die()
     {
+        if (animator != null)
+            animator.SetTrigger("DownHit");
+
         currentPrisonId = 0;
         isDoingInteraction = false;
         isBeingHealed = false;
@@ -360,6 +363,5 @@ public class SurvivorState : NetworkBehaviour
 
         animator.SetInteger("Condition", (int)currentCondition);
         animator.SetBool("IsImprisoned", IsImprisoned);
-        animator.SetBool("IsDead", IsDead);
     }
 }
