@@ -53,7 +53,7 @@ MonoBehaviour:
   syncInterval: 0
   leftPoint: {fileID: 8749130615233499885}
   rightPoint: {fileID: 8438051215184147755}
-  upPoint: {x: 0, y: 0.2, z: 0}
+  upPoint: {x: 0, y: 0.5, z: 0}
   moveToPointSpeed: 5
   survivorVaultSpeed: 4
   killerVaultSpeed: 1.5
