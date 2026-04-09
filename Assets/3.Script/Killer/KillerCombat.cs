@@ -43,9 +43,6 @@ public class KillerCombat : NetworkBehaviour
 
     void Update()
     {
-        // 1. 애니메이션 동기화 (모든 클라이언트 공통) [cite: 2026-04-06]
-        UpdateAnimationState();
-
         // 2. 서버 로직: 서버가 직접 시간을 재고 상태를 Idle로 변경 [cite: 2026-04-06]
         if (isServer && state.CurrentCondition == KillerCondition.Recovering)
         {
@@ -71,15 +68,6 @@ public class KillerCombat : NetworkBehaviour
         {
             HandleAttackInput();
         }
-    }
-
-    private void UpdateAnimationState()
-    {
-        if (animator == null) return;
-
-        bool isBusy = state.CurrentCondition == KillerCondition.Recovering ||
-                      state.CurrentCondition == KillerCondition.Hit ||
-                      state.CurrentCondition == KillerCondition.Breaking;
     }
 
     private void HandleAttackInput()

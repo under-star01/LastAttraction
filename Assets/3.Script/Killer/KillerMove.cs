@@ -34,6 +34,8 @@ public class KillerMove : NetworkBehaviour
     [SyncVar] private float syncedPitch;
     [SyncVar] private float syncedMoveSpeed;
 
+    public float SyncedMoveSpeed => syncedMoveSpeed;
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -62,8 +64,6 @@ public class KillerMove : NetworkBehaviour
 
     private void Update()
     {
-        UpdateAnimation();
-
         if (isLocalPlayer)
         {
             // 1. 로컬 시야 회전 처리 (CanLook 상태일 때만)
@@ -116,12 +116,6 @@ public class KillerMove : NetworkBehaviour
         // 타인 화면에서는 동기화된 값 적용
         transform.rotation = Quaternion.Euler(0f, syncedYaw, 0f);
         killerCamera.localRotation = Quaternion.Euler(syncedPitch, 0f, 0f);
-    }
-
-    private void ApplyRemoteAnimator()
-    {
-        if (animator != null)
-            animator.SetFloat("Speed", syncedMoveSpeed, 0.1f, Time.deltaTime);
     }
 
     private void SendInputToServer()
@@ -192,29 +186,5 @@ public class KillerMove : NetworkBehaviour
         else yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
 
         controller.Move(new Vector3(0, yVelocity, 0) * Time.fixedDeltaTime);
-    }
-
-    private void UpdateAnimation()
-    {
-        if (animator == null) return;
-
-        // 공격 중이거나 판자를 부수는 중에는 Speed를 건드리지 않습니다. [cite: 2026-04-06]
-        bool isBusy = state.CurrentCondition == KillerCondition.Hit ||
-                      state.CurrentCondition == KillerCondition.Breaking ||
-                      state.CurrentCondition == KillerCondition.Recovering;
-
-        if (!isBusy)
-        {
-            // 서버가 넘겨준 syncedMoveSpeed 값을 그대로 애니메이터에 적용합니다. [cite: 2026-04-06]
-            animator.SetFloat("Speed", syncedMoveSpeed, 0.1f, Time.deltaTime);
-
-            // 런지 상태도 상태값(SyncVar)을 보고 결정합니다. [cite: 2026-04-06]
-            animator.SetBool("isLunging", state.CurrentCondition == KillerCondition.Lunging);
-        }
-        else
-        {
-            // 동작 중일 때는 발이 미끄러지지 않게 강제로 0으로 고정합니다. [cite: 2026-04-06]
-            animator.SetFloat("Speed", 0f, 0.1f, Time.deltaTime);
-        }
     }
 }
