@@ -62,6 +62,8 @@ public class KillerMove : NetworkBehaviour
 
     private void Update()
     {
+        UpdateAnimation();
+
         if (isLocalPlayer)
         {
             // 1. 로컬 시야 회전 처리 (CanLook 상태일 때만)
@@ -78,7 +80,7 @@ public class KillerMove : NetworkBehaviour
         {
             // 3. 원격 플레이어 동기화
             ApplyRemoteLook();
-            ApplyRemoteAnimator();
+            //ApplyRemoteAnimator();
         }
     }
 
@@ -147,7 +149,8 @@ public class KillerMove : NetworkBehaviour
         if (!state.CanMove)
         {
             ApplyGravityOnlyServer();
-            UpdateAnimatorServer(0f);
+            //UpdateAnimatorServer(0f);
+            syncedMoveSpeed = 0f;
             return;
         }
 
@@ -178,7 +181,8 @@ public class KillerMove : NetworkBehaviour
         controller.Move(finalMove * Time.fixedDeltaTime);
 
         // 애니메이션 속도 동기화
-        UpdateAnimatorServer(moveInput.magnitude);
+        //UpdateAnimatorServer(moveInput.magnitude);
+        syncedMoveSpeed = moveInput.magnitude;
     }
 
     [Server]
@@ -190,11 +194,27 @@ public class KillerMove : NetworkBehaviour
         controller.Move(new Vector3(0, yVelocity, 0) * Time.fixedDeltaTime);
     }
 
-    [Server]
-    private void UpdateAnimatorServer(float targetSpeed)
+    private void UpdateAnimation()
     {
-        syncedMoveSpeed = targetSpeed;
-        if (animator != null)
-            animator.SetFloat("Speed", targetSpeed, 0.1f, Time.fixedDeltaTime);
+        if (animator == null) return;
+
+        // 공격 중이거나 판자를 부수는 중에는 Speed를 건드리지 않습니다. [cite: 2026-04-06]
+        bool isBusy = state.CurrentCondition == KillerCondition.Hit ||
+                      state.CurrentCondition == KillerCondition.Breaking ||
+                      state.CurrentCondition == KillerCondition.Recovering;
+
+        if (!isBusy)
+        {
+            // 서버가 넘겨준 syncedMoveSpeed 값을 그대로 애니메이터에 적용합니다. [cite: 2026-04-06]
+            animator.SetFloat("Speed", syncedMoveSpeed, 0.1f, Time.deltaTime);
+
+            // 런지 상태도 상태값(SyncVar)을 보고 결정합니다. [cite: 2026-04-06]
+            animator.SetBool("isLunging", state.CurrentCondition == KillerCondition.Lunging);
+        }
+        else
+        {
+            // 동작 중일 때는 발이 미끄러지지 않게 강제로 0으로 고정합니다. [cite: 2026-04-06]
+            animator.SetFloat("Speed", 0f, 0.1f, Time.deltaTime);
+        }
     }
 }

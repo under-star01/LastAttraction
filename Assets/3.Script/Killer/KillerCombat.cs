@@ -80,12 +80,6 @@ public class KillerCombat : NetworkBehaviour
         bool isBusy = state.CurrentCondition == KillerCondition.Recovering ||
                       state.CurrentCondition == KillerCondition.Hit ||
                       state.CurrentCondition == KillerCondition.Breaking;
-
-        // 후딜레이나 피격 중에는 이동 애니메이션 파라미터를 갱신하지 않음 [cite: 2026-04-06]
-        if (!isBusy)
-        {
-            animator.SetBool("isLunging", state.CurrentCondition == KillerCondition.Lunging);
-        }
     }
 
     private void HandleAttackInput()
@@ -154,7 +148,7 @@ public class KillerCombat : NetworkBehaviour
     private void CmdStartLunge()
     {
         state.ChangeState(KillerCondition.Lunging);
-        if (networkAnimator != null) networkAnimator.SetTrigger("Attack");
+        //if (networkAnimator != null) networkAnimator.SetTrigger("Attack");
     }
 
     [Command]

@@ -5,6 +5,7 @@ public enum KillerCondition { Idle, Lunging, Recovering, Hit, Vaulting, Breaking
 
 public class KillerState : NetworkBehaviour
 {
+    private NetworkAnimator networkAnimator;
     // [SyncVar]를 붙여야 서버에서 바꾼 상태가 모든 클라이언트에게 전달됩니다.
     [SyncVar(hook = nameof(OnConditionChanged))]
     private KillerCondition currentCondition = KillerCondition.Idle;
@@ -37,9 +38,22 @@ public class KillerState : NetworkBehaviour
         currentCondition = newState;
     }
 
-    // 상태가 변했을 때 로그를 찍거나 특정 처리를 하고 싶다면 훅(Hook)을 사용합니다.
     private void OnConditionChanged(KillerCondition oldState, KillerCondition newState)
     {
-        Debug.Log($"[KillerState] 상태 변경: {oldState} -> {newState}");
+        if (networkAnimator == null) networkAnimator = GetComponent<NetworkAnimator>();
+
+        // 상태가 변하는 "그 순간"에만 트리거를 한 번 빵! 터뜨려줍니다. [cite: 2026-04-06]
+        switch (newState)
+        {
+            case KillerCondition.Lunging:
+                networkAnimator.SetTrigger("Attack"); // 공격 시작
+                break;
+            case KillerCondition.Hit:
+                networkAnimator.SetTrigger("Hit");    // 피격
+                break;
+            case KillerCondition.Breaking:
+                networkAnimator.SetTrigger("Break"); // 판자 파괴
+                break;
+        }
     }
 }
