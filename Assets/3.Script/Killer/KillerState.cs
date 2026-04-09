@@ -76,6 +76,20 @@ public class KillerState : NetworkBehaviour
         // 클라이언트 전용 효과(사운드 등)를 넣을 때 사용하세요. [cite: 2026-04-07]
     }
 
+    [ClientRpc]
+    private void RpcPlayLocalAnimation(KillerCondition condition)
+    {
+        // 서버에서 이미 실행했으므로 클라이언트에서만 실행 (권한 에러 방지용 일반 animator 사용) [cite: 2026-04-06]
+        if (isServer) return;
+
+        switch (condition)
+        {
+            case KillerCondition.Lunging: animator.SetTrigger("Attack"); break;
+            case KillerCondition.Hit: animator.SetTrigger("Hit"); break;
+            case KillerCondition.Breaking: animator.SetTrigger("Break"); break;
+        }
+    }
+
     // --- [상태 관리] 매 프레임 변하는 파라미터는 변수값에 따라 모든 클라이언트에서 업데이트 [cite: 2026-04-06]
     private void Update()
     {
