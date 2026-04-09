@@ -50,6 +50,8 @@ public class KillerState : NetworkBehaviour
     // --- [1. 사건 관리] 상태가 바뀌는 "순간" 트리거 애니메이션 실행 [cite: 2026-04-06]
     private void OnConditionChanged(KillerCondition oldState, KillerCondition newState)
     {
+        if (!isServer) return;
+
         if (networkAnimator == null) networkAnimator = GetComponent<NetworkAnimator>();
 
         switch (newState)
