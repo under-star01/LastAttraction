@@ -132,7 +132,7 @@ public class KillerInteractor : NetworkBehaviour
     {
         if (!isServer) return;
         if (state.CurrentCondition == KillerCondition.Hit) return;
-
+        Debug.Log($"<color=red>[KillerHit]</color> 판자에 맞음! 스턴 시간: {duration}");
         state.ChangeState(KillerCondition.Hit);
         StartCoroutine(ResetHitStunRoutine(duration));
     }
