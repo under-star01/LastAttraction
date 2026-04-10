@@ -11511,7 +11511,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  killerCamera: {fileID: 6045872689445835082}
+  killerCamera: {fileID: 2383060795224604532}
   cameraTarget: {fileID: 5939102808237091577}
   animator: {fileID: 0}
   audioListener: {fileID: 0}
