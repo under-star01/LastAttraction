@@ -46,7 +46,7 @@ public class KillerState : NetworkBehaviour
         {
             // [동기화 해결] 서버가 상태를 바꿨을 때 실행되어야 하는 트리거들
             // 피격(Hit)이나 공격 후딜레이(Recovering) 시작 시 애니메이션을 재생합니다.
-            if (newState == KillerCondition.Hit || newState == KillerCondition.Recovering)
+            if (newState == KillerCondition.Hit || newState == KillerCondition.Recovering || newState == KillerCondition.Incage)
                 PlayTrigger(newState);
         }
         else
@@ -70,6 +70,7 @@ public class KillerState : NetworkBehaviour
             case KillerCondition.Hit: animator.SetTrigger("Hit"); break;
             case KillerCondition.Breaking: animator.SetTrigger("Break"); break;
             case KillerCondition.Vaulting: animator.SetTrigger("Vault"); break;
+            case KillerCondition.Incage: animator.SetTrigger("Incage"); break;
         }
     }
 }

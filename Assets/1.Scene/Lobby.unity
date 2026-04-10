@@ -654,7 +654,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1, y: 1, z: -4.5}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2061,6 +2061,10 @@ PrefabInstance:
       propertyPath: upPoint.y
       value: 0.2
       objectReference: {fileID: 0}
+    - target: {fileID: 1069680334166291292, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 1080533240555412860, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: m_TagString
       value: Window
@@ -2153,6 +2157,10 @@ PrefabInstance:
       propertyPath: upPoint.y
       value: 0.2
       objectReference: {fileID: 0}
+    - target: {fileID: 2018315558243481409, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 2043236170098492678, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: upPoint.y
       value: 0.2
@@ -2188,6 +2196,10 @@ PrefabInstance:
     - target: {fileID: 2621088408829582911, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: upPoint.y
       value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2626853263168423158, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
       objectReference: {fileID: 0}
     - target: {fileID: 2652225133619188614, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
@@ -2333,6 +2345,14 @@ PrefabInstance:
       propertyPath: upPoint.y
       value: 0.2
       objectReference: {fileID: 0}
+    - target: {fileID: 5129684511763666293, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
+    - target: {fileID: 5159056772198467598, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 5261097865612656576, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
       value: 3417549130
@@ -2396,6 +2416,10 @@ PrefabInstance:
     - target: {fileID: 6273440620176193355, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: upPoint.y
       value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6277297205151330313, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
       objectReference: {fileID: 0}
     - target: {fileID: 6419690384248031031, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
@@ -2488,6 +2512,10 @@ PrefabInstance:
     - target: {fileID: 7746787582340904247, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: m_Name
       value: Map
+      objectReference: {fileID: 0}
+    - target: {fileID: 7827840077398398265, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
       objectReference: {fileID: 0}
     - target: {fileID: 7895203386253891126, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: upPoint.y

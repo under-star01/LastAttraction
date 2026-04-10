@@ -11436,7 +11436,7 @@ MonoBehaviour:
     m_Bits: 512
   obstacleMask:
     serializedVersion: 2
-    m_Bits: 1024
+    m_Bits: 7496
 --- !u!114 &7075201297679001473
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11496,6 +11496,9 @@ MonoBehaviour:
   interactLayer:
     serializedVersion: 2
     m_Bits: 1
+  survivorLayer:
+    serializedVersion: 2
+    m_Bits: 2112
 --- !u!114 &835159930052555109
 MonoBehaviour:
   m_ObjectHideFlags: 0
