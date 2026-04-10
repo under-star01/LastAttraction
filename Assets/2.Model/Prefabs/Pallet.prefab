@@ -146,7 +146,7 @@ MonoBehaviour:
   droppedCollider: {fileID: 558598395523839174}
   leftPoint: {fileID: 3809310533888025628}
   rightPoint: {fileID: 9112308028019181740}
-  vaultOffset: {x: 0, y: 0.2, z: 0}
+  vaultOffset: {x: 0, y: 0, z: 0}
   moveToPointSpeed: 5
   dropActionTime: 0.5
   survivorVaultSpeed: 4
