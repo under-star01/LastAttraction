@@ -1435,7 +1435,7 @@ GameObject:
   - component: {fileID: 8174374209964335500}
   m_Layer: 0
   m_Name: ModelRoot
-  m_TagString: Untagged
+  m_TagString: Survivor
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2390,9 +2390,9 @@ GameObject:
   - component: {fileID: 8488072216295189698}
   - component: {fileID: 5940893645410601040}
   - component: {fileID: 690693491435381684}
-  m_Layer: 6
+  m_Layer: 13
   m_Name: Trigger
-  m_TagString: Untagged
+  m_TagString: Survivor
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
