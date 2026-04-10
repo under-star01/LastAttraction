@@ -47,11 +47,11 @@ public class KillerInteractor : NetworkBehaviour
     {
         Vector3 rayOrigin = transform.position + Vector3.up * 1.5f;
         RaycastHit hit;
+        Debug.DrawRay(rayOrigin, transform.forward * interactRange, Color.red);
         if (Physics.Raycast(rayOrigin, transform.forward, out hit, interactRange, interactLayer, QueryTriggerInteraction.Collide))
         {
             // 3. 자식 콜라이더를 맞췄을 때 부모의 스크립트를 찾도록 GetComponentInParent를 사용합니다.
             currentTarget = hit.collider.GetComponentInParent<IInteractable>();
-            Debug.DrawRay(rayOrigin, transform.forward * interactRange, Color.red);
         }
         else
         {
