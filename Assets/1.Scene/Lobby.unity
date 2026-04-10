@@ -1787,6 +1787,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Pallet
       objectReference: {fileID: 0}
+    - target: {fileID: 470973326124032601, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 575004779959769769, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
       value: 2798820397
@@ -1798,6 +1802,10 @@ PrefabInstance:
     - target: {fileID: 813644007408462793, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
       value: 3685250079
+      objectReference: {fileID: 0}
+    - target: {fileID: 1080533240555412860, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
       objectReference: {fileID: 0}
     - target: {fileID: 1107658409799379167, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: m_TagString
@@ -1843,6 +1851,10 @@ PrefabInstance:
       propertyPath: sceneId
       value: 1399063528
       objectReference: {fileID: 0}
+    - target: {fileID: 1385760522894405918, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 1444498298191292116, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
       value: 490859361
@@ -1862,6 +1874,18 @@ PrefabInstance:
     - target: {fileID: 1708144538927039024, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
       value: 2012825972
+      objectReference: {fileID: 0}
+    - target: {fileID: 1755603905453138800, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
+    - target: {fileID: 1844871437179591575, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
+    - target: {fileID: 2141216850243354094, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
       objectReference: {fileID: 0}
     - target: {fileID: 2334573963708100651, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: m_TagString
@@ -1931,6 +1955,10 @@ PrefabInstance:
       propertyPath: sceneId
       value: 3575683639
       objectReference: {fileID: 0}
+    - target: {fileID: 3402664311004727207, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 3539395451297960464, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
       value: 280635462
@@ -1943,9 +1971,21 @@ PrefabInstance:
       propertyPath: sceneId
       value: 3540166916
       objectReference: {fileID: 0}
+    - target: {fileID: 3774029571637836801, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 3816626674382224793, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: m_TagString
       value: Pallet
+      objectReference: {fileID: 0}
+    - target: {fileID: 3938373692850279049, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
+    - target: {fileID: 4067994690249049425, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
       objectReference: {fileID: 0}
     - target: {fileID: 4175988311617947898, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
@@ -1967,6 +2007,10 @@ PrefabInstance:
       propertyPath: sceneId
       value: 769010456
       objectReference: {fileID: 0}
+    - target: {fileID: 4942472417831897915, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 4978532412961769104, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
       value: 807932731
@@ -1983,6 +2027,10 @@ PrefabInstance:
       propertyPath: sceneId
       value: 2937239642
       objectReference: {fileID: 0}
+    - target: {fileID: 5530131973781143753, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 5596474758074872943, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: m_TagString
       value: Pallet
@@ -1995,6 +2043,10 @@ PrefabInstance:
       propertyPath: sceneId
       value: 2491840852
       objectReference: {fileID: 0}
+    - target: {fileID: 5785643687053301839, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 5823785685903316184, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
       value: 122222479
@@ -2003,9 +2055,17 @@ PrefabInstance:
       propertyPath: sceneId
       value: 767053291
       objectReference: {fileID: 0}
+    - target: {fileID: 5944748107567870292, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 6109040143432259534, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: m_TagString
       value: Pallet
+      objectReference: {fileID: 0}
+    - target: {fileID: 6209229073433145318, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
       objectReference: {fileID: 0}
     - target: {fileID: 6419690384248031031, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
@@ -2075,6 +2135,14 @@ PrefabInstance:
       propertyPath: m_Size.y
       value: 2.7
       objectReference: {fileID: 0}
+    - target: {fileID: 7534519671377245843, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
+    - target: {fileID: 7698810294669640177, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 7744624488133706142, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
       value: 3530943784
@@ -2123,9 +2191,21 @@ PrefabInstance:
       propertyPath: sceneId
       value: 315253932
       objectReference: {fileID: 0}
+    - target: {fileID: 8735538528468392058, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
+    - target: {fileID: 8834361014125713768, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
     - target: {fileID: 8928981073957495192, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
       value: 3688471914
+      objectReference: {fileID: 0}
+    - target: {fileID: 8951275652562374264, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
       objectReference: {fileID: 0}
     - target: {fileID: 8979686486470244644, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
@@ -2138,6 +2218,14 @@ PrefabInstance:
     - target: {fileID: 9088011081186346134, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: m_TagString
       value: Pallet
+      objectReference: {fileID: 0}
+    - target: {fileID: 9130664121564062863, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
+      objectReference: {fileID: 0}
+    - target: {fileID: 9166160733034122828, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_TagString
+      value: Window
       objectReference: {fileID: 0}
     - target: {fileID: 9217493961263221804, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: sceneId
