@@ -6,7 +6,6 @@ public enum KillerCondition { Idle, Lunging, Recovering, Hit, Vaulting, Breaking
 public class KillerState : NetworkBehaviour
 {
     private Animator animator;
-    private NetworkAnimator networkAnimator;
 
     [Header("Sync Variables")]
     [SyncVar(hook = nameof(OnConditionChanged))]
@@ -30,7 +29,6 @@ public class KillerState : NetworkBehaviour
     private void Awake()
     {
         animator = GetComponentInChildren<Animator>();
-        networkAnimator = GetComponent<NetworkAnimator>();
     }
 
     [Server]
@@ -38,19 +36,24 @@ public class KillerState : NetworkBehaviour
     {
         if (currentCondition == newState) return;
         currentCondition = newState;
-
-        // [중요] 데디케이트 서버는 화면이 없으므로 트리거를 당길 필요가 없지만,
-        // NetworkAnimator를 통해 트리거를 전파하고 싶다면 여기서 호출할 수 있습니다.
-        // 하지만 우리는 더 확실한 SyncVar Hook 방식을 사용합니다.
     }
 
     private void OnConditionChanged(KillerCondition oldState, KillerCondition newState)
     {
-        // 서버(데디케이트)는 실행하지 않음
         if (isServer && !isClient) return;
 
-        // 모든 클라이언트(나 포함)가 상태 변화를 감지하면 트리거를 실행합니다.
-        PlayTrigger(newState);
+        if (isLocalPlayer)
+        {
+            // [동기화 해결] 서버가 상태를 바꿨을 때 실행되어야 하는 트리거들
+            // 피격(Hit)이나 공격 후딜레이(Recovering) 시작 시 애니메이션을 재생합니다.
+            if (newState == KillerCondition.Hit || newState == KillerCondition.Recovering)
+                PlayTrigger(newState);
+        }
+        else
+        {
+            // 타인 화면에서는 모든 상태 변화에 대해 트리거를 시도합니다.
+            PlayTrigger(newState);
+        }
     }
 
     public void PlayTrigger(KillerCondition condition)
@@ -59,7 +62,11 @@ public class KillerState : NetworkBehaviour
 
         switch (condition)
         {
-            case KillerCondition.Lunging: animator.SetTrigger("Attack"); break;
+            // 런지(Lunging)는 bool 값에 의한 'Run' 애니메이션이므로 트리거를 쓰지 않습니다.
+            case KillerCondition.Recovering:
+                // 이제 공격 후딜레이 상태가 될 때 실제 공격 휘두르기 애니메이션이 나옵니다.
+                animator.SetTrigger("Attack");
+                break;
             case KillerCondition.Hit: animator.SetTrigger("Hit"); break;
             case KillerCondition.Breaking: animator.SetTrigger("Break"); break;
             case KillerCondition.Vaulting: animator.SetTrigger("Vault"); break;

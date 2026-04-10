@@ -39,6 +39,7 @@ public class KillerCombat : NetworkBehaviour
     {
         if (animator != null)
         {
+            // 모든 클라이언트에서 현재 상태가 Lunging이면 Run 애니메이션을 틉니다.
             animator.SetBool("isLunging", state.CurrentCondition == KillerCondition.Lunging);
         }
 
@@ -55,7 +56,6 @@ public class KillerCombat : NetworkBehaviour
             return;
         }
 
-        // 공격 시도
         if (state.CanAttack || state.CurrentCondition == KillerCondition.Lunging)
         {
             HandleAttackInput();
@@ -68,7 +68,10 @@ public class KillerCombat : NetworkBehaviour
         {
             if (state.CurrentCondition != KillerCondition.Lunging)
             {
-                // 로컬에서 즉시 초기화
+                // [연속 공격 방지] 현재 공격 가능한 상태(Idle)가 아니면 입력을 무시합니다.
+                if (!state.CanAttack) return;
+
+                // [중요] 여기서 PlayTrigger를 호출하지 않습니다. (휘두르기 스킵 방지)
                 hasHitTarget = false;
                 currentLungeTime = 0f;
                 hitSurvivorNetId = 0;
@@ -100,7 +103,6 @@ public class KillerCombat : NetworkBehaviour
     private void CheckHitDetection()
     {
         if (hasHitTarget || attackPoint == null) return;
-
         if (Physics.CheckSphere(attackPoint.position, attackRadius * 0.5f, obstacleLayer))
         {
             hasHitTarget = true;
@@ -129,9 +131,7 @@ public class KillerCombat : NetworkBehaviour
     [Command]
     private void CmdStartLunge()
     {
-        // [예외 처리] 서버에서 현재 공격 가능한 상태인지 다시 한번 검증합니다.
         if (state.CurrentCondition != KillerCondition.Idle) return;
-
         state.ChangeState(KillerCondition.Lunging);
     }
 
