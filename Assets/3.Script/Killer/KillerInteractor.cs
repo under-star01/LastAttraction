@@ -45,7 +45,7 @@ public class KillerInteractor : NetworkBehaviour
 
     private void SearchTarget()
     {
-        Vector3 rayOrigin = transform.position + Vector3.up * 1.5f;
+        Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
         RaycastHit hit;
         Debug.DrawRay(rayOrigin, transform.forward * interactRange, Color.red);
         if (Physics.Raycast(rayOrigin, transform.forward, out hit, interactRange, interactLayer, QueryTriggerInteraction.Collide))
