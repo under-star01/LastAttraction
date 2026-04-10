@@ -133,8 +133,22 @@ public class KillerInteractor : NetworkBehaviour
         if (!isServer) return;
         if (state.CurrentCondition == KillerCondition.Hit) return;
 
+        // 1. 서버에서 상태 변경
         state.ChangeState(KillerCondition.Hit);
+
+        // 2. [핵심] 모든 클라이언트(나 포함)에게 피격 애니메이션 재생 명령
+        RpcPlayHitAnimation();
+
+        // 3. 복구 코루틴
         StartCoroutine(ResetHitStunRoutine(duration));
+    }
+
+    [ClientRpc]
+    private void RpcPlayHitAnimation()
+    {
+        // SyncVar 훅에 의존하지 않고, 즉시 트리거를 당깁니다.
+        // 다른 진행 중인 트리거들이 방해하지 못하도록 상태를 초기화하고 재생하는 것이 좋습니다.
+        state.PlayTrigger(KillerCondition.Hit);
     }
 
     private IEnumerator ResetHitStunRoutine(float delay)
