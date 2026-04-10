@@ -18,12 +18,17 @@ public class Window : NetworkBehaviour, IInteractable
     [SerializeField] private float killerVaultSpeed = 2.5f;
     [SerializeField] private float occupationRadius = 1.0f;
 
-    // 지금 누가 창틀을 사용 중인지 서버가 관리
+    // 버튼을 눌러 선점한 순간부터 true
+    // 포인트로 이동 중이든 실제 넘는 중이든 다른 사람이 못 쓰게 막음
+    [SyncVar] private bool isBusy;
+
+    // 실제 넘는 연출 중인지
     [SyncVar] private bool isVaulting;
+
+    // 현재 사용 중인 플레이어
     [SyncVar] private uint currentActorNetId;
 
     // 상호작용 시작
-    // 로컬에서 호출되지만 실제 처리는 서버에서 한다
     public void BeginInteract(GameObject actor)
     {
         if (actor == null)
@@ -36,28 +41,21 @@ public class Window : NetworkBehaviour, IInteractable
         if (actorIdentity == null)
             return;
 
-        // 이미 창틀 사용 중이면 시작 불가
-        if (isVaulting)
+        // 이미 누가 선점했거나 넘는 중이면 불가
+        if (isBusy || isVaulting)
             return;
 
-        // 서버면 바로 처리
         if (isServer)
-        {
             TryBeginVaultServer(actorIdentity);
-        }
-        // 클라이언트면 서버에 요청
         else
-        {
             CmdBeginVault(actorIdentity.netId);
-        }
     }
 
     public void EndInteract()
     {
-        // Press 타입이라 따로 종료 처리 없음
+        // Press 타입이라 종료 처리 없음
     }
 
-    // 클라 -> 서버 : 창틀 넘기 요청
     [Command(requiresAuthority = false)]
     private void CmdBeginVault(uint actorNetId)
     {
@@ -67,21 +65,20 @@ public class Window : NetworkBehaviour, IInteractable
         TryBeginVaultServer(actorIdentity);
     }
 
-    // 서버에서 실제 시작 판정
     [Server]
     private void TryBeginVaultServer(NetworkIdentity actorIdentity)
     {
         if (actorIdentity == null)
             return;
 
-        if (isVaulting)
+        // 이미 누가 선점했거나 넘는 중이면 불가
+        if (isBusy || isVaulting)
             return;
 
         GameObject actor = actorIdentity.gameObject;
         if (actor == null)
             return;
 
-        // 생존자 / 살인마 둘 중 하나만 허용
         bool isSurvivor = actor.CompareTag("Survivor");
         bool isKiller = actor.CompareTag("Killer");
 
@@ -92,16 +89,17 @@ public class Window : NetworkBehaviour, IInteractable
         if (sidePoint == null)
             return;
 
-        // 같은 쪽 포인트 근처에 상대가 있으면 못 넘게
+        // 같은 쪽 포인트 주변에 상대가 있으면 시작 막기
         string opponentTag = isSurvivor ? "Killer" : "Survivor";
         if (IsOpponentAtPoint(sidePoint, opponentTag))
             return;
 
-        // 범위 체크
+        // 범위 밖이면 불가
         if (!CanUse(actor.transform))
             return;
 
-        isVaulting = true;
+        // 여기서 바로 선점
+        isBusy = true;
         currentActorNetId = actorIdentity.netId;
 
         if (isSurvivor)
@@ -110,8 +108,6 @@ public class Window : NetworkBehaviour, IInteractable
             StartCoroutine(KillerVaultRoutine(actorIdentity));
     }
 
-    // 생존자 창틀 넘기
-    // 서버에서 실제 이동
     [Server]
     private IEnumerator SurvivorVaultRoutine(NetworkIdentity actorIdentity)
     {
@@ -140,7 +136,6 @@ public class Window : NetworkBehaviour, IInteractable
             yield break;
         }
 
-        // 이동 잠금
         if (move != null)
         {
             move.SetMoveLock(true);
@@ -148,9 +143,10 @@ public class Window : NetworkBehaviour, IInteractable
             Vector3 lookDir = GetLookDirection(sidePoint);
             if (lookDir.sqrMagnitude > 0.001f)
                 move.FaceDirection(lookDir.normalized);
+
+            move.StopAnimation();
         }
 
-        // 컨트롤러 끄고 위치 이동
         if (controller != null)
             controller.enabled = false;
 
@@ -159,13 +155,12 @@ public class Window : NetworkBehaviour, IInteractable
         Vector3 startPos = sidePoint.position + upPoint;
         Vector3 endPos = oppositePoint.position + upPoint;
 
-        if (move != null)
-            move.StopAnimation();
-
-        // 내 쪽 시작 포인트까지 이동
+        // 포인트로 이동하는 구간도 이미 isBusy=true 상태
         yield return MoveActorToPoint(actor.transform, startPos, moveToPointSpeed);
 
-        // 볼트 애니메이션 시작
+        // 실제 넘기 시작
+        isVaulting = true;
+
         if (move != null)
         {
             move.SetVaulting(true);
@@ -176,10 +171,8 @@ public class Window : NetworkBehaviour, IInteractable
                 move.PlayAnimation("RightVault");
         }
 
-        // 반대편으로 이동
         yield return MoveActorToPoint(actor.transform, endPos, survivorVaultSpeed);
 
-        // 다시 원래 상태 복구
         if (controller != null)
             controller.enabled = true;
 
@@ -192,8 +185,6 @@ public class Window : NetworkBehaviour, IInteractable
         StopVaultServer();
     }
 
-    // 살인마 창틀 넘기
-    // 서버에서 실제 이동
     [Server]
     private IEnumerator KillerVaultRoutine(NetworkIdentity actorIdentity)
     {
@@ -231,8 +222,10 @@ public class Window : NetworkBehaviour, IInteractable
 
         yield return null;
 
-        // 내 쪽 포인트로 먼저 이동
+        // 포인트로 이동하는 구간도 이미 isBusy=true 상태
         yield return MoveActorToPoint(actor.transform, sidePoint.position, moveToPointSpeed);
+
+        isVaulting = true;
 
         Vector3 lookDir = GetLookDirection(sidePoint);
         if (lookDir.sqrMagnitude > 0.001f)
@@ -241,7 +234,6 @@ public class Window : NetworkBehaviour, IInteractable
         if (animator != null)
             animator.SetTrigger("Vault");
 
-        // 반대편으로 이동
         yield return MoveActorToPoint(actor.transform, oppositePoint.position, killerVaultSpeed);
 
         if (controller != null)
@@ -253,15 +245,14 @@ public class Window : NetworkBehaviour, IInteractable
         StopVaultServer();
     }
 
-    // 공통 종료
     [Server]
     private void StopVaultServer()
     {
+        isBusy = false;
         isVaulting = false;
         currentActorNetId = 0;
     }
 
-    // 어느 쪽 포인트인지 계산
     private Transform GetSidePointForActor(Transform actor)
     {
         if (actor == null)
@@ -275,7 +266,6 @@ public class Window : NetworkBehaviour, IInteractable
             return rightPoint;
     }
 
-    // 반대편 포인트 반환
     private Transform GetOppositePoint(Transform sidePoint)
     {
         if (sidePoint == leftPoint)
@@ -287,7 +277,6 @@ public class Window : NetworkBehaviour, IInteractable
         return null;
     }
 
-    // 창틀을 바라보는 방향 계산
     private Vector3 GetLookDirection(Transform sidePoint)
     {
         if (sidePoint == leftPoint)
@@ -299,7 +288,6 @@ public class Window : NetworkBehaviour, IInteractable
         return Vector3.zero;
     }
 
-    // 실제 위치 이동
     [Server]
     private IEnumerator MoveActorToPoint(Transform actor, Vector3 targetPos, float speed)
     {
@@ -315,7 +303,6 @@ public class Window : NetworkBehaviour, IInteractable
         actor.position = targetPos;
     }
 
-    // 상대가 같은 쪽 포인트 근처에 있는지 확인
     private bool IsOpponentAtPoint(Transform targetPoint, string opponentTag)
     {
         if (targetPoint == null)
@@ -332,7 +319,6 @@ public class Window : NetworkBehaviour, IInteractable
         return false;
     }
 
-    // 너무 멀면 사용 못 하게
     private bool CanUse(Transform actorTransform)
     {
         if (actorTransform == null)
@@ -351,7 +337,6 @@ public class Window : NetworkBehaviour, IInteractable
         return sqrDist <= 4f;
     }
 
-    // 생존자 상호작용 목록 등록
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Survivor"))

@@ -2023,6 +2023,10 @@ PrefabInstance:
       propertyPath: sceneId
       value: 2869845773
       objectReference: {fileID: 0}
+    - target: {fileID: 6719402057218687207, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 6744811909711093017, guid: 86ac748855ad95045af222ac6010f2cb, type: 3}
       propertyPath: m_TagString
       value: Pallet
