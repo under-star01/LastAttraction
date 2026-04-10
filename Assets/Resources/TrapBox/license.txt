@@ -1,0 +1,11 @@
+Model Information:
+* title:	Clown (Pipo) Out Of The Box
+* source:	https://sketchfab.com/3d-models/clown-pipo-out-of-the-box-412feb792845477b848618fd0d720e47
+* author:	Filip Bakker (https://sketchfab.com/fbakker.6)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Clown (Pipo) Out Of The Box" (https://sketchfab.com/3d-models/clown-pipo-out-of-the-box-412feb792845477b848618fd0d720e47) by Filip Bakker (https://sketchfab.com/fbakker.6) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
