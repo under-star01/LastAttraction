@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 84291236}
   - component: {fileID: 84291235}
   m_Layer: 5
-  m_Name: Range
+  m_Name: Range4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -662,7 +662,7 @@ GameObject:
   - component: {fileID: 320190744}
   - component: {fileID: 320190743}
   m_Layer: 5
-  m_Name: Range
+  m_Name: Range1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -804,7 +804,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1, y: 1, z: -4.5}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1370,7 +1370,7 @@ GameObject:
   - component: {fileID: 471689490}
   - component: {fileID: 471689489}
   m_Layer: 5
-  m_Name: QTE Point
+  m_Name: QTE Point1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1550,7 +1550,7 @@ GameObject:
   - component: {fileID: 586720990}
   - component: {fileID: 586720989}
   m_Layer: 5
-  m_Name: QTE Point
+  m_Name: QTE Point3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1646,6 +1646,7 @@ MonoBehaviour:
   killerLobbyCamera: {fileID: 900829951}
   survivorLobbyCamera: {fileID: 1438959019}
   progressUI: {fileID: 1556038587}
+  qteUI: {fileID: 0}
   livePriority: 20
   idlePriority: 10
 --- !u!4 &591203397
@@ -1675,7 +1676,7 @@ GameObject:
   - component: {fileID: 721827242}
   - component: {fileID: 721827241}
   m_Layer: 5
-  m_Name: Range
+  m_Name: Range2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2473,7 +2474,7 @@ GameObject:
   - component: {fileID: 1027616154}
   - component: {fileID: 1027616153}
   m_Layer: 5
-  m_Name: Range
+  m_Name: Range3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2678,6 +2679,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1295987903}
+  - component: {fileID: 1295987904}
   m_Layer: 5
   m_Name: QTEUI
   m_TagString: Untagged
@@ -2708,6 +2710,42 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1295987904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1295987902}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45a92b7dc88dc364a8ed3468926c0bbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QTEUI
+  pointSlots:
+  - root: {fileID: 471689487}
+    keyImage: {fileID: 471689489}
+    rangeTransform: {fileID: 320190742}
+  - root: {fileID: 1335798399}
+    keyImage: {fileID: 1335798401}
+    rangeTransform: {fileID: 721827240}
+  - root: {fileID: 586720987}
+    keyImage: {fileID: 586720989}
+    rangeTransform: {fileID: 1027616152}
+  - root: {fileID: 2076717336}
+    keyImage: {fileID: 2076717338}
+    rangeTransform: {fileID: 84291234}
+  wSprite: {fileID: 21300000, guid: 6f4eb54ca74fab24f935b3a76cd6af3f, type: 3}
+  aSprite: {fileID: 21300000, guid: a58014197a2600c41afbfaec72b043f8, type: 3}
+  sSprite: {fileID: 21300000, guid: 500aa897d0726154697ad7cf9ed293a4, type: 3}
+  dSprite: {fileID: 21300000, guid: bfcacf796d64bd54598f8236b2d7fdc8, type: 3}
+  requiredSuccessCount: 4
+  delayBetweenQTE: 0.5
+  shrinkDuration: 1.2
+  startScale: 5
+  targetScale: 1
+  successMinScale: 0.9
+  successMaxScale: 1.1
 --- !u!1 &1335798399
 GameObject:
   m_ObjectHideFlags: 0
@@ -2720,7 +2758,7 @@ GameObject:
   - component: {fileID: 1335798402}
   - component: {fileID: 1335798401}
   m_Layer: 5
-  m_Name: QTE Point
+  m_Name: QTE Point2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3625,7 +3663,7 @@ GameObject:
   - component: {fileID: 2076717339}
   - component: {fileID: 2076717338}
   m_Layer: 5
-  m_Name: QTE Point
+  m_Name: QTE Point4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

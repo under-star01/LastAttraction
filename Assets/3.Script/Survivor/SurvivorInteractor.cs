@@ -7,6 +7,7 @@ public class SurvivorInteractor : NetworkBehaviour
 {
     [Header("UI")]
     [SerializeField] private ProgressUI progressUI;
+    [SerializeField] private QTEUI qteUI;
 
     private SurvivorInput input;
     private SurvivorState state;
@@ -26,6 +27,9 @@ public class SurvivorInteractor : NetworkBehaviour
     // 범위 안에 있는 상호작용 대상 목록
     private readonly List<IInteractable> nearbyInteractables = new List<IInteractable>();
 
+    // QTE 실행 여부
+    private bool isQTEPlaying;
+
     public bool IsInteracting => isInteracting;
 
     public ProgressUI ProgressUI
@@ -36,6 +40,17 @@ public class SurvivorInteractor : NetworkBehaviour
                 BindUI();
 
             return progressUI;
+        }
+    }
+
+    public QTEUI QTEUI
+    {
+        get
+        {
+            if (qteUI == null)
+                BindUI();
+
+            return qteUI;
         }
     }
 
@@ -83,9 +98,6 @@ public class SurvivorInteractor : NetworkBehaviour
         if (!isLocalPlayer)
             return;
 
-        if (progressUI == null)
-            BindUI();
-
         // 다운 / 다운 피격 연출 / 사망이면 상호작용 강제 종료
         if (state != null && (state.IsDowned || state.IsBusy || state.IsDead))
         {
@@ -106,8 +118,8 @@ public class SurvivorInteractor : NetworkBehaviour
         if (LobbySceneBinder.Instance != null)
             progressUI = LobbySceneBinder.Instance.GetProgressUI();
 
-        if (progressUI == null)
-            progressUI = FindFirstObjectByType<ProgressUI>(FindObjectsInactive.Include);
+        if (LobbySceneBinder.Instance != null)
+            qteUI = LobbySceneBinder.Instance.GetQTEUI();
     }
 
     public void ShowProgress(object owner, float value)
@@ -115,10 +127,10 @@ public class SurvivorInteractor : NetworkBehaviour
         if (!isLocalPlayer)
             return;
 
-        if (progressUI == null)
+        if (progressUI == null || qteUI == null)
             BindUI();
 
-        if (progressUI == null)
+        if (progressUI == null || qteUI == null)
             return;
 
         if (progressOwner != null && progressOwner != owner)

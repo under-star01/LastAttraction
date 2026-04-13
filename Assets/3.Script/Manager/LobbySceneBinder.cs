@@ -11,6 +11,7 @@ public class LobbySceneBinder : MonoBehaviour
 
     [Header("Lobby UI")]
     [SerializeField] private ProgressUI progressUI;
+    [SerializeField] private QTEUI qteUI;
 
 
     [Header("Priority")]
@@ -50,5 +51,10 @@ public class LobbySceneBinder : MonoBehaviour
     public ProgressUI GetProgressUI()
     {
         return progressUI;
+    }
+
+    public QTEUI GetQTEUI()
+    {
+        return qteUI;
     }
 }
