@@ -44,11 +44,6 @@ public class LobbyAudioListener : MonoBehaviour
         if (lobbyAudioListener != null && lobbyAudioListener.enabled)
             lobbyAudioListener.enabled = false;
 
-        // 카메라도 같이 끄고 싶으면 켜기
-        if (lobbyCamera != null && lobbyCamera.enabled)
-            lobbyCamera.enabled = false;
-
-        // 이 스크립트도 더 이상 할 일 없으니 종료
         enabled = false;
     }
 }
