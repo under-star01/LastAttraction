@@ -105,6 +105,13 @@ public class SurvivorInteractor : NetworkBehaviour
             return;
         }
 
+        // 증거 상호작용시 QTE 실행
+        if (isQTEPlaying)
+        {
+            HandleEvidenceQTEState();
+            return;
+        }
+
         // 상호작용 중이 아닐 때만 앉기 상태로 시작 막기
         if (!isInteracting && input != null && input.IsCrouching)
             return;
@@ -127,6 +134,9 @@ public class SurvivorInteractor : NetworkBehaviour
         if (!isLocalPlayer)
             return;
 
+        if (owner is EvidencePoint)
+            return;
+
         if (progressUI == null || qteUI == null)
             BindUI();
 
@@ -144,6 +154,9 @@ public class SurvivorInteractor : NetworkBehaviour
     public void HideProgress(object owner, bool reset)
     {
         if (!isLocalPlayer)
+            return;
+
+        if (owner is EvidencePoint)
             return;
 
         if (progressUI == null)
@@ -450,5 +463,75 @@ public class SurvivorInteractor : NetworkBehaviour
             return;
 
         state.SetDoingInteractionServer(value);
+    }
+
+    // 증거 상호작용 QTE 시작 메소드
+    public void StartEvidenceQTE()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (qteUI == null)
+            BindUI();
+
+        if (qteUI == null)
+            return;
+
+        if (isQTEPlaying)
+            return;
+
+        if (currentInteractable is not EvidencePoint)
+            return;
+
+        qteUI.StartQTE();
+        isQTEPlaying = true;
+    }
+
+    // 증거 상호작용 성공 메소드
+    private void OnQTESuccess()
+    {
+        if (!isQTEPlaying)
+            return;
+
+        isQTEPlaying = false;
+
+        Debug.Log("[QTE] 상호작용 성공");
+    }
+
+    // 증거 상호작용 실패 메소드
+    private void OnQTEFail()
+    {
+        if (!isQTEPlaying)
+            return;
+
+        isQTEPlaying = false;
+
+        if (qteUI != null)
+            qteUI.StopQTE();
+
+        Debug.Log("[QTE] 상호작용 실패");
+
+        if (isInteracting && activeInteractable != null)
+        {
+            isInteracting = false;
+            SetInteractionState(false);
+            activeInteractable.EndInteract();
+            activeInteractable = null;
+        }
+
+        ForceHideProgress();
+    }
+
+    // QTE 진행중 좌클릭 유지 확인 메소드
+    private void HandleEvidenceQTEState()
+    {
+        if (input == null)
+            return;
+
+        if (!input.IsInteracting1)
+        {
+            Debug.Log("[QTE] 좌클릭 해제로 상호작용 실패");
+            OnQTEFail();
+        }
     }
 }
