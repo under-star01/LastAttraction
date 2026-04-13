@@ -544,8 +544,8 @@ MonoBehaviour:
   range2Source: {fileID: 201833050}
   range3Source: {fileID: 201833049}
   range1MaxVolume: 0.4
-  range2MaxVolume: 0.4
-  range3MaxVolume: 0.4
+  range2MaxVolume: 0.5
+  range3MaxVolume: 0.6
   heartbeatSource: {fileID: 201833048}
   heartbeatClip: {fileID: 8300000, guid: 7e0c3a5a46578724f8ec3cfb92923399, type: 3}
   heartbeatVolume: 1
