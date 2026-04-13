@@ -141,7 +141,18 @@ public class KillerCombat : NetworkBehaviour
         if (state.CurrentCondition != KillerCondition.Lunging) return;
 
         state.ChangeState(KillerCondition.Recovering);
-        float finalPenalty = isHit ? currentPenaltyTime : Mathf.Max(1.2f, lungeTime * hitFailPenalty);
+        float finalPenalty;
+
+        if (isHit)
+        {
+            // survivorNetId가 있으면 생존자 타격(2.5s), 없으면 벽 타격(3.0s)
+            finalPenalty = (survivorNetId != 0) ? hitSuccessPenalty : wallHitPenalty;
+        }
+        else
+        {
+            // 헛스윙 패널티 계산
+            finalPenalty = Mathf.Max(1.2f, lungeTime * hitFailPenalty);
+        }
 
         if (isHit && survivorNetId != 0)
         {
@@ -166,7 +177,7 @@ public class KillerCombat : NetworkBehaviour
     [ClientRpc]
     private void RpcSyncAttackResult(float speed, float penalty)
     {
-        if (animator != null) animator.SetFloat("AttackSpeed", Mathf.Clamp(speed, 1.0f, 3.0f));
+        if (animator != null) animator.SetFloat("AttackSpeed", Mathf.Clamp(speed, 0.8f, 3.0f));
         if (isLocalPlayer) currentPenaltyTime = penalty;
     }
 }
