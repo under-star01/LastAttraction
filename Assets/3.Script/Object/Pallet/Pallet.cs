@@ -4,49 +4,55 @@ using UnityEngine;
 
 public class Pallet : NetworkBehaviour, IInteractable
 {
-    // 판자는 버튼 한 번 누르면 실행되는 Press 타입
+    // 판자는 버튼 1번 눌러서 바로 실행되는 Press 타입
     public InteractType InteractType => InteractType.Press;
 
     [Header("참조")]
-    [SerializeField] private Animator animator;          // 판자 자체 애니메이터
+    [SerializeField] private Animator animator;          // 판자 애니메이터
     [SerializeField] private Collider standingCollider;  // 세워져 있을 때 콜라이더
     [SerializeField] private Collider droppedCollider;   // 내려간 뒤 콜라이더
-    [SerializeField] private Transform leftPoint;        // 왼쪽 상호작용 기준점
-    [SerializeField] private Transform rightPoint;       // 오른쪽 상호작용 기준점
+    [SerializeField] private Transform leftPoint;        // 왼쪽 사용 포인트
+    [SerializeField] private Transform rightPoint;       // 오른쪽 사용 포인트
 
     [Header("이동/연출 설정")]
-    [SerializeField] private Vector3 vaultOffset = new Vector3(0f, 0.2f, 0f); // 볼트할 때 살짝 위로 띄울 값
-    [SerializeField] private float moveToPointSpeed = 5f;   // 시작 위치 포인트로 이동하는 속도
-    [SerializeField] private float dropActionTime = 0.5f;   // 판자 내리기 액션 시간
-    [SerializeField] private float survivorVaultSpeed = 4f; // 생존자 판자 넘는 속도
-    [SerializeField] private float breakActionTime = 2f;    // 살인마 판자 부수는 시간
+    [SerializeField] private Vector3 vaultOffset = new Vector3(0f, 0.2f, 0f); // 볼트 시 살짝 위로
+    [SerializeField] private float moveToPointSpeed = 5f;   // 시작 포인트로 이동 속도
+    [SerializeField] private float dropActionTime = 0.5f;   // 생존자 판자 내리기 시간
+    [SerializeField] private float survivorVaultSpeed = 4f; // 생존자 판자 넘기 속도
+    [SerializeField] private float breakActionTime = 2f;    // 킬러 판자 부수기 시간
 
     [Header("판정")]
-    [SerializeField] private float useDistance = 2f;        // 판자 사용 가능 거리
-    [SerializeField] private float occupationRadius = 1f;   // 포인트 주변에 상대가 있는지 검사할 반경
-    [SerializeField] private float stunTime = 1.2f;         // 판자 맞은 살인마 스턴 시간
+    [SerializeField] private float useDistance = 2f;        // 사용 가능 거리
+    [SerializeField] private float occupationRadius = 1f;   // 포인트 점유 검사 반경
+    [SerializeField] private float stunTime = 1.2f;         // 판자 맞은 킬러 스턴 시간
 
-    // 현재 판자가 내려가 있는지 여부
-    // SyncVar라서 서버 값이 모든 클라이언트에 자동 동기화됨
+    // 현재 판자가 내려가 있는지
     [SyncVar(hook = nameof(OnDroppedChanged))]
     private bool isDropped;
 
-    // 지금 누가 사용 중인지
-    // 동시에 여러 명이 같은 판자를 쓰지 못하게 막기 위해 사용
+    // 누가 이 판자를 사용 중인지
+    // 한번 선점되면 다른 사람은 못 쓰게 막는다.
     [SyncVar]
     private bool isBusy;
 
-    // 현재 사용 중인 플레이어의 netId
-    // 누가 이 판자를 쓰고 있는지 서버가 기억함
+    // 현재 사용 중인 플레이어 netId
     [SyncVar]
     private uint currentActorNetId;
+
+    // 현재 어떤 동작 중인지 따로 분리
+    // 이 값을 따로 두는 이유:
+    // 내리는 중 / 넘는 중 / 부수는 중을 명확하게 구분해서
+    // 중간에 킬러가 들어오거나 다른 생존자가 들어오는 버그를 막기 위함
+    [SyncVar] private bool isDropping;
+    [SyncVar] private bool isVaulting;
+    [SyncVar] private bool isBreaking;
 
     private void Awake()
     {
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
-        // 시작 상태에 맞게 콜라이더 적용
+        // 시작 상태 반영
         ApplyDroppedState(isDropped);
     }
 
@@ -54,12 +60,11 @@ public class Pallet : NetworkBehaviour, IInteractable
     {
         base.OnStartClient();
 
-        // 클라이언트가 접속했을 때도 현재 판자 상태를 외형에 반영
+        // 클라이언트 접속 시 현재 상태 반영
         ApplyDroppedState(isDropped);
     }
 
-    // 로컬에서 상호작용 시작
-    // 실제 판정은 서버에서 하게 해야 멀티에서 안전함
+    // 상호작용 시작
     public void BeginInteract(GameObject actor)
     {
         if (actor == null)
@@ -75,23 +80,16 @@ public class Pallet : NetworkBehaviour, IInteractable
 
         // 서버면 바로 처리
         if (isServer)
-        {
             TryBeginInteractServer(actorIdentity);
-        }
-        // 클라이언트면 서버에 요청
         else
-        {
             CmdBeginInteract(actorIdentity.netId);
-        }
     }
 
     public void EndInteract()
     {
-        // 판자는 Press 타입이라 별도 종료 없음
+        // 판자는 Press 타입이라 따로 종료 처리 없음
     }
 
-    // 클라이언트 -> 서버
-    // "이 플레이어가 판자를 쓰려고 했어요" 라고 요청
     [Command(requiresAuthority = false)]
     private void CmdBeginInteract(uint actorNetId)
     {
@@ -101,16 +99,16 @@ public class Pallet : NetworkBehaviour, IInteractable
         TryBeginInteractServer(actorIdentity);
     }
 
-    // 서버에서 실제 사용 가능 여부를 체크하고
-    // 생존자면 내리기/넘기, 살인마면 부수기를 시작
+    // 서버에서 실제 사용 시작 판정
     [Server]
     private void TryBeginInteractServer(NetworkIdentity actorIdentity)
     {
         if (actorIdentity == null)
             return;
 
-        // 이미 다른 누군가가 사용 중이면 막음
-        if (isBusy)
+        // 이미 사용 중이거나,
+        // 내리는 중 / 넘는 중 / 부수는 중이면 새로 시작 불가
+        if (isBusy || isDropping || isVaulting || isBreaking)
             return;
 
         GameObject actor = actorIdentity.gameObject;
@@ -120,32 +118,32 @@ public class Pallet : NetworkBehaviour, IInteractable
         bool isSurvivor = actor.CompareTag("Survivor");
         bool isKiller = actor.CompareTag("Killer");
 
-        // 생존자나 살인마만 사용 가능
+        // 생존자 또는 킬러만 사용 가능
         if (!isSurvivor && !isKiller)
             return;
 
-        // 너무 멀리 있으면 사용 불가
+        // 너무 멀면 사용 불가
         if (!CanUse(actor.transform))
             return;
 
-        // 내가 어느 쪽에서 접근했는지 계산
+        // 현재 어느 쪽에서 접근했는지 계산
         Transform sidePoint = GetSidePointForActor(actor.transform);
         if (sidePoint == null)
             return;
 
-        // 같은 쪽 포인트 주변에 상대가 있으면 시작 막기
+        // 같은 쪽 포인트에 상대가 너무 가까이 있으면 막기
         string opponentTag = isSurvivor ? "Killer" : "Survivor";
         if (IsOpponentAtPoint(sidePoint, opponentTag))
             return;
 
-        // 이제 이 판자는 사용 중 상태
+        // 선점
         isBusy = true;
         currentActorNetId = actorIdentity.netId;
 
-        // 아직 안 내려진 판자
+        // 아직 세워진 판자
         if (!isDropped)
         {
-            // 판자 내리기는 생존자만 가능
+            // 세워진 판자를 내릴 수 있는 건 생존자뿐
             if (!isSurvivor)
             {
                 StopUseServer();
@@ -166,7 +164,7 @@ public class Pallet : NetworkBehaviour, IInteractable
                 return;
             }
 
-            // 살인마는 부수기
+            // 킬러는 부수기
             if (isKiller)
             {
                 StartCoroutine(BreakRoutineServer(actorIdentity));
@@ -177,7 +175,9 @@ public class Pallet : NetworkBehaviour, IInteractable
         StopUseServer();
     }
 
+    // --------------------------
     // 생존자 판자 내리기
+    // --------------------------
     [Server]
     private IEnumerator DropRoutineServer(NetworkIdentity actorIdentity)
     {
@@ -194,10 +194,13 @@ public class Pallet : NetworkBehaviour, IInteractable
             yield break;
         }
 
+        // 내리는 중 상태 시작
+        // 이 순간부터 킬러가 부수려고 해도 들어오지 못함
+        isDropping = true;
+
         SurvivorMove move = actor.GetComponent<SurvivorMove>();
         CharacterController controller = actor.GetComponent<CharacterController>();
 
-        // 현재 서 있는 쪽 포인트
         Transform sidePoint = GetSidePointForActor(actor.transform);
         if (sidePoint == null)
         {
@@ -205,7 +208,7 @@ public class Pallet : NetworkBehaviour, IInteractable
             yield break;
         }
 
-        // 이동 막고, 판자 방향 바라보게
+        // 이동 잠금 + 판자 방향 바라보기
         if (move != null)
         {
             move.SetMoveLock(true);
@@ -214,52 +217,53 @@ public class Pallet : NetworkBehaviour, IInteractable
             if (lookDir.sqrMagnitude > 0.001f)
                 move.FaceDirection(lookDir.normalized);
 
-            // 이동 애니메이션 정지
             move.StopAnimation();
         }
 
-        // 직접 위치를 옮길 거라 CharacterController 잠깐 끔
+        // 직접 이동시킬 것이므로 컨트롤러 끔
         if (controller != null)
             controller.enabled = false;
 
         yield return null;
 
-        // 내 쪽 포인트까지 이동
+        // 자기 쪽 포인트로 이동
         yield return MoveActorToPoint(actor.transform, sidePoint.position, moveToPointSpeed);
 
         // 생존자 드롭 애니메이션
         if (move != null)
             move.PlayAnimation("Drop");
 
-        // 판자 자체 애니메이션도 모든 클라에서 재생
+        // 판자 자체 애니메이션
         RpcPlayPalletTrigger("Drop");
 
-        // 내린 콜라이더의 맞은 생존자는 밀기
+        // 판자가 내려오면서 닿은 생존자 밀어내기
         PushOutServer();
 
-        // 내려가면서 살인마가 맞았는지 검사
+        // 내려오는 판자에 킬러가 맞았는지 검사
         CheckKillerStunServer();
-        // 내리는 액션 시간만큼 대기
 
+        // 액션 시간 대기
         yield return new WaitForSeconds(dropActionTime);
 
-        // 실제로 판자가 내려간 상태로 변경
+        // 실제로 내려진 상태 적용
         isDropped = true;
         ApplyDroppedState(true);
-
 
         // 컨트롤러 복구
         if (controller != null)
             controller.enabled = true;
 
-        // 이동 다시 허용
+        // 이동 잠금 해제
         if (move != null)
             move.SetMoveLock(false);
 
+        isDropping = false;
         StopUseServer();
     }
 
+    // --------------------------
     // 생존자 판자 넘기
+    // --------------------------
     [Server]
     private IEnumerator VaultRoutineServer(NetworkIdentity actorIdentity)
     {
@@ -276,6 +280,10 @@ public class Pallet : NetworkBehaviour, IInteractable
             yield break;
         }
 
+        // 넘는 중 상태 시작
+        // 이 순간부터 킬러가 부수려고 해도 들어오지 못함
+        isVaulting = true;
+
         SurvivorMove move = actor.GetComponent<SurvivorMove>();
         CharacterController controller = actor.GetComponent<CharacterController>();
 
@@ -288,7 +296,7 @@ public class Pallet : NetworkBehaviour, IInteractable
             yield break;
         }
 
-        // 이동 막고 판자 방향 보기
+        // 이동 잠금 + 판자 방향 보기
         if (move != null)
         {
             move.SetMoveLock(true);
@@ -305,11 +313,10 @@ public class Pallet : NetworkBehaviour, IInteractable
 
         yield return null;
 
-        // 살짝 위로 띄운 시작점 / 도착점
         Vector3 startPos = sidePoint.position + vaultOffset;
         Vector3 endPos = oppositePoint.position + vaultOffset;
 
-        // 먼저 자기 쪽 시작점으로 이동
+        // 먼저 자기 쪽 시작 포인트로 이동
         yield return MoveActorToPoint(actor.transform, startPos, moveToPointSpeed);
 
         // 볼트 애니메이션 실행
@@ -335,9 +342,84 @@ public class Pallet : NetworkBehaviour, IInteractable
             move.SetMoveLock(false);
         }
 
+        isVaulting = false;
         StopUseServer();
     }
 
+    // --------------------------
+    // 킬러 판자 부수기
+    // --------------------------
+    [Server]
+    private IEnumerator BreakRoutineServer(NetworkIdentity actorIdentity)
+    {
+        if (actorIdentity == null)
+        {
+            StopUseServer();
+            yield break;
+        }
+
+        GameObject actor = actorIdentity.gameObject;
+        if (actor == null)
+        {
+            StopUseServer();
+            yield break;
+        }
+
+        // 부수기 시작
+        isBreaking = true;
+
+        KillerState killerState = actor.GetComponent<KillerState>();
+        CharacterController controller = actor.GetComponent<CharacterController>();
+        Animator killerAnimator = actor.GetComponentInChildren<Animator>();
+
+        Transform sidePoint = GetSidePointForActor(actor.transform);
+        if (sidePoint == null)
+        {
+            StopUseServer();
+            yield break;
+        }
+
+        // 중요:
+        // 여기서만 Breaking 상태를 넣는다.
+        // 즉, 진짜 부수기 시작이 확정된 뒤에만 상태 변경.
+        if (killerState != null)
+            killerState.ChangeState(KillerCondition.Breaking);
+
+        if (controller != null)
+            controller.enabled = false;
+
+        yield return null;
+
+        // 자기 쪽 포인트로 이동
+        yield return MoveActorToPoint(actor.transform, sidePoint.position, moveToPointSpeed);
+
+        // 판자 바라보게 정렬
+        Vector3 lookDir = GetLookDirection(sidePoint);
+        if (lookDir.sqrMagnitude > 0.001f)
+            actor.transform.rotation = Quaternion.LookRotation(lookDir.normalized);
+
+        // 킬러 부수기 애니메이션
+        if (killerAnimator != null)
+            killerAnimator.SetTrigger("Break");
+
+        // 판자 자체 부서지는 애니메이션
+        RpcPlayPalletTrigger("Break");
+
+        yield return new WaitForSeconds(breakActionTime);
+
+        if (controller != null)
+            controller.enabled = true;
+
+        if (killerState != null)
+            killerState.ChangeState(KillerCondition.Idle);
+
+        isBreaking = false;
+
+        // 판자 제거
+        NetworkServer.Destroy(gameObject);
+    }
+
+    // 내려진 판자 안에 있는 생존자 밀어내기
     [Server]
     private void PushOutServer()
     {
@@ -367,7 +449,6 @@ public class Pallet : NetworkBehaviour, IInteractable
 
             Transform target = hit.transform;
 
-            // 루트 플레이어 위치로 맞추기
             SurvivorMove move = hit.GetComponent<SurvivorMove>();
             if (move == null)
                 move = hit.GetComponentInParent<SurvivorMove>();
@@ -379,7 +460,7 @@ public class Pallet : NetworkBehaviour, IInteractable
             if (controller == null)
                 controller = target.GetComponentInParent<CharacterController>();
 
-            // 판자 기준 왼쪽/오른쪽 판별
+            // 판자 기준 좌우 판정
             Vector3 localPos = transform.InverseTransformPoint(target.position);
 
             Vector3 teleportPos;
@@ -388,8 +469,6 @@ public class Pallet : NetworkBehaviour, IInteractable
                 teleportPos = leftPoint.position;
             else
                 teleportPos = rightPoint.position;
-
-            teleportPos.y = target.position.y;
 
             teleportPos.y = target.position.y;
 
@@ -403,80 +482,13 @@ public class Pallet : NetworkBehaviour, IInteractable
         }
     }
 
-    // 살인마 판자 부수기
-    [Server]
-    private IEnumerator BreakRoutineServer(NetworkIdentity actorIdentity)
-    {
-        if (actorIdentity == null)
-        {
-            StopUseServer();
-            yield break;
-        }
-
-        GameObject actor = actorIdentity.gameObject;
-        if (actor == null)
-        {
-            StopUseServer();
-            yield break;
-        }
-
-        KillerState killerState = actor.GetComponent<KillerState>();
-        CharacterController controller = actor.GetComponent<CharacterController>();
-        Animator killerAnimator = actor.GetComponentInChildren<Animator>();
-
-        Transform sidePoint = GetSidePointForActor(actor.transform);
-        if (sidePoint == null)
-        {
-            StopUseServer();
-            yield break;
-        }
-
-        // 살인마 상태를 부수기 상태로 변경
-        if (killerState != null)
-            killerState.ChangeState(KillerCondition.Breaking);
-
-        // 직접 위치 이동하므로 컨트롤러 끔
-        if (controller != null)
-            controller.enabled = false;
-
-        yield return null;
-
-        // 자기 쪽 포인트로 이동
-        yield return MoveActorToPoint(actor.transform, sidePoint.position, moveToPointSpeed);
-
-        // 판자 바라보게 정렬
-        Vector3 lookDir = GetLookDirection(sidePoint);
-        if (lookDir.sqrMagnitude > 0.001f)
-            actor.transform.rotation = Quaternion.LookRotation(lookDir.normalized);
-
-        // 살인마 부수기 애니메이션
-        if (killerAnimator != null)
-            killerAnimator.SetTrigger("Break");
-
-        // 판자 부서지는 애니메이션
-        RpcPlayPalletTrigger("Break");
-
-        yield return new WaitForSeconds(breakActionTime);
-
-        if (controller != null)
-            controller.enabled = true;
-
-        if (killerState != null)
-            killerState.ChangeState(KillerCondition.Idle);
-
-        // 서버에서 네트워크 오브젝트 제거
-        NetworkServer.Destroy(gameObject);
-    }
-
-    // 판자 맞은 살인마 정렬 + 스턴
+    // 내려오는 판자에 킬러가 맞았는지 검사
     [Server]
     private void CheckKillerStunServer()
     {
-        Debug.Log("판자 스턴 검사 시작");
         if (droppedCollider == null)
             return;
 
-        // 내려진 판자 콜라이더 범위 안의 오브젝트 검사
         Collider[] hits = Physics.OverlapBox(
             droppedCollider.bounds.center,
             droppedCollider.bounds.extents,
@@ -490,12 +502,10 @@ public class Pallet : NetworkBehaviour, IInteractable
             if (!hit.CompareTag("Killer"))
                 continue;
 
-            // KillerInteractor 찾기
             KillerInteractor killerInteractor = hit.GetComponent<KillerInteractor>();
             if (killerInteractor == null)
                 killerInteractor = hit.GetComponentInParent<KillerInteractor>();
 
-            // 네트워크 아이덴티티 찾기
             NetworkIdentity killerIdentity = hit.GetComponent<NetworkIdentity>();
             if (killerIdentity == null)
                 killerIdentity = hit.GetComponentInParent<NetworkIdentity>();
@@ -503,11 +513,11 @@ public class Pallet : NetworkBehaviour, IInteractable
             if (killerInteractor == null || killerIdentity == null)
                 continue;
 
-            // 맞은 살인마를 포인트 쪽으로 정렬 후 스턴
             StartCoroutine(KillerHitAlignRoutineServer(killerIdentity, killerInteractor));
         }
     }
 
+    // 맞은 킬러를 판자 쪽으로 정렬한 뒤 스턴 적용
     [Server]
     private IEnumerator KillerHitAlignRoutineServer(NetworkIdentity killerIdentity, KillerInteractor killerInteractor)
     {
@@ -520,7 +530,6 @@ public class Pallet : NetworkBehaviour, IInteractable
 
         CharacterController controller = killer.GetComponent<CharacterController>();
 
-        // 직접 위치 정렬 위해 컨트롤러 끔
         if (controller != null)
             controller.enabled = false;
 
@@ -529,16 +538,13 @@ public class Pallet : NetworkBehaviour, IInteractable
         Transform sidePoint = GetSidePointForActor(killer.transform);
         if (sidePoint != null)
         {
-            // 현재 서 있는 쪽 포인트로 이동
             yield return MoveActorToPoint(killer.transform, sidePoint.position, moveToPointSpeed);
 
-            // 판자 방향 바라보게
             Vector3 lookDir = GetLookDirection(sidePoint);
             if (lookDir.sqrMagnitude > 0.001f)
                 killer.transform.rotation = Quaternion.LookRotation(lookDir.normalized);
         }
 
-        // 살인마 스턴 적용
         killerInteractor.ApplyHitStun(stunTime);
 
         yield return new WaitForSeconds(stunTime);
@@ -547,10 +553,7 @@ public class Pallet : NetworkBehaviour, IInteractable
             controller.enabled = true;
     }
 
-    // 공통 함수
-
     // 사용 종료
-    // 바쁜 상태와 현재 사용자 정보 초기화
     [Server]
     private void StopUseServer()
     {
@@ -558,13 +561,13 @@ public class Pallet : NetworkBehaviour, IInteractable
         currentActorNetId = 0;
     }
 
-    // isDropped 값이 바뀌면 자동 호출됨
+    // isDropped 값이 바뀌면 외형/콜라이더 반영
     private void OnDroppedChanged(bool oldValue, bool newValue)
     {
         ApplyDroppedState(newValue);
     }
 
-    // 판자 상태에 맞게 콜라이더 on/off
+    // 세워짐/내려짐 상태에 따라 콜라이더 전환
     private void ApplyDroppedState(bool dropped)
     {
         if (standingCollider != null)
@@ -582,7 +585,7 @@ public class Pallet : NetworkBehaviour, IInteractable
             animator.SetTrigger(triggerName);
     }
 
-    // 플레이어가 판자의 왼쪽/오른쪽 어디에 있는지 판단
+    // 플레이어가 판자의 왼쪽/오른쪽 어디에 있는지 판정
     private Transform GetSidePointForActor(Transform actor)
     {
         if (actor == null)
@@ -608,7 +611,7 @@ public class Pallet : NetworkBehaviour, IInteractable
         return null;
     }
 
-    // 해당 포인트 기준으로 판자 바라보는 방향 계산
+    // 해당 쪽에서 판자를 바라보는 방향 계산
     private Vector3 GetLookDirection(Transform sidePoint)
     {
         if (sidePoint == leftPoint)
@@ -620,7 +623,7 @@ public class Pallet : NetworkBehaviour, IInteractable
         return Vector3.zero;
     }
 
-    // 서버에서 실제 위치를 부드럽게 이동
+    // 서버에서 실제 위치 이동
     [Server]
     private IEnumerator MoveActorToPoint(Transform actor, Vector3 targetPos, float speed)
     {
@@ -641,7 +644,7 @@ public class Pallet : NetworkBehaviour, IInteractable
         actor.position = targetPos;
     }
 
-    // 특정 포인트 주변에 상대가 있는지 체크
+    // 특정 포인트 주변에 상대가 있는지 검사
     private bool IsOpponentAtPoint(Transform targetPoint, string opponentTag)
     {
         if (targetPoint == null)
@@ -658,7 +661,7 @@ public class Pallet : NetworkBehaviour, IInteractable
         return false;
     }
 
-    // 너무 멀면 판자 사용 못 하게
+    // 사용 가능 거리 검사
     private bool CanUse(Transform actorTransform)
     {
         if (actorTransform == null)
@@ -677,8 +680,7 @@ public class Pallet : NetworkBehaviour, IInteractable
         return sqrDist <= useDistance * useDistance;
     }
 
-    // 생존자 쪽 상호작용 등록
-    // SurvivorInteractor가 근처 상호작용 목록에 이 판자를 넣음
+    // 생존자 로컬 상호작용 등록
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Survivor"))
@@ -691,7 +693,6 @@ public class Pallet : NetworkBehaviour, IInteractable
         if (interactor == null)
             return;
 
-        // 내 로컬 플레이어만 등록
         if (!interactor.isLocalPlayer)
             return;
 
@@ -716,7 +717,7 @@ public class Pallet : NetworkBehaviour, IInteractable
         interactor.ClearInteractable(this);
     }
 
-    // 씬에서 반경 확인용
+    // 씬에서 점유 반경 확인용
     private void OnDrawGizmosSelected()
     {
         if (leftPoint != null)

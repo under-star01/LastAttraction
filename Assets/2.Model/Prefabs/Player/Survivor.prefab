@@ -934,9 +934,9 @@ MonoBehaviour:
   playerListener: {fileID: 8661341603311887797}
   modelRoot: {fileID: 8174374209964335500}
   animator: {fileID: 7436738972924962348}
-  walkSpeed: 2.3
-  runSpeed: 4
-  crouchSpeed: 1.2
+  walkSpeed: 2
+  runSpeed: 3.6
+  crouchSpeed: 1
   crawlSpeed: 0.4
   turnSpeed: 15
   mouseSensitivity: 0.08
