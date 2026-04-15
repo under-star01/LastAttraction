@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,6 +9,7 @@ public class QTEUI : MonoBehaviour
 {
     private enum QTEKey
     {
+        None,
         W,
         A,
         S,
@@ -15,15 +17,15 @@ public class QTEUI : MonoBehaviour
     }
 
     [System.Serializable]
-    private class QTEPointSlot
+    private class QTEPoint
     {
-        public GameObject root;              // QTE Point 전체 오브젝트
-        public Image keyImage;               // W/A/S/D 아이콘 표시용
-        public RectTransform rangeTransform; // 줄어드는 Range 오브젝트
+        public GameObject pointObject;
+        public Image pointImage;
+        public RectTransform rangeTransform;
     }
 
-    [Header("QTE Point Slots")]
-    [SerializeField] private List<QTEPointSlot> pointSlots = new();
+    [Header("QTE Points")]
+    [SerializeField] private List<QTEPoint> qtePoints = new();
 
     [Header("Key Sprites")]
     [SerializeField] private Sprite wSprite;
@@ -32,167 +34,166 @@ public class QTEUI : MonoBehaviour
     [SerializeField] private Sprite dSprite;
 
     [Header("QTE Settings")]
-    [SerializeField] private int requiredSuccessCount = 4;
-    [SerializeField] private float delayBetweenQTE = 0.5f;
-    [SerializeField] private float shrinkDuration = 1.2f;
+    [SerializeField] private int successTargetCount = 4;
     [SerializeField] private float startScale = 5f;
-    [SerializeField] private float targetScale = 1f;
+    [SerializeField] private float minSuccessScale = 0.5f;
+    [SerializeField] private float maxSuccessScale = 1.5f;
+    [SerializeField] private float shrinkSpeed = 4f;
+    [SerializeField] private float nextDelay = 0.25f;
 
-    [Header("Success Window")]
-    [SerializeField] private float successMinScale = 0.9f;
-    [SerializeField] private float successMaxScale = 1.1f;
-
+    private InputSystem inputSys;
     private Coroutine qteRoutine;
+
+    private bool inputReceived;
+    private QTEKey pressedKey = QTEKey.None;
+    private QTEKey answerKey = QTEKey.None;
+
+    private QTEPoint currentPoint;
     private bool isRunning;
 
-    private void Awake()
+    private void OnEnable()
     {
+        inputSys = new InputSystem();
+        inputSys.Player.Enable();
+        inputSys.Player.Interact3.performed += OnInteract3Performed;
+
         HideAllPoints();
-        gameObject.SetActive(false);
+        ResetStepState();
+
+        qteRoutine = StartCoroutine(QTERoutine());
     }
 
-    public void StartQTE()
+    private void OnDisable()
     {
-        if (isRunning)
-            return;
+        if (inputSys != null)
+        {
+            inputSys.Player.Interact3.performed -= OnInteract3Performed;
+            inputSys.Player.Disable();
+            inputSys = null;
+        }
 
-        gameObject.SetActive(true);
-        isRunning = true;
-        qteRoutine = StartCoroutine(QTESequenceRoutine());
-    }
-
-    public void StopQTE()
-    {
         if (qteRoutine != null)
         {
             StopCoroutine(qteRoutine);
             qteRoutine = null;
         }
 
-        isRunning = false;
         HideAllPoints();
-        gameObject.SetActive(false);
+        ResetStepState();
+        isRunning = false;
     }
 
-    private IEnumerator QTESequenceRoutine()
+    // 전체 QTE 루프 코루틴
+    private IEnumerator QTERoutine()
     {
+        isRunning = true;
         int successCount = 0;
 
-        while (successCount < requiredSuccessCount)
+        while (successCount < successTargetCount)
         {
-            yield return new WaitForSeconds(delayBetweenQTE);
+            // 반환값이 IEnumerator로 고정이라서, 지역 변수 success에 값을 변경할 수 있는 임시 메소드를 매개변수로 전달
+            bool success = false;
+            yield return StartCoroutine(SingleQTERoutine(result => success = result)); // result는 매개변수, => 뒤에 내용이 메소드 내용
 
-            bool stepSuccess = false;
-            yield return StartCoroutine(RunSingleQTE(result => stepSuccess = result));
-
-            if (!stepSuccess)
+            if (!success)
             {
                 Debug.Log("[QTE] 실패");
-                StopQTE();
+                isRunning = false;
+                gameObject.SetActive(false);
                 yield break;
             }
 
             successCount++;
-            Debug.Log($"[QTE] 성공 ({successCount}/{requiredSuccessCount})");
+            Debug.Log($"[QTE] 성공 ({successCount}/{successTargetCount})");
+
+            if (successCount < successTargetCount)
+                yield return new WaitForSeconds(nextDelay);
         }
 
         Debug.Log("[QTE] 전체 성공");
-        StopQTE();
+        isRunning = false;
+        gameObject.SetActive(false);
     }
 
-    private IEnumerator RunSingleQTE(System.Action<bool> onFinished)
+    // 단독 QTE 실행 코루틴 
+    private IEnumerator SingleQTERoutine(Action<bool> onFinished)
     {
+        ResetStepState();
         HideAllPoints();
 
-        if (pointSlots.Count == 0)
+        currentPoint = GetRandomPoint();
+        if (currentPoint == null)
         {
-            Debug.LogWarning("[QTE] Point Slot이 설정되지 않았습니다.");
             onFinished?.Invoke(false);
             yield break;
         }
 
-        int randomPointIndex = Random.Range(0, pointSlots.Count);
-        QTEPointSlot selectedPoint = pointSlots[randomPointIndex];
+        answerKey = GetRandomKey();
 
-        QTEKey targetKey = (QTEKey)Random.Range(0, 4);
+        currentPoint.pointImage.sprite = GetSprite(answerKey);
+        currentPoint.rangeTransform.localScale = Vector3.one * startScale;
+        currentPoint.pointObject.SetActive(true);
 
-        selectedPoint.root.SetActive(true);
-        selectedPoint.keyImage.sprite = GetSprite(targetKey);
-        selectedPoint.rangeTransform.localScale = Vector3.one * startScale;
-
-        float elapsed = 0f;
-        bool finished = false;
-
-        while (elapsed < shrinkDuration)
+        while (!inputReceived && currentPoint.rangeTransform.localScale.x > minSuccessScale)
         {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / shrinkDuration);
-            float currentScale = Mathf.Lerp(startScale, targetScale, t);
-            selectedPoint.rangeTransform.localScale = Vector3.one * currentScale;
-
-            if (TryGetPressedQTEKey(out QTEKey pressedKey))
-            {
-                bool isCorrectKey = pressedKey == targetKey;
-                bool isInSuccessWindow = currentScale >= successMinScale && currentScale <= successMaxScale;
-
-                if (isCorrectKey && isInSuccessWindow)
-                {
-                    HideAllPoints();
-                    finished = true;
-                    onFinished?.Invoke(true);
-                    yield break;
-                }
-                else
-                {
-                    HideAllPoints();
-                    finished = true;
-                    onFinished?.Invoke(false);
-                    yield break;
-                }
-            }
-
+            float currentScale = currentPoint.rangeTransform.localScale.x;
+            float nextScale = Mathf.MoveTowards(currentScale, 0f, shrinkSpeed * Time.deltaTime);
+            currentPoint.rangeTransform.localScale = Vector3.one * nextScale;
             yield return null;
         }
 
-        if (!finished)
-        {
-            HideAllPoints();
-            onFinished?.Invoke(false);
-        }
+        bool result = CheckSuccess();
+
+        currentPoint.pointObject.SetActive(false);
+        ResetStepState();
+
+        onFinished?.Invoke(result);
     }
 
-    private bool TryGetPressedQTEKey(out QTEKey pressedKey)
+    // QTE 상호작용 Input 입력시 실행 메소드
+    private void OnInteract3Performed(InputAction.CallbackContext context)
     {
-        pressedKey = default;
+        if (!isRunning)
+            return;
 
-        if (Keyboard.current == null)
+        if (inputReceived)
+            return;
+
+        pressedKey = ConvertControlToKey(context.control);
+        if (pressedKey == QTEKey.None)
+            return;
+
+        inputReceived = true;
+    }
+
+    private bool CheckSuccess()
+    {
+        if (!inputReceived)
             return false;
 
-        if (Keyboard.current.wKey.wasPressedThisFrame)
-        {
-            pressedKey = QTEKey.W;
-            return true;
-        }
+        if (pressedKey != answerKey)
+            return false;
 
-        if (Keyboard.current.aKey.wasPressedThisFrame)
-        {
-            pressedKey = QTEKey.A;
-            return true;
-        }
+        if (currentPoint == null || currentPoint.rangeTransform == null)
+            return false;
 
-        if (Keyboard.current.sKey.wasPressedThisFrame)
-        {
-            pressedKey = QTEKey.S;
-            return true;
-        }
+        float scale = currentPoint.rangeTransform.localScale.x;
+        return scale >= minSuccessScale && scale <= maxSuccessScale;
+    }
 
-        if (Keyboard.current.dKey.wasPressedThisFrame)
-        {
-            pressedKey = QTEKey.D;
-            return true;
-        }
+    private QTEPoint GetRandomPoint()
+    {
+        if (qtePoints == null || qtePoints.Count == 0)
+            return null;
 
-        return false;
+        int index = UnityEngine.Random.Range(0, qtePoints.Count);
+        return qtePoints[index];
+    }
+
+    private QTEKey GetRandomKey()
+    {
+        int value = UnityEngine.Random.Range(1, 5);
+        return (QTEKey)value;
     }
 
     private Sprite GetSprite(QTEKey key)
@@ -203,17 +204,41 @@ public class QTEUI : MonoBehaviour
             case QTEKey.A: return aSprite;
             case QTEKey.S: return sSprite;
             case QTEKey.D: return dSprite;
+            default: return null;
         }
+    }
 
-        return null;
+    private QTEKey ConvertControlToKey(InputControl control)
+    {
+        if (control == null)
+            return QTEKey.None;
+
+        string keyName = control.name.ToLower();
+
+        switch (keyName)
+        {
+            case "w": return QTEKey.W;
+            case "a": return QTEKey.A;
+            case "s": return QTEKey.S;
+            case "d": return QTEKey.D;
+            default: return QTEKey.None;
+        }
     }
 
     private void HideAllPoints()
     {
-        for (int i = 0; i < pointSlots.Count; i++)
+        for (int i = 0; i < qtePoints.Count; i++)
         {
-            if (pointSlots[i].root != null)
-                pointSlots[i].root.SetActive(false);
+            if (qtePoints[i] != null && qtePoints[i].pointObject != null)
+                qtePoints[i].pointObject.SetActive(false);
         }
+    }
+
+    private void ResetStepState()
+    {
+        inputReceived = false;
+        pressedKey = QTEKey.None;
+        answerKey = QTEKey.None;
+        currentPoint = null;
     }
 }
