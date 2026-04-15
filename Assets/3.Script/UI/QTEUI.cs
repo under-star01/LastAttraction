@@ -166,6 +166,7 @@ public class QTEUI : MonoBehaviour
         inputReceived = true;
     }
 
+    // QTE 성공 판정 메소드
     private bool CheckSuccess()
     {
         if (!inputReceived)
@@ -181,6 +182,7 @@ public class QTEUI : MonoBehaviour
         return scale >= minSuccessScale && scale <= maxSuccessScale;
     }
 
+    // QTE Point 랜덤 설정 메소드
     private QTEPoint GetRandomPoint()
     {
         if (qtePoints == null || qtePoints.Count == 0)
@@ -190,12 +192,14 @@ public class QTEUI : MonoBehaviour
         return qtePoints[index];
     }
 
+    // 정답 Key 설정 메소드
     private QTEKey GetRandomKey()
     {
         int value = UnityEngine.Random.Range(1, 5);
         return (QTEKey)value;
     }
 
+    // WASD -> 스프라이트 반환 메소드
     private Sprite GetSprite(QTEKey key)
     {
         switch (key)
@@ -208,6 +212,7 @@ public class QTEUI : MonoBehaviour
         }
     }
 
+    // Input -> WASD 반환 메소드
     private QTEKey ConvertControlToKey(InputControl control)
     {
         if (control == null)
@@ -225,6 +230,7 @@ public class QTEUI : MonoBehaviour
         }
     }
 
+    // 전체 QTA Point 비활성화 메소드
     private void HideAllPoints()
     {
         for (int i = 0; i < qtePoints.Count; i++)
@@ -234,6 +240,7 @@ public class QTEUI : MonoBehaviour
         }
     }
 
+    // QTA 상태 초기화 메소드
     private void ResetStepState()
     {
         inputReceived = false;
