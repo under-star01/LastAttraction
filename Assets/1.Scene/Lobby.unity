@@ -1821,6 +1821,7 @@ MonoBehaviour:
   killerLobbyCamera: {fileID: 900829951}
   survivorLobbyCamera: {fileID: 1438959019}
   progressUI: {fileID: 1556038587}
+  qteUI: {fileID: 956838514467486886}
   livePriority: 20
   idlePriority: 10
 --- !u!4 &591203397
@@ -3894,6 +3895,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45a92b7dc88dc364a8ed3468926c0bbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QTEUI
+  root: {fileID: 0}
   qtePoints:
   - pointObject: {fileID: 1070812571096251959}
     pointImage: {fileID: 9021566407841550743}
@@ -3917,12 +3919,10 @@ MonoBehaviour:
   aSprite: {fileID: 21300000, guid: a58014197a2600c41afbfaec72b043f8, type: 3}
   sSprite: {fileID: 21300000, guid: 500aa897d0726154697ad7cf9ed293a4, type: 3}
   dSprite: {fileID: 21300000, guid: bfcacf796d64bd54598f8236b2d7fdc8, type: 3}
-  successTargetCount: 10
   startScale: 5
   minSuccessScale: 0.5
   maxSuccessScale: 1.7
   shrinkSpeed: 4
-  nextDelay: 0.25
 --- !u!1 &1070812571096251959
 GameObject:
   m_ObjectHideFlags: 0

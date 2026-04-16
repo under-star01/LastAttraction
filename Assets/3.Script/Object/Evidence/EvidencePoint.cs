@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
@@ -9,6 +10,10 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
     [Header("조사 설정")]
     [SerializeField] private float interactTime = 10f;   // 조사 완료까지 걸리는 시간
     [SerializeField] private ProgressUI progressUI;      // 진행도 UI
+
+    [Header("QTE 설정")]
+    [SerializeField] private int minQteCount = 2;        // 최소 QTE 횟수
+    [SerializeField] private int maxQteCount = 4;        // 최대 QTE 횟수
 
     private EvidenceZone zone;                           // 이 포인트가 속한 구역
 
@@ -27,9 +32,17 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
     [SyncVar]
     private uint currentInteractorNetId;                 // 현재 조사 중인 플레이어 netId
 
+    [SyncVar]
+    private bool isWaitingQTE;                           // 현재 QTE 결과 대기 중인지
+
+    // 서버 전용 QTE 진행 정보
+    private readonly List<float> qteTriggerProgressList = new List<float>();
+    private int currentQteIndex;
+
     // 로컬 플레이어 관련 참조
     private SurvivorInteractor localInteractor;
     private SurvivorMove localMove;
+    private QTEUI localQTEUI;
 
     // 내 로컬 플레이어가 이 증거 범위 안에 있는지
     private bool isLocalInside;
@@ -99,6 +112,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             progressUI.Hide();
         }
 
+        if (localQTEUI != null)
+            localQTEUI.ForceClose(false);
+
         // 실제 종료는 서버에 요청
         CmdEndInteract();
     }
@@ -132,6 +148,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         isInteracting = true;
         currentInteractorNetId = sender.identity.netId;
         progress = 0f;
+        isWaitingQTE = false;
+
+        SetupQTEPointsServer();
     }
 
     // 클라이언트 -> 서버 : 조사 종료 요청
@@ -149,6 +168,34 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             return;
 
         StopServerInteract();
+    }
+
+    // 클라이언트 -> 서버 : QTE 결과 전달
+    [Command(requiresAuthority = false)]
+    private void CmdSubmitQTEResult(bool success, NetworkConnectionToClient sender = null)
+    {
+        if (sender == null || sender.identity == null)
+            return;
+
+        if (!isInteracting)
+            return;
+
+        if (!isWaitingQTE)
+            return;
+
+        if (currentInteractorNetId != sender.identity.netId)
+            return;
+
+        // 실패하면 조사 즉시 중단
+        if (!success)
+        {
+            StopServerInteract();
+            return;
+        }
+
+        // 성공하면 다시 조사 진행
+        isWaitingQTE = false;
+        currentQteIndex++;
     }
 
     // 서버에서 조사 진행
@@ -179,8 +226,25 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             return;
         }
 
+        // QTE 대기 중이면 진행도 정지
+        if (isWaitingQTE)
+            return;
+
         // 진행도 증가
         progress += Time.deltaTime;
+
+        // 아직 남은 QTE가 있고, 현재 타이밍에 도달했으면 QTE 발생
+        if (currentQteIndex < qteTriggerProgressList.Count)
+        {
+            float triggerTime = qteTriggerProgressList[currentQteIndex] * interactTime;
+
+            if (progress >= triggerTime)
+            {
+                isWaitingQTE = true;
+                TargetStartQTE(identity.connectionToClient);
+                return;
+            }
+        }
 
         // 완료되면 서버 처리
         if (progress >= interactTime)
@@ -194,6 +258,10 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         isInteracting = false;
         currentInteractorNetId = 0;
         progress = 0f;
+        isWaitingQTE = false;
+
+        qteTriggerProgressList.Clear();
+        currentQteIndex = 0;
 
         RpcForceStopLocalEffects();
     }
@@ -206,6 +274,10 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         isInteracting = false;
         currentInteractorNetId = 0;
         progress = interactTime;
+        isWaitingQTE = false;
+
+        qteTriggerProgressList.Clear();
+        currentQteIndex = 0;
 
         // 진짜 증거면 구역에 알림
         if (isRealEvidence)
@@ -225,6 +297,54 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         RpcHideEvidence();
     }
 
+    // 조사 시작 시 서버가 2~4회 랜덤 QTE 발생 타이밍 생성
+    [Server]
+    private void SetupQTEPointsServer()
+    {
+        qteTriggerProgressList.Clear();
+        currentQteIndex = 0;
+
+        int count = Random.Range(minQteCount, maxQteCount + 1);
+
+        // 너무 앞 / 너무 뒤는 피하고 전체 구간에 퍼지게 생성
+        float startNormalized = 0.15f;
+        float endNormalized = 0.85f;
+        float totalRange = endNormalized - startNormalized;
+        float sectionSize = totalRange / count;
+
+        for (int i = 0; i < count; i++)
+        {
+            float sectionStart = startNormalized + sectionSize * i;
+            float sectionEnd = sectionStart + sectionSize * 0.8f;
+
+            float point = Random.Range(sectionStart, sectionEnd);
+            qteTriggerProgressList.Add(point);
+        }
+    }
+
+    // 조사 중인 플레이어 클라이언트에만 QTE 시작
+    [TargetRpc]
+    private void TargetStartQTE(NetworkConnection target)
+    {
+        if (localQTEUI == null && localInteractor != null)
+            localQTEUI = localInteractor.QTEUI;
+
+        if (localQTEUI == null)
+        {
+            // 로컬 UI를 못 찾았으면 실패 처리
+            CmdSubmitQTEResult(false);
+            return;
+        }
+
+        localQTEUI.StartQTE(OnLocalQTEFinished);
+    }
+
+    // 로컬에서 QTE 끝났을 때 서버로 결과 전달
+    private void OnLocalQTEFinished(bool success)
+    {
+        CmdSubmitQTEResult(success);
+    }
+
     // 모든 클라이언트에서 로컬 연출 종료
     [ClientRpc]
     private void RpcForceStopLocalEffects()
@@ -240,6 +360,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             progressUI.SetProgress(0f);
             progressUI.Hide();
         }
+
+        if (localQTEUI != null)
+            localQTEUI.ForceClose(false);
 
         if (localInteractor != null)
             localInteractor.ClearInteractable(this);
@@ -275,6 +398,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             progressUI.SetProgress(0f);
             progressUI.Hide();
         }
+
+        if (localQTEUI != null)
+            localQTEUI.ForceClose(false);
 
         // 마지막에 오브젝트 자체 비활성화
         gameObject.SetActive(false);
@@ -414,6 +540,8 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             localMove = interactor.GetComponentInParent<SurvivorMove>();
 
         progressUI = interactor.ProgressUI;
+        localQTEUI = interactor.QTEUI;
+
         isLocalInside = true;
 
         RefreshLocalAvailability();
@@ -449,10 +577,14 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
                 progressUI.Hide();
             }
 
+            if (localQTEUI != null)
+                localQTEUI.ForceClose(false);
+
             CmdEndInteract();
 
             localInteractor = null;
             localMove = null;
+            localQTEUI = null;
         }
     }
 }

@@ -24,6 +24,9 @@ public class QTEUI : MonoBehaviour
         public RectTransform rangeTransform;
     }
 
+    [Header("UI Root")]
+    [SerializeField] private GameObject root;
+
     [Header("QTE Points")]
     [SerializeField] private List<QTEPoint> qtePoints = new();
 
@@ -34,12 +37,10 @@ public class QTEUI : MonoBehaviour
     [SerializeField] private Sprite dSprite;
 
     [Header("QTE Settings")]
-    [SerializeField] private int successTargetCount = 4;
     [SerializeField] private float startScale = 5f;
     [SerializeField] private float minSuccessScale = 0.5f;
     [SerializeField] private float maxSuccessScale = 1.5f;
     [SerializeField] private float shrinkSpeed = 4f;
-    [SerializeField] private float nextDelay = 0.25f;
 
     private InputSystem inputSys;
     private Coroutine qteRoutine;
@@ -51,106 +52,104 @@ public class QTEUI : MonoBehaviour
     private QTEPoint currentPoint;
     private bool isRunning;
 
-    private void OnEnable()
-    {
-        inputSys = new InputSystem();
-        inputSys.Player.Enable();
-        inputSys.Player.Interact3.performed += OnInteract3Performed;
+    private Action<bool> finishCallback;
 
+    public bool IsRunning => isRunning;
+
+    private void Awake()
+    {
+        HideUI();
+        HideAllPoints();
+        ResetStepState();
+    }
+
+    // 외부에서 QTE 시작
+    public void StartQTE(Action<bool> onFinished)
+    {
+        ForceClose(false);
+
+        finishCallback = onFinished;
+        EnableInput();
+
+        ShowUI();
         HideAllPoints();
         ResetStepState();
 
-        qteRoutine = StartCoroutine(QTERoutine());
+        qteRoutine = StartCoroutine(SingleQTERoutine());
     }
 
-    private void OnDisable()
+    // 외부에서 강제 종료
+    // notifyResult = true 면 실패 처리까지 같이 전달
+    public void ForceClose(bool notifyResult)
     {
-        if (inputSys != null)
-        {
-            inputSys.Player.Interact3.performed -= OnInteract3Performed;
-            inputSys.Player.Disable();
-            inputSys = null;
-        }
-
         if (qteRoutine != null)
         {
             StopCoroutine(qteRoutine);
             qteRoutine = null;
         }
 
-        HideAllPoints();
-        ResetStepState();
+        bool wasRunning = isRunning;
+
         isRunning = false;
+        DisableInput();
+
+        HideAllPoints();
+        HideUI();
+        ResetStepState();
+
+        if (notifyResult && wasRunning)
+            Finish(false);
     }
 
-    // 전체 QTE 루프 코루틴
-    private IEnumerator QTERoutine()
+    // 단일 QTE 1회 실행
+    private IEnumerator SingleQTERoutine()
     {
         isRunning = true;
-        int successCount = 0;
-
-        while (successCount < successTargetCount)
-        {
-            // 반환값이 IEnumerator로 고정이라서, 지역 변수 success에 값을 변경할 수 있는 임시 메소드를 매개변수로 전달
-            bool success = false;
-            yield return StartCoroutine(SingleQTERoutine(result => success = result)); // result는 매개변수, => 뒤에 내용이 메소드 내용
-
-            if (!success)
-            {
-                Debug.Log("[QTE] 실패");
-                isRunning = false;
-                gameObject.SetActive(false);
-                yield break;
-            }
-
-            successCount++;
-            Debug.Log($"[QTE] 성공 ({successCount}/{successTargetCount})");
-
-            if (successCount < successTargetCount)
-                yield return new WaitForSeconds(nextDelay);
-        }
-
-        Debug.Log("[QTE] 전체 성공");
-        isRunning = false;
-        gameObject.SetActive(false);
-    }
-
-    // 단독 QTE 실행 코루틴 
-    private IEnumerator SingleQTERoutine(Action<bool> onFinished)
-    {
-        ResetStepState();
-        HideAllPoints();
 
         currentPoint = GetRandomPoint();
         if (currentPoint == null)
         {
-            onFinished?.Invoke(false);
+            Finish(false);
             yield break;
         }
 
         answerKey = GetRandomKey();
 
-        currentPoint.pointImage.sprite = GetSprite(answerKey);
-        currentPoint.rangeTransform.localScale = Vector3.one * startScale;
-        currentPoint.pointObject.SetActive(true);
+        if (currentPoint.pointImage != null)
+            currentPoint.pointImage.sprite = GetSprite(answerKey);
 
-        while (!inputReceived && currentPoint.rangeTransform.localScale.x > minSuccessScale)
+        if (currentPoint.rangeTransform != null)
+            currentPoint.rangeTransform.localScale = Vector3.one * startScale;
+
+        if (currentPoint.pointObject != null)
+            currentPoint.pointObject.SetActive(true);
+
+        while (!inputReceived)
         {
+            if (currentPoint == null || currentPoint.rangeTransform == null)
+            {
+                Finish(false);
+                yield break;
+            }
+
             float currentScale = currentPoint.rangeTransform.localScale.x;
             float nextScale = Mathf.MoveTowards(currentScale, 0f, shrinkSpeed * Time.deltaTime);
             currentPoint.rangeTransform.localScale = Vector3.one * nextScale;
+
+            // 너무 늦게 눌렀으면 실패
+            if (nextScale < minSuccessScale)
+            {
+                Finish(false);
+                yield break;
+            }
+
             yield return null;
         }
 
         bool result = CheckSuccess();
-
-        currentPoint.pointObject.SetActive(false);
-        ResetStepState();
-
-        onFinished?.Invoke(result);
+        Finish(result);
     }
 
-    // QTE 상호작용 Input 입력시 실행 메소드
     private void OnInteract3Performed(InputAction.CallbackContext context)
     {
         if (!isRunning)
@@ -166,7 +165,6 @@ public class QTEUI : MonoBehaviour
         inputReceived = true;
     }
 
-    // QTE 성공 판정 메소드
     private bool CheckSuccess()
     {
         if (!inputReceived)
@@ -182,7 +180,62 @@ public class QTEUI : MonoBehaviour
         return scale >= minSuccessScale && scale <= maxSuccessScale;
     }
 
-    // QTE Point 랜덤 설정 메소드
+    private void Finish(bool success)
+    {
+        if (qteRoutine != null)
+        {
+            StopCoroutine(qteRoutine);
+            qteRoutine = null;
+        }
+
+        isRunning = false;
+        DisableInput();
+
+        HideAllPoints();
+        HideUI();
+
+        Action<bool> callback = finishCallback;
+        finishCallback = null;
+
+        ResetStepState();
+
+        callback?.Invoke(success);
+    }
+
+    private void EnableInput()
+    {
+        if (inputSys != null)
+            return;
+
+        inputSys = new InputSystem();
+        inputSys.Player.Enable();
+        inputSys.Player.Interact3.performed += OnInteract3Performed;
+    }
+
+    private void DisableInput()
+    {
+        if (inputSys == null)
+            return;
+
+        inputSys.Player.Interact3.performed -= OnInteract3Performed;
+        inputSys.Player.Disable();
+        inputSys = null;
+    }
+
+    private void ShowUI()
+    {
+        if (root != null)
+            root.SetActive(true);
+        else
+            gameObject.SetActive(true);
+    }
+
+    private void HideUI()
+    {
+        if (root != null)
+            root.SetActive(false);
+    }
+
     private QTEPoint GetRandomPoint()
     {
         if (qtePoints == null || qtePoints.Count == 0)
@@ -192,14 +245,12 @@ public class QTEUI : MonoBehaviour
         return qtePoints[index];
     }
 
-    // 정답 Key 설정 메소드
     private QTEKey GetRandomKey()
     {
         int value = UnityEngine.Random.Range(1, 5);
         return (QTEKey)value;
     }
 
-    // WASD -> 스프라이트 반환 메소드
     private Sprite GetSprite(QTEKey key)
     {
         switch (key)
@@ -212,7 +263,6 @@ public class QTEUI : MonoBehaviour
         }
     }
 
-    // Input -> WASD 반환 메소드
     private QTEKey ConvertControlToKey(InputControl control)
     {
         if (control == null)
@@ -230,7 +280,6 @@ public class QTEUI : MonoBehaviour
         }
     }
 
-    // 전체 QTA Point 비활성화 메소드
     private void HideAllPoints()
     {
         for (int i = 0; i < qtePoints.Count; i++)
@@ -240,7 +289,6 @@ public class QTEUI : MonoBehaviour
         }
     }
 
-    // QTA 상태 초기화 메소드
     private void ResetStepState()
     {
         inputReceived = false;

@@ -7,6 +7,7 @@ public class SurvivorInteractor : NetworkBehaviour
 {
     [Header("UI")]
     [SerializeField] private ProgressUI progressUI;
+    [SerializeField] private QTEUI qteUI;
 
     private SurvivorInput input;
     private SurvivorState state;
@@ -29,6 +30,7 @@ public class SurvivorInteractor : NetworkBehaviour
 
     public bool IsInteracting => isInteracting;
 
+    // 로컬 플레이어용 ProgressUI
     public ProgressUI ProgressUI
     {
         get
@@ -37,6 +39,18 @@ public class SurvivorInteractor : NetworkBehaviour
                 BindUI();
 
             return progressUI;
+        }
+    }
+
+    // 로컬 플레이어용 QTEUI
+    public QTEUI QTEUI
+    {
+        get
+        {
+            if (qteUI == null)
+                BindUI();
+
+            return qteUI;
         }
     }
 
@@ -69,6 +83,9 @@ public class SurvivorInteractor : NetworkBehaviour
         base.OnStartLocalPlayer();
         BindUI();
         ForceHideProgress();
+
+        if (qteUI != null)
+            qteUI.ForceClose(false);
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -78,15 +95,15 @@ public class SurvivorInteractor : NetworkBehaviour
 
         BindUI();
         ForceHideProgress();
+
+        if (qteUI != null)
+            qteUI.ForceClose(false);
     }
 
     private void Update()
     {
         if (!isLocalPlayer)
             return;
-
-        if (progressUI == null)
-            BindUI();
 
         // 다운 / 행동 제한 / 사망이면 강제 종료
         if (state != null)
@@ -111,10 +128,16 @@ public class SurvivorInteractor : NetworkBehaviour
     private void BindUI()
     {
         if (LobbySceneBinder.Instance != null)
+        {
             progressUI = LobbySceneBinder.Instance.GetProgressUI();
+            qteUI = LobbySceneBinder.Instance.GetQTEUI();
+        }
 
         if (progressUI == null)
             progressUI = FindFirstObjectByType<ProgressUI>(FindObjectsInactive.Include);
+
+        if (qteUI == null)
+            qteUI = FindFirstObjectByType<QTEUI>(FindObjectsInactive.Include);
     }
 
     public void ShowProgress(object owner, float value)
@@ -242,7 +265,7 @@ public class SurvivorInteractor : NetworkBehaviour
             return 200;
 
         if (interactable is Pallet)
-            return 110;
+            return 100;
 
         if (interactable is Window)
             return 100;
@@ -419,6 +442,9 @@ public class SurvivorInteractor : NetworkBehaviour
         currentInteractable = null;
         nearbyInteractables.Clear();
         ForceHideProgress();
+
+        if (qteUI != null)
+            qteUI.ForceClose(false);
     }
 
     // 행동 상태에 Hold 상호작용 여부 저장
@@ -450,6 +476,9 @@ public class SurvivorInteractor : NetworkBehaviour
         activeInteractable = null;
         currentInteractable = null;
         ForceHideProgress();
+
+        if (qteUI != null)
+            qteUI.ForceClose(false);
     }
 
     [Command]
