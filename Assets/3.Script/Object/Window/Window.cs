@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class Window : NetworkBehaviour, IInteractable
 {
-    // 창틀은 버튼 1번 눌러서 실행하는 Press 타입
     public InteractType InteractType => InteractType.Press;
 
     [Header("참조")]
@@ -18,17 +17,10 @@ public class Window : NetworkBehaviour, IInteractable
     [SerializeField] private float killerVaultSpeed = 2.5f;
     [SerializeField] private float occupationRadius = 1.0f;
 
-    // 버튼을 눌러 선점한 순간부터 true
-    // 포인트로 이동 중이든 실제 넘는 중이든 다른 사람이 못 쓰게 막음
     [SyncVar] private bool isBusy;
-
-    // 실제 넘는 연출 중인지
     [SyncVar] private bool isVaulting;
-
-    // 현재 사용 중인 플레이어
     [SyncVar] private uint currentActorNetId;
 
-    // 상호작용 시작
     public void BeginInteract(GameObject actor)
     {
         if (actor == null)
@@ -41,14 +33,13 @@ public class Window : NetworkBehaviour, IInteractable
         if (actorIdentity == null)
             return;
 
-        // 이미 누가 선점했거나 넘는 중이면 불가
         if (isBusy || isVaulting)
             return;
 
         if (isServer)
-            TryBeginVaultServer(actorIdentity);
+            TryBegin(actorIdentity);
         else
-            CmdBeginVault(actorIdentity.netId);
+            CmdBegin(actorIdentity.netId);
     }
 
     public void EndInteract()
@@ -57,21 +48,21 @@ public class Window : NetworkBehaviour, IInteractable
     }
 
     [Command(requiresAuthority = false)]
-    private void CmdBeginVault(uint actorNetId)
+    private void CmdBegin(uint actorNetId)
     {
         if (!NetworkServer.spawned.TryGetValue(actorNetId, out NetworkIdentity actorIdentity))
             return;
 
-        TryBeginVaultServer(actorIdentity);
+        TryBegin(actorIdentity);
     }
 
+    // 서버에서 실제 사용 가능 여부 확인 후 시작
     [Server]
-    private void TryBeginVaultServer(NetworkIdentity actorIdentity)
+    private void TryBegin(NetworkIdentity actorIdentity)
     {
         if (actorIdentity == null)
             return;
 
-        // 이미 누가 선점했거나 넘는 중이면 불가
         if (isBusy || isVaulting)
             return;
 
@@ -85,67 +76,71 @@ public class Window : NetworkBehaviour, IInteractable
         if (!isSurvivor && !isKiller)
             return;
 
-        Transform sidePoint = GetSidePointForActor(actor.transform);
+        Transform sidePoint = GetSide(actor.transform);
         if (sidePoint == null)
             return;
 
-        // 같은 쪽 포인트 주변에 상대가 있으면 시작 막기
         string opponentTag = isSurvivor ? "Killer" : "Survivor";
         if (IsOpponentAtPoint(sidePoint, opponentTag))
             return;
 
-        // 범위 밖이면 불가
         if (!CanUse(actor.transform))
             return;
 
-        // 여기서 바로 선점
         isBusy = true;
         currentActorNetId = actorIdentity.netId;
 
         if (isSurvivor)
-            StartCoroutine(SurvivorVaultRoutine(actorIdentity));
+            StartCoroutine(SurvivorVault(actorIdentity));
         else
-            StartCoroutine(KillerVaultRoutine(actorIdentity));
+            StartCoroutine(KillerVault(actorIdentity));
     }
 
+    // 생존자 창틀 넘기
     [Server]
-    private IEnumerator SurvivorVaultRoutine(NetworkIdentity actorIdentity)
+    private IEnumerator SurvivorVault(NetworkIdentity actorIdentity)
     {
         if (actorIdentity == null)
         {
-            StopVaultServer();
+            StopVault();
             yield break;
         }
 
         GameObject actor = actorIdentity.gameObject;
         if (actor == null)
         {
-            StopVaultServer();
+            StopVault();
             yield break;
         }
 
         SurvivorMove move = actor.GetComponent<SurvivorMove>();
+        SurvivorActionState act = actor.GetComponent<SurvivorActionState>();
         CharacterController controller = actor.GetComponent<CharacterController>();
 
-        Transform sidePoint = GetSidePointForActor(actor.transform);
-        Transform oppositePoint = GetOppositePoint(sidePoint);
+        Transform sidePoint = GetSide(actor.transform);
+        Transform oppositePoint = GetOpposite(sidePoint);
 
         if (sidePoint == null || oppositePoint == null)
         {
-            StopVaultServer();
+            StopVault();
             yield break;
         }
 
+        // 넘기 시작 전에 움직임 잠금, 방향 정렬, 스킬 해제
         if (move != null)
         {
             move.SetMoveLock(true);
 
-            Vector3 lookDir = GetLookDirection(sidePoint);
+            Vector3 lookDir = GetLook(sidePoint);
             if (lookDir.sqrMagnitude > 0.001f)
                 move.FaceDirection(lookDir.normalized);
 
             move.StopAnimation();
+            move.SetCamAnim(false);
         }
+
+        if (act != null)
+            act.SetCam(false);
 
         if (controller != null)
             controller.enabled = false;
@@ -155,11 +150,17 @@ public class Window : NetworkBehaviour, IInteractable
         Vector3 startPos = sidePoint.position + upPoint;
         Vector3 endPos = oppositePoint.position + upPoint;
 
-        // 포인트로 이동하는 구간도 이미 isBusy=true 상태
-        yield return MoveActorToPoint(actor.transform, startPos, moveToPointSpeed);
+        // 먼저 자기 쪽 시작점으로 이동
+        yield return MoveTo(actor.transform, startPos, moveToPointSpeed);
 
-        // 실제 넘기 시작
+        // 실제 넘기 상태 시작
         isVaulting = true;
+
+        if (act != null)
+        {
+            act.SetCam(false);
+            act.SetAct(SurvivorAction.Vault);
+        }
 
         if (move != null)
         {
@@ -171,7 +172,8 @@ public class Window : NetworkBehaviour, IInteractable
                 move.PlayAnimation("RightVault");
         }
 
-        yield return MoveActorToPoint(actor.transform, endPos, survivorVaultSpeed);
+        // 반대편으로 이동
+        yield return MoveTo(actor.transform, endPos, survivorVaultSpeed);
 
         if (controller != null)
             controller.enabled = true;
@@ -182,22 +184,26 @@ public class Window : NetworkBehaviour, IInteractable
             move.SetMoveLock(false);
         }
 
-        StopVaultServer();
+        if (act != null)
+            act.ClearAct(SurvivorAction.Vault);
+
+        StopVault();
     }
 
+    // 킬러 창틀 넘기
     [Server]
-    private IEnumerator KillerVaultRoutine(NetworkIdentity actorIdentity)
+    private IEnumerator KillerVault(NetworkIdentity actorIdentity)
     {
         if (actorIdentity == null)
         {
-            StopVaultServer();
+            StopVault();
             yield break;
         }
 
         GameObject actor = actorIdentity.gameObject;
         if (actor == null)
         {
-            StopVaultServer();
+            StopVault();
             yield break;
         }
 
@@ -205,12 +211,12 @@ public class Window : NetworkBehaviour, IInteractable
         CharacterController controller = actor.GetComponent<CharacterController>();
         Animator animator = actor.GetComponentInChildren<Animator>();
 
-        Transform sidePoint = GetSidePointForActor(actor.transform);
-        Transform oppositePoint = GetOppositePoint(sidePoint);
+        Transform sidePoint = GetSide(actor.transform);
+        Transform oppositePoint = GetOpposite(sidePoint);
 
         if (sidePoint == null || oppositePoint == null)
         {
-            StopVaultServer();
+            StopVault();
             yield break;
         }
 
@@ -222,19 +228,18 @@ public class Window : NetworkBehaviour, IInteractable
 
         yield return null;
 
-        // 포인트로 이동하는 구간도 이미 isBusy=true 상태
-        yield return MoveActorToPoint(actor.transform, sidePoint.position, moveToPointSpeed);
+        yield return MoveTo(actor.transform, sidePoint.position, moveToPointSpeed);
 
         isVaulting = true;
 
-        Vector3 lookDir = GetLookDirection(sidePoint);
+        Vector3 lookDir = GetLook(sidePoint);
         if (lookDir.sqrMagnitude > 0.001f)
             actor.transform.rotation = Quaternion.LookRotation(lookDir.normalized);
 
         if (animator != null)
             animator.SetTrigger("Vault");
 
-        yield return MoveActorToPoint(actor.transform, oppositePoint.position, killerVaultSpeed);
+        yield return MoveTo(actor.transform, oppositePoint.position, killerVaultSpeed);
 
         if (controller != null)
             controller.enabled = true;
@@ -242,18 +247,18 @@ public class Window : NetworkBehaviour, IInteractable
         if (killerState != null)
             killerState.ChangeState(KillerCondition.Idle);
 
-        StopVaultServer();
+        StopVault();
     }
 
     [Server]
-    private void StopVaultServer()
+    private void StopVault()
     {
         isBusy = false;
         isVaulting = false;
         currentActorNetId = 0;
     }
 
-    private Transform GetSidePointForActor(Transform actor)
+    private Transform GetSide(Transform actor)
     {
         if (actor == null)
             return null;
@@ -266,7 +271,7 @@ public class Window : NetworkBehaviour, IInteractable
             return rightPoint;
     }
 
-    private Transform GetOppositePoint(Transform sidePoint)
+    private Transform GetOpposite(Transform sidePoint)
     {
         if (sidePoint == leftPoint)
             return rightPoint;
@@ -277,7 +282,7 @@ public class Window : NetworkBehaviour, IInteractable
         return null;
     }
 
-    private Vector3 GetLookDirection(Transform sidePoint)
+    private Vector3 GetLook(Transform sidePoint)
     {
         if (sidePoint == leftPoint)
             return transform.right;
@@ -289,7 +294,7 @@ public class Window : NetworkBehaviour, IInteractable
     }
 
     [Server]
-    private IEnumerator MoveActorToPoint(Transform actor, Vector3 targetPos, float speed)
+    private IEnumerator MoveTo(Transform actor, Vector3 targetPos, float speed)
     {
         if (actor == null)
             yield break;

@@ -850,6 +850,7 @@ GameObject:
   - component: {fileID: 2069850198979918394}
   - component: {fileID: 9042901668219853417}
   - component: {fileID: 5606561105763548437}
+  - component: {fileID: 4145043514256990560}
   m_Layer: 6
   m_Name: Survivor
   m_TagString: Survivor
@@ -964,6 +965,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   progressUI: {fileID: 0}
+  qteUI: {fileID: 0}
 --- !u!114 &2491799505081291953
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1107,6 +1109,26 @@ MonoBehaviour:
   syncInterval: 0
   move: {fileID: 0}
   interactor: {fileID: 0}
+  animator: {fileID: 0}
+--- !u!114 &4145043514256990560
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a543f095c8188f40b126a79473bdfa7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivorCameraSkill
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  input: {fileID: 0}
+  move: {fileID: 0}
+  state: {fileID: 0}
+  actionState: {fileID: 0}
   animator: {fileID: 0}
 --- !u!1 &4079158676388771637
 GameObject:

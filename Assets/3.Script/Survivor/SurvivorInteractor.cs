@@ -12,6 +12,7 @@ public class SurvivorInteractor : NetworkBehaviour
     private SurvivorInput input;
     private SurvivorState state;
     private SurvivorActionState actionState;
+    private SurvivorMove move;
 
     // 현재 선택된 상호작용 대상
     private IInteractable currentInteractable;
@@ -30,7 +31,6 @@ public class SurvivorInteractor : NetworkBehaviour
 
     public bool IsInteracting => isInteracting;
 
-    // 로컬 플레이어용 ProgressUI
     public ProgressUI ProgressUI
     {
         get
@@ -42,7 +42,6 @@ public class SurvivorInteractor : NetworkBehaviour
         }
     }
 
-    // 로컬 플레이어용 QTEUI
     public QTEUI QTEUI
     {
         get
@@ -64,6 +63,7 @@ public class SurvivorInteractor : NetworkBehaviour
         input = GetComponent<SurvivorInput>();
         state = GetComponent<SurvivorState>();
         actionState = GetComponent<SurvivorActionState>();
+        move = GetComponent<SurvivorMove>();
     }
 
     public override void OnStartClient()
@@ -105,7 +105,6 @@ public class SurvivorInteractor : NetworkBehaviour
         if (!isLocalPlayer)
             return;
 
-        // 다운 / 행동 제한 / 사망이면 강제 종료
         if (state != null)
         {
             bool isBusy = actionState != null && actionState.IsBusy;
@@ -117,7 +116,6 @@ public class SurvivorInteractor : NetworkBehaviour
             }
         }
 
-        // 상호작용 중이 아닐 때만 앉기 상태로 시작 막기
         if (!isInteracting && input != null && input.IsCrouching)
             return;
 
@@ -191,7 +189,6 @@ public class SurvivorInteractor : NetworkBehaviour
     // 범위 안 목록에서 가장 우선순위 높은 대상 선택
     private void RefreshCurrentInteractable()
     {
-        // Hold 상호작용 중이면 대상 유지
         if (isInteracting && activeInteractable != null)
         {
             currentInteractable = activeInteractable;
@@ -333,6 +330,10 @@ public class SurvivorInteractor : NetworkBehaviour
                 if (currentInteractable == null)
                     return;
 
+                // Hold 상호작용 시작 시 촬영 애니메이션 정리
+                if (move != null)
+                    move.SetCamAnim(false);
+
                 isInteracting = true;
                 activeInteractable = currentInteractable;
 
@@ -455,7 +456,10 @@ public class SurvivorInteractor : NetworkBehaviour
 
         if (isServer)
         {
-            actionState.SetDoingInteractionServer(value);
+            actionState.SetInteract(value);
+
+            if (value)
+                actionState.SetCam(false);
         }
         else if (isLocalPlayer)
         {
@@ -487,6 +491,9 @@ public class SurvivorInteractor : NetworkBehaviour
         if (actionState == null)
             return;
 
-        actionState.SetDoingInteractionServer(value);
+        actionState.SetInteract(value);
+
+        if (value)
+            actionState.SetCam(false);
     }
 }

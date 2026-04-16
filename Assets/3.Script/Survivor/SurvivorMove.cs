@@ -33,29 +33,27 @@ public class SurvivorMove : NetworkBehaviour
     private SurvivorInput input;
     private SurvivorInteractor interactor;
     private SurvivorState state;
-    private SurvivorActionState actionState;
+    private SurvivorActionState act;
     private SurvivorMoveState moveState;
+    private SurvivorCameraSkill camSkill;
 
     private float localYaw;
     private float localPitch;
     private float yVelocity;
 
-    // 외부 상호작용이나 연출에서 이동을 잠글 때 사용
     private bool isMoveLocked;
 
-    // 로컬 입력을 서버에 보내서 서버가 실제 이동 처리
     private Vector2 serverMoveInput;
     private bool serverWantsRun;
     private bool serverWantsCrouch;
     private float serverYaw;
     private float serverPitch;
 
-    // 원격 플레이어 시점/모델 회전 동기화용
     [SyncVar] private float syncedYaw;
     [SyncVar] private float syncedPitch;
     [SyncVar] private float syncedModelYaw;
 
-    // 이동 잠금 on/off
+    // 외부 스크립트가 이동을 잠글 때 사용
     public void SetMoveLock(bool value)
     {
         isMoveLocked = value;
@@ -70,7 +68,8 @@ public class SurvivorMove : NetworkBehaviour
         isMoveLocked = value;
     }
 
-    // 특정 방향을 바라보게 할 때 사용
+    // 외부에서 특정 방향을 바라보게 할 때 사용
+    // 예: 상호작용 시작 전에 오브젝트 쪽 정렬
     public void FaceDirection(Vector3 dir)
     {
         dir.y = 0f;
@@ -80,35 +79,35 @@ public class SurvivorMove : NetworkBehaviour
 
         if (isServer)
         {
-            ApplyFaceDirection(dir.normalized);
-            RpcFaceDirection(dir.normalized);
+            ApplyFace(dir.normalized);
+            RpcFace(dir.normalized);
         }
         else if (isLocalPlayer)
         {
-            CmdFaceDirection(dir.normalized);
+            CmdFace(dir.normalized);
         }
     }
 
     [Command]
-    private void CmdFaceDirection(Vector3 dir)
+    private void CmdFace(Vector3 dir)
     {
         if (dir.sqrMagnitude <= 0.001f)
             return;
 
-        ApplyFaceDirection(dir.normalized);
-        RpcFaceDirection(dir.normalized);
+        ApplyFace(dir.normalized);
+        RpcFace(dir.normalized);
     }
 
     [ClientRpc]
-    private void RpcFaceDirection(Vector3 dir)
+    private void RpcFace(Vector3 dir)
     {
         if (isServer)
             return;
 
-        ApplyFaceDirection(dir.normalized);
+        ApplyFace(dir.normalized);
     }
 
-    private void ApplyFaceDirection(Vector3 dir)
+    private void ApplyFace(Vector3 dir)
     {
         if (modelRoot == null)
             return;
@@ -123,8 +122,9 @@ public class SurvivorMove : NetworkBehaviour
         input = GetComponent<SurvivorInput>();
         interactor = GetComponent<SurvivorInteractor>();
         state = GetComponent<SurvivorState>();
-        actionState = GetComponent<SurvivorActionState>();
+        act = GetComponent<SurvivorActionState>();
         moveState = GetComponent<SurvivorMoveState>();
+        camSkill = GetComponent<SurvivorCameraSkill>();
 
         if (animator == null && modelRoot != null)
             animator = modelRoot.GetComponentInChildren<Animator>();
@@ -132,8 +132,6 @@ public class SurvivorMove : NetworkBehaviour
         if (animator != null)
             animator.applyRootMotion = false;
 
-        // 시작 시 카메라와 오디오는 모두 꺼두고
-        // 로컬 플레이어만 켠다
         if (playerCamera != null)
             playerCamera.enabled = false;
 
@@ -173,15 +171,15 @@ public class SurvivorMove : NetworkBehaviour
     {
         if (isLocalPlayer)
         {
-            UpdateLocalLook();
-            SendInputToServer();
-            ApplyLocalCamera();
-            ApplyModelRotation();
+            UpdateLook();
+            SendInput();
+            ApplyCam();
+            ApplyModel();
         }
         else
         {
             ApplyRemoteLook();
-            ApplyModelRotation();
+            ApplyModel();
         }
     }
 
@@ -190,11 +188,11 @@ public class SurvivorMove : NetworkBehaviour
         if (!isServer)
             return;
 
-        ServerTickMovement();
+        MoveTick();
     }
 
-    // 로컬 마우스 입력으로 시야 회전 계산
-    private void UpdateLocalLook()
+    // 로컬 카메라 회전 입력 처리
+    private void UpdateLook()
     {
         if (input == null)
             return;
@@ -206,8 +204,8 @@ public class SurvivorMove : NetworkBehaviour
         localPitch = Mathf.Clamp(localPitch, minPitch, maxPitch);
     }
 
-    // 내 카메라에 로컬 시야 적용
-    private void ApplyLocalCamera()
+    // 로컬 카메라 루트에 회전 반영
+    private void ApplyCam()
     {
         if (cameraYawRoot != null)
             cameraYawRoot.localRotation = Quaternion.Euler(0f, localYaw, 0f);
@@ -216,7 +214,7 @@ public class SurvivorMove : NetworkBehaviour
             cameraPitchRoot.localRotation = Quaternion.Euler(localPitch, 0f, 0f);
     }
 
-    // 다른 클라이언트 플레이어 시야 반영
+    // 원격 플레이어 카메라 회전 반영
     private void ApplyRemoteLook()
     {
         if (cameraYawRoot != null)
@@ -226,8 +224,8 @@ public class SurvivorMove : NetworkBehaviour
             cameraPitchRoot.localRotation = Quaternion.Euler(syncedPitch, 0f, 0f);
     }
 
-    // 모델이 바라보는 방향 반영
-    private void ApplyModelRotation()
+    // 동기화된 모델 y 회전값 적용
+    private void ApplyModel()
     {
         if (modelRoot == null)
             return;
@@ -237,8 +235,8 @@ public class SurvivorMove : NetworkBehaviour
         modelRoot.eulerAngles = euler;
     }
 
-    // 로컬 입력을 서버로 전달
-    private void SendInputToServer()
+    // 현재 입력을 서버로 전달
+    private void SendInput()
     {
         if (input == null)
             return;
@@ -265,22 +263,21 @@ public class SurvivorMove : NetworkBehaviour
         syncedPitch = pitch;
     }
 
-    // 서버에서 실제 이동 상태를 판단하고 이동 처리
+    // 서버에서 실제 이동 처리
     [Server]
-    private void ServerTickMovement()
+    private void MoveTick()
     {
         if (controller == null || !controller.enabled)
             return;
 
         bool isDowned = state != null && state.IsDowned;
         bool isDead = state != null && state.IsDead;
-        bool isBusy = actionState != null && actionState.IsBusy;
+        bool isBusy = act != null && act.IsBusy;
 
-        // 이동 잠김 / 행동 제한 / 사망 상태면 실제 이동은 막고
-        // 중력만 적용
+        // 움직일 수 없으면 중력만 적용
         if (isMoveLocked || isBusy || isDead)
         {
-            ApplyGravityOnlyServer();
+            GravityOnly();
 
             if (moveState != null)
                 moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
@@ -288,32 +285,32 @@ public class SurvivorMove : NetworkBehaviour
             return;
         }
 
-        // 다운 상태면 기어가기 전용 이동 사용
+        // 다운 상태는 crawl 이동
         if (isDowned)
         {
-            CrawlMoveServer(serverMoveInput, serverYaw);
+            Crawl(serverMoveInput, serverYaw);
             return;
         }
 
-        // Hold 상호작용 중일 때는 새로 앉기 시작 못 하게 막음
+        // Hold 상호작용 중에는 새로 앉기 시작 금지
         bool canCrouch = interactor == null || !interactor.IsInteracting;
         bool isCrouching = canCrouch && serverWantsCrouch;
 
         if (isCrouching)
-            SetSizeServer(crouchHeight, crouchCenter);
+            SetSize(crouchHeight, crouchCenter);
         else
-            SetSizeServer(standHeight, standCenter);
+            SetSize(standHeight, standCenter);
 
-        MoveServer(serverMoveInput, serverWantsRun, isCrouching, serverYaw);
+        MoveNormal(serverMoveInput, serverWantsRun, isCrouching, serverYaw);
     }
 
     // 일반 이동 처리
     [Server]
-    private void MoveServer(Vector2 moveInput, bool wantsRun, bool isCrouching, float yaw)
+    private void MoveNormal(Vector2 moveInput, bool wantsRun, bool isCrouching, float yaw)
     {
-        Quaternion yawRotation = Quaternion.Euler(0f, yaw, 0f);
-        Vector3 forward = yawRotation * Vector3.forward;
-        Vector3 right = yawRotation * Vector3.right;
+        Quaternion yawRot = Quaternion.Euler(0f, yaw, 0f);
+        Vector3 forward = yawRot * Vector3.forward;
+        Vector3 right = yawRot * Vector3.right;
 
         Vector3 move = forward * moveInput.y + right * moveInput.x;
 
@@ -340,36 +337,47 @@ public class SurvivorMove : NetworkBehaviour
 
         controller.Move(finalMove * Time.fixedDeltaTime);
 
-        RotateModelServer(move, isMoving);
+        // 카메라 스킬 중이면 몸을 카메라 정면 방향으로 유지
+        // camSkill 또는 actionState 둘 중 하나라도 true면 스킬 상태로 본다.
+        bool useCamSkill = false;
 
-        // 애니메이션 상태 반영
-        // 앉은 상태는 움직이지 않아도 Crouch 상태를 유지해야
-        // Crouch Idle이 나오게 된다
+        if (camSkill != null && camSkill.IsUse)
+            useCamSkill = true;
+
+        if (act != null && act.IsCamSkill)
+            useCamSkill = true;
+
+        if (useCamSkill)
+        {
+            Vector3 camDir = yawRot * Vector3.forward;
+            RotateCam(camDir);
+        }
+        else
+        {
+            RotateMove(move, isMoving);
+        }
+
+        // 이동 상태 애니메이터 값 갱신
         if (moveState != null)
         {
-            if (isCrouching)
-            {
-                moveState.SetMoveState(SurvivorLocomotionState.Crouch, isMoving);
-            }
+            if (!isMoving)
+                moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
+            else if (isCrouching)
+                moveState.SetMoveState(SurvivorLocomotionState.Crouch, true);
+            else if (isRunning)
+                moveState.SetMoveState(SurvivorLocomotionState.Run, true);
             else
-            {
-                if (!isMoving)
-                    moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
-                else if (isRunning)
-                    moveState.SetMoveState(SurvivorLocomotionState.Run, true);
-                else
-                    moveState.SetMoveState(SurvivorLocomotionState.Walk, true);
-            }
+                moveState.SetMoveState(SurvivorLocomotionState.Walk, true);
         }
     }
 
-    // 다운 상태 이동 처리
+    // 다운 상태 이동
     [Server]
-    private void CrawlMoveServer(Vector2 moveInput, float yaw)
+    private void Crawl(Vector2 moveInput, float yaw)
     {
-        Quaternion yawRotation = Quaternion.Euler(0f, yaw, 0f);
-        Vector3 forward = yawRotation * Vector3.forward;
-        Vector3 right = yawRotation * Vector3.right;
+        Quaternion yawRot = Quaternion.Euler(0f, yaw, 0f);
+        Vector3 forward = yawRot * Vector3.forward;
+        Vector3 right = yawRot * Vector3.right;
 
         Vector3 move = forward * moveInput.y + right * moveInput.x;
 
@@ -400,15 +408,13 @@ public class SurvivorMove : NetworkBehaviour
             syncedModelYaw = modelRoot.eulerAngles.y;
         }
 
-        // 다운 상태도 Crawl 상태로 유지한 채
-        // 움직임 여부에 따라 Down Idle / Crawl이 갈리게 함
         if (moveState != null)
             moveState.SetMoveState(SurvivorLocomotionState.Crawl, isMoving);
     }
 
-    // 이동 방향으로 모델 회전
+    // 일반 상태에서는 이동 방향을 바라보게 함
     [Server]
-    private void RotateModelServer(Vector3 move, bool isMoving)
+    private void RotateMove(Vector3 move, bool isMoving)
     {
         if (!isMoving || modelRoot == null)
             return;
@@ -423,9 +429,31 @@ public class SurvivorMove : NetworkBehaviour
         syncedModelYaw = modelRoot.eulerAngles.y;
     }
 
-    // 이동 못 할 때도 중력은 계속 적용
+    // 카메라 스킬 중에는 카메라가 보는 앞 방향을 바라보게 함
     [Server]
-    private void ApplyGravityOnlyServer()
+    private void RotateCam(Vector3 dir)
+    {
+        if (modelRoot == null)
+            return;
+
+        dir.y = 0f;
+
+        if (dir.sqrMagnitude <= 0.001f)
+            return;
+
+        Quaternion targetRot = Quaternion.LookRotation(dir.normalized);
+        modelRoot.rotation = Quaternion.Slerp(
+            modelRoot.rotation,
+            targetRot,
+            turnSpeed * Time.fixedDeltaTime
+        );
+
+        syncedModelYaw = modelRoot.eulerAngles.y;
+    }
+
+    // 이동 불가 상태에서 떨어지지 않도록 중력만 처리
+    [Server]
+    private void GravityOnly()
     {
         if (controller == null || !controller.enabled)
             return;
@@ -439,45 +467,45 @@ public class SurvivorMove : NetworkBehaviour
         controller.Move(gravityMove * Time.fixedDeltaTime);
     }
 
-    // 앉기/서기 시 CharacterController 크기 변경
+    // 서기 / 앉기 컨트롤러 크기 반영
     [Server]
-    private void SetSizeServer(float height, Vector3 center)
+    private void SetSize(float height, Vector3 center)
     {
         controller.height = height;
         controller.center = center;
     }
 
-    // 트리거형 애니메이션 재생
+    // 트리거 애니메이션 실행
     public void PlayAnimation(string triggerName)
     {
         if (isServer)
         {
-            ApplyPlayAnimation(triggerName);
-            RpcPlayAnimation(triggerName);
+            ApplyAnim(triggerName);
+            RpcAnim(triggerName);
         }
         else if (isLocalPlayer)
         {
-            CmdPlayAnimation(triggerName);
+            CmdAnim(triggerName);
         }
     }
 
     [Command]
-    private void CmdPlayAnimation(string triggerName)
+    private void CmdAnim(string triggerName)
     {
-        ApplyPlayAnimation(triggerName);
-        RpcPlayAnimation(triggerName);
+        ApplyAnim(triggerName);
+        RpcAnim(triggerName);
     }
 
     [ClientRpc]
-    private void RpcPlayAnimation(string triggerName)
+    private void RpcAnim(string triggerName)
     {
         if (isServer)
             return;
 
-        ApplyPlayAnimation(triggerName);
+        ApplyAnim(triggerName);
     }
 
-    private void ApplyPlayAnimation(string triggerName)
+    private void ApplyAnim(string triggerName)
     {
         if (animator == null)
             return;
@@ -485,79 +513,115 @@ public class SurvivorMove : NetworkBehaviour
         animator.SetTrigger(triggerName);
     }
 
-    // 볼트 상태 bool 제어
+    // 볼트 bool 애니메이션
     public void SetVaulting(bool value)
     {
         if (isServer)
         {
-            ApplySetVaulting(value);
-            RpcSetVaulting(value);
+            ApplyVault(value);
+            RpcVault(value);
         }
         else if (isLocalPlayer)
         {
-            CmdSetVaulting(value);
+            CmdVault(value);
         }
     }
 
     [Command]
-    private void CmdSetVaulting(bool value)
+    private void CmdVault(bool value)
     {
-        ApplySetVaulting(value);
-        RpcSetVaulting(value);
+        ApplyVault(value);
+        RpcVault(value);
     }
 
     [ClientRpc]
-    private void RpcSetVaulting(bool value)
+    private void RpcVault(bool value)
     {
         if (isServer)
             return;
 
-        ApplySetVaulting(value);
+        ApplyVault(value);
     }
 
-    private void ApplySetVaulting(bool value)
+    private void ApplyVault(bool value)
     {
         if (animator != null)
             animator.SetBool("IsVaulting", value);
     }
 
-    // 조사 / 힐 / 감옥 같은 전신 상호작용 bool 제어
+    // searching bool 애니메이션
     public void SetSearching(bool value)
     {
         if (isServer)
         {
-            ApplySetSearching(value);
-            RpcSetSearching(value);
+            ApplySearch(value);
+            RpcSearch(value);
         }
         else if (isLocalPlayer)
         {
-            CmdSetSearching(value);
+            CmdSearch(value);
         }
     }
 
     [Command]
-    private void CmdSetSearching(bool value)
+    private void CmdSearch(bool value)
     {
-        ApplySetSearching(value);
-        RpcSetSearching(value);
+        ApplySearch(value);
+        RpcSearch(value);
     }
 
     [ClientRpc]
-    private void RpcSetSearching(bool value)
+    private void RpcSearch(bool value)
     {
         if (isServer)
             return;
 
-        ApplySetSearching(value);
+        ApplySearch(value);
     }
 
-    private void ApplySetSearching(bool value)
+    private void ApplySearch(bool value)
     {
         if (animator != null)
             animator.SetBool("IsSearching", value);
     }
 
-    // 이동 애니메이션을 강제로 기본 Idle로 돌리고 싶을 때 사용
+    // 카메라 스킬 상체 애니메이션 bool
+    public void SetCamAnim(bool value)
+    {
+        if (isServer)
+        {
+            ApplyCamAnim(value);
+            RpcCamAnim(value);
+        }
+        else if (isLocalPlayer)
+        {
+            CmdCamAnim(value);
+        }
+    }
+
+    [Command]
+    private void CmdCamAnim(bool value)
+    {
+        ApplyCamAnim(value);
+        RpcCamAnim(value);
+    }
+
+    [ClientRpc]
+    private void RpcCamAnim(bool value)
+    {
+        if (isServer)
+            return;
+
+        ApplyCamAnim(value);
+    }
+
+    private void ApplyCamAnim(bool value)
+    {
+        if (animator != null)
+            animator.SetBool("IsCameraSkill", value);
+    }
+
+    // 이동 애니메이션을 즉시 idle 쪽으로 돌릴 때 사용
     public void StopAnimation()
     {
         if (isServer)
@@ -567,12 +631,12 @@ public class SurvivorMove : NetworkBehaviour
         }
         else if (isLocalPlayer)
         {
-            CmdStopAnimation();
+            CmdStopAnim();
         }
     }
 
     [Command]
-    private void CmdStopAnimation()
+    private void CmdStopAnim()
     {
         if (moveState != null)
             moveState.SetMoveState(SurvivorLocomotionState.Idle, false);

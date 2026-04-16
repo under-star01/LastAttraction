@@ -73,7 +73,7 @@ public class SurvivorState : NetworkBehaviour
         UpdateAnim();
 
         if (actionState != null)
-            actionState.ApplyInteractEnabled();
+            actionState.ApplyUse();
     }
 
     private void Update()
@@ -189,9 +189,10 @@ public class SurvivorState : NetworkBehaviour
 
         if (actionState != null)
         {
-            actionState.SetDoingInteractionServer(false);
-            actionState.SetBeingHealedServer(false);
-            actionState.SetAction(SurvivorAction.None);
+            actionState.SetInteract(false);
+            actionState.SetHeal(false);
+            actionState.SetCam(false);
+            actionState.SetAct(SurvivorAction.None);
         }
 
         ApplyAllStateServer();
@@ -221,9 +222,10 @@ public class SurvivorState : NetworkBehaviour
 
         if (actionState != null)
         {
-            actionState.SetDoingInteractionServer(false);
-            actionState.SetBeingHealedServer(false);
-            actionState.SetAction(SurvivorAction.None);
+            actionState.SetInteract(false);
+            actionState.SetHeal(false);
+            actionState.SetCam(false);
+            actionState.SetAct(SurvivorAction.None);
         }
 
         ApplyAllStateServer();
@@ -247,7 +249,7 @@ public class SurvivorState : NetworkBehaviour
         UpdateAnim();
 
         if (actionState != null)
-            actionState.ApplyInteractEnabled();
+            actionState.ApplyUse();
     }
 
     private void OnConditionChanged(SurvivorCondition oldValue, SurvivorCondition newValue)
@@ -256,7 +258,7 @@ public class SurvivorState : NetworkBehaviour
         UpdateAnim();
 
         if (actionState != null)
-            actionState.ApplyInteractEnabled();
+            actionState.ApplyUse();
     }
 
     // 다운 상태일 때만 Downed 레이어 적용

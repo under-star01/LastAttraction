@@ -6,6 +6,7 @@ public class SurvivorInput : NetworkBehaviour
 {
     private InputSystem inputSys;
 
+    // 이동 입력
     public Vector2 Move
     {
         get
@@ -17,6 +18,7 @@ public class SurvivorInput : NetworkBehaviour
         }
     }
 
+    // 시야 회전 입력
     public Vector2 Look
     {
         get
@@ -28,6 +30,7 @@ public class SurvivorInput : NetworkBehaviour
         }
     }
 
+    // 달리기 입력
     public bool IsRunning
     {
         get
@@ -39,6 +42,7 @@ public class SurvivorInput : NetworkBehaviour
         }
     }
 
+    // 앉기 입력
     public bool IsCrouching
     {
         get
@@ -50,6 +54,7 @@ public class SurvivorInput : NetworkBehaviour
         }
     }
 
+    // Hold 타입 상호작용 입력
     public bool IsInteracting1
     {
         get
@@ -61,6 +66,7 @@ public class SurvivorInput : NetworkBehaviour
         }
     }
 
+    // Press 타입 상호작용 입력
     public bool IsInteracting2
     {
         get
@@ -69,6 +75,18 @@ public class SurvivorInput : NetworkBehaviour
                 return false;
 
             return inputSys.Player.Interact2.WasPressedThisFrame();
+        }
+    }
+
+    // 우클릭 홀드 카메라 스킬 입력
+    public bool IsCameraSkillPressed
+    {
+        get
+        {
+            if (inputSys == null)
+                return false;
+
+            return inputSys.Player.CameraSkill.IsPressed();
         }
     }
 
@@ -83,8 +101,6 @@ public class SurvivorInput : NetworkBehaviour
         base.OnStopClient();
 
         if (isLocalPlayer && inputSys != null)
-        {
             inputSys.Player.Disable();
-        }
     }
 }

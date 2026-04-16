@@ -68,6 +68,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "CameraSkill",
+                    "type": "Button",
+                    "id": "9d6fc406-5359-44bd-ad17-8a8c80ea78c7",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -222,6 +231,17 @@
                     "processors": "",
                     "groups": ";PC",
                     "action": "Interact3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "2353b9f2-cf6e-4477-8467-598f4629d994",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";PC",
+                    "action": "CameraSkill",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
