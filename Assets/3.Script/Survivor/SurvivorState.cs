@@ -115,13 +115,19 @@ public class SurvivorState : NetworkBehaviour
     [Server]
     public void TakeHit()
     {
-        if (actionState != null && actionState.IsBusy)
+        if (actionState != null && actionState.CurrentAction == SurvivorAction.DownHit)
             return;
 
         if (IsImprisoned || IsDead)
             return;
 
         StopAllCoroutines();
+        if (actionState != null)
+        {
+            // 중요: 코루틴을 멈췄으므로, 'Stunned'에 멈춰있는 Action을 None으로 초기화해야 합니다.
+            // 그래야 피격 이후에 캐릭터가 굳지 않고 정상적으로 움직일 수 있습니다.
+            actionState.ForceResetActionServer();
+        }
 
         if (interactor != null)
             interactor.ForceStopInteract();
