@@ -14,9 +14,8 @@ public class CameraSkillUI : MonoBehaviour
 
     private void Awake()
     {
-        // 시작 시 숨김
-        Hide();
         BindTexture();
+        gameObject.SetActive(false);
     }
 
     private void OnEnable()
@@ -27,6 +26,18 @@ public class CameraSkillUI : MonoBehaviour
     // RawImage에 RenderTexture 연결
     private void BindTexture()
     {
+        if (screenImage == null)
+        {
+            Debug.LogWarning("[CameraSkillUI] screenImage가 연결되지 않았습니다.");
+            return;
+        }
+
+        if (renderTexture == null)
+        {
+            Debug.LogWarning("[CameraSkillUI] renderTexture가 연결되지 않았습니다.");
+            return;
+        }
+
         screenImage.texture = renderTexture;
     }
 

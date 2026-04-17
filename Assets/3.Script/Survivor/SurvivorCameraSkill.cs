@@ -22,6 +22,9 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
     public bool IsUse => isUse;
 
+    // 로컬 UI 준비 완료 여부
+    private bool isLocalReady;
+
     private void Awake()
     {
         if (input == null)
@@ -33,28 +36,29 @@ public class SurvivorCameraSkill : NetworkBehaviour
         if (act == null)
             act = GetComponent<SurvivorActionState>();
 
-        SetLocalView(false);
+        // 시작 시 카메라는 무조건 꺼둔다
+        if (skillCamera != null)
+            skillCamera.enabled = false;
     }
 
     public override void OnStartLocalPlayer()
     {
         base.OnStartLocalPlayer();
 
-        if (skillUI == null && LobbySceneBinder.Instance != null)
-            skillUI = LobbySceneBinder.Instance.GetCameraSkillUI();
+        BindUI();
+        isLocalReady = true;
 
-        if (skillUI == null)
-            skillUI = FindFirstObjectByType<CameraSkillUI>(FindObjectsInactive.Include);
-
-        SetLocalView(false);
+        // 로컬 준비가 끝난 뒤 현재 상태 다시 반영
+        ApplyLocalView(isUse);
     }
 
     public override void OnStartClient()
     {
         base.OnStartClient();
 
-        if (!isLocalPlayer)
-            SetLocalView(false);
+        // 내 플레이어가 아니면 전용 카메라는 항상 꺼둔다
+        if (!isLocalPlayer && skillCamera != null)
+            skillCamera.enabled = false;
     }
 
     private void Update()
@@ -103,18 +107,36 @@ public class SurvivorCameraSkill : NetworkBehaviour
         if (move != null)
             move.SetCamAnim(newValue);
 
-        SetLocalView(newValue);
+        // SyncVar hook은 UI 준비 전에도 들어올 수 있으니
+        // 로컬 준비가 끝난 뒤에만 안전하게 반영
+        if (isLocalPlayer)
+            ApplyLocalView(newValue);
     }
 
-    private void SetLocalView(bool value)
+    private void BindUI()
+    {
+        if (skillUI == null && LobbySceneBinder.Instance != null)
+            skillUI = LobbySceneBinder.Instance.GetCameraSkillUI();
+
+        if (skillUI == null)
+            skillUI = FindFirstObjectByType<CameraSkillUI>(FindObjectsInactive.Include);
+    }
+
+    private void ApplyLocalView(bool value)
     {
         if (!isLocalPlayer)
+            return;
+
+        // 아직 로컬 준비 전이면 카메라만 꺼두고 종료
+        if (!isLocalReady)
         {
             if (skillCamera != null)
                 skillCamera.enabled = false;
 
             return;
         }
+
+        BindUI();
 
         if (skillCamera != null)
             skillCamera.enabled = value;
