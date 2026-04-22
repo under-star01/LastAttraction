@@ -288,8 +288,22 @@ public class SurvivorState : NetworkBehaviour
         if (target == null)
             return;
 
+        int localCameraLayer = LayerMask.NameToLayer("LocalCameraModel");
+        int worldCameraLayer = LayerMask.NameToLayer("WorldCameraModel");
+        int ownerHiddenLayer = LayerMask.NameToLayer("OwnerWorldCameraHidden");
+
         // 힐 트리거는 레이어 변경 제외
         if (target.GetComponent<SurvivorHeal>() != null)
+            return;
+
+        // 카메라 모델 관련 레이어는 유지
+        if (target.gameObject.layer == localCameraLayer)
+            return;
+
+        if (target.gameObject.layer == worldCameraLayer)
+            return;
+
+        if (target.gameObject.layer == ownerHiddenLayer)
             return;
 
         target.gameObject.layer = layer;
