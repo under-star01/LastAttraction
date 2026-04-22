@@ -21,6 +21,7 @@ public class KillerCombat : NetworkBehaviour
     private KillerInput input;
     private KillerState state;
     private Animator animator;
+    private TrapHandler trapHandler;
 
     private float currentLungeTime;
     private float currentPenaltyTime;
@@ -33,6 +34,7 @@ public class KillerCombat : NetworkBehaviour
         input = GetComponent<KillerInput>();
         state = GetComponent<KillerState>();
         animator = GetComponentInChildren<Animator>();
+        trapHandler = GetComponent<TrapHandler>();
     }
 
     void Update()
@@ -45,14 +47,25 @@ public class KillerCombat : NetworkBehaviour
 
         if (!isLocalPlayer) return;
 
+        if ((trapHandler != null && trapHandler.IsBuildMode) || state.CurrentCondition == KillerCondition.Planting)
+        {
+            return;
+        }
+
+        //if (state.CurrentCondition == KillerCondition.Recovering)
+        //{
+        //    currentPenaltyTime -= Time.deltaTime;
+        //    if (currentPenaltyTime <= 0f)
+        //    {
+        //        isEndingAttack = false;
+        //        CmdResetToIdle();
+        //    }
+        //    return;
+        //}
+
         if (state.CurrentCondition == KillerCondition.Recovering)
         {
-            currentPenaltyTime -= Time.deltaTime;
-            if (currentPenaltyTime <= 0f)
-            {
-                isEndingAttack = false;
-                CmdResetToIdle();
-            }
+            HandleRecovery();
             return;
         }
 
@@ -62,8 +75,24 @@ public class KillerCombat : NetworkBehaviour
         }
     }
 
+    private void HandleRecovery()
+    {
+        currentPenaltyTime -= Time.deltaTime;
+        if (currentPenaltyTime <= 0f)
+        {
+            isEndingAttack = false;
+            CmdResetToIdle();
+        }
+    }
+
     private void HandleAttackInput()
     {
+        if (!isLocalPlayer) return;
+
+        // [중요] 시작 부분에 다시 한번 이중 잠금
+        if (trapHandler != null && trapHandler.IsBuildMode) return;
+
+
         if (input.IsAttackPressed)
         {
             if (state.CurrentCondition != KillerCondition.Lunging)
@@ -161,6 +190,16 @@ public class KillerCombat : NetworkBehaviour
                 SurvivorState sState = identity.GetComponentInParent<SurvivorState>();
                 if (sState != null) sState.TakeHit();
             }
+        }
+
+        if (isHit && survivorNetId != 0)
+        {
+            Debug.Log("킬러 공격 명중");
+            // ... TakeHit() 호출 ...
+        }
+        else
+        {
+            Debug.Log("헛스윙 또는 장해물에 막힘");
         }
 
         float animSpeed = baseAttackAnimationLength / finalPenalty;

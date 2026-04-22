@@ -1,7 +1,7 @@
 using UnityEngine;
 using Mirror;
 
-public enum KillerCondition { Idle, Lunging, Recovering, Hit, Vaulting, Breaking, Incage }
+public enum KillerCondition { Idle, Lunging, Recovering, Hit, Vaulting, Breaking, Incage, Planting }
 
 public class KillerState : NetworkBehaviour
 {
@@ -16,7 +16,8 @@ public class KillerState : NetworkBehaviour
     public bool CanMove =>
         currentCondition == KillerCondition.Idle ||
         currentCondition == KillerCondition.Lunging ||
-        currentCondition == KillerCondition.Recovering;
+        currentCondition == KillerCondition.Recovering ||
+        currentCondition == KillerCondition.Planting;
 
     public bool CanLook =>
         currentCondition != KillerCondition.Hit &&
@@ -72,5 +73,12 @@ public class KillerState : NetworkBehaviour
             case KillerCondition.Vaulting: animator.SetTrigger("Vault"); break;
             case KillerCondition.Incage: animator.SetTrigger("Incage"); break;
         }
+    }
+
+    [Command]
+    public void CmdChangeKillerState(KillerCondition newState)
+    {
+        // 클라이언트의 요청을 받아 서버에서 실제 상태를 변경합니다.
+        ChangeState(newState);
     }
 }
