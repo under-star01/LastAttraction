@@ -27,7 +27,9 @@ public class SurvivorCameraSkill : NetworkBehaviour
     public bool IsUse => isUse;
 
     private bool isLocalReady;
-    private Renderer[] worldModelRenderers;
+
+    private int worldCameraLayer;
+    private int ownerHiddenLayer;
 
     private void Awake()
     {
@@ -47,10 +49,10 @@ public class SurvivorCameraSkill : NetworkBehaviour
             localCameraModel.SetActive(false);
 
         if (worldCameraModel != null)
-        {
             worldCameraModel.SetActive(false);
-            worldModelRenderers = worldCameraModel.GetComponentsInChildren<Renderer>(true);
-        }
+
+        worldCameraLayer = LayerMask.NameToLayer("WorldCameraModel");
+        ownerHiddenLayer = LayerMask.NameToLayer("OwnerWorldCameraHidden");
     }
 
     public override void OnStartLocalPlayer()
@@ -68,9 +70,6 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
         if (!isLocalPlayer && skillCamera != null)
             skillCamera.enabled = false;
-
-        if (!isLocalPlayer && localCameraModel != null)
-            localCameraModel.SetActive(false);
     }
 
     private void Update()
@@ -124,7 +123,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
         if (isLocalPlayer)
         {
-            SetOwnWorldModelVisible(!newValue);
+            SetOwnWorldModelHiddenForSkill(newValue);
             ApplyLocalView(newValue);
         }
     }
@@ -138,19 +137,31 @@ public class SurvivorCameraSkill : NetworkBehaviour
             skillUI = FindFirstObjectByType<CameraSkillUI>(FindObjectsInactive.Include);
     }
 
-    private void SetOwnWorldModelVisible(bool value)
+    private void SetOwnWorldModelHiddenForSkill(bool hide)
     {
         if (!isLocalPlayer)
             return;
 
-        if (worldModelRenderers == null)
+        if (worldCameraModel == null)
             return;
 
-        for (int i = 0; i < worldModelRenderers.Length; i++)
-        {
-            if (worldModelRenderers[i] != null)
-                worldModelRenderers[i].enabled = value;
-        }
+        int targetLayer = worldCameraLayer;
+
+        if (hide)
+            targetLayer = ownerHiddenLayer;
+
+        SetLayerRecursive(worldCameraModel.transform, targetLayer);
+    }
+
+    private void SetLayerRecursive(Transform target, int layer)
+    {
+        if (target == null)
+            return;
+
+        target.gameObject.layer = layer;
+
+        for (int i = 0; i < target.childCount; i++)
+            SetLayerRecursive(target.GetChild(i), layer);
     }
 
     private void ApplyLocalView(bool value)
