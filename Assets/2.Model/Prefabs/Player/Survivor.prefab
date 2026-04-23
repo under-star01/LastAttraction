@@ -2616,8 +2616,8 @@ MonoBehaviour:
   act: {fileID: 5606561105763548437}
   skillCamera: {fileID: 899376854374036102}
   skillUI: {fileID: 0}
-  localCameraModel: {fileID: 0}
-  worldCameraModel: {fileID: 0}
+  localCameraModel: {fileID: 2458870675417667234}
+  worldCameraModel: {fileID: 1955517297303155038}
   normalCinemachine: {fileID: 6907075847553500461}
   skillCinemachine: {fileID: 5365576005356907084}
 --- !u!95 &7436738972924962348
