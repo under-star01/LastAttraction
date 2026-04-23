@@ -51,6 +51,12 @@ public class SurvivorCameraSkill : NetworkBehaviour
         if (worldCameraModel != null)
             worldCameraModel.SetActive(false);
 
+        if (normalCinemachine != null)
+            normalCinemachine.gameObject.SetActive(false);
+
+        if (skillCinemachine != null)
+            skillCinemachine.gameObject.SetActive(false);
+
         worldCameraLayer = LayerMask.NameToLayer("WorldCameraModel");
         ownerHiddenLayer = LayerMask.NameToLayer("OwnerWorldCameraHidden");
     }
@@ -61,6 +67,14 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
         BindUI();
         isLocalReady = true;
+
+        // 내 플레이어의 Cinemachine 카메라만 활성화
+        if (normalCinemachine != null)
+            normalCinemachine.gameObject.SetActive(true);
+
+        if (skillCinemachine != null)
+            skillCinemachine.gameObject.SetActive(true);
+
         ApplyLocalView(isUse);
     }
 
@@ -68,8 +82,18 @@ public class SurvivorCameraSkill : NetworkBehaviour
     {
         base.OnStartClient();
 
-        if (!isLocalPlayer && skillCamera != null)
-            skillCamera.enabled = false;
+        // 남의 플레이어 카메라는 절대 활성화되면 안 된다.
+        if (!isLocalPlayer)
+        {
+            if (skillCamera != null)
+                skillCamera.enabled = false;
+
+            if (normalCinemachine != null)
+                normalCinemachine.gameObject.SetActive(false);
+
+            if (skillCinemachine != null)
+                skillCinemachine.gameObject.SetActive(false);
+        }
     }
 
     private void Update()
