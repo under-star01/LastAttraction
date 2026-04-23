@@ -45,7 +45,6 @@ public class SurvivorActionState : NetworkBehaviour
     public bool IsVault => currentAction == SurvivorAction.Vault;
 
     // 실제로 강하게 행동을 막는 상태만 Busy로 취급
-    // Vault는 스킬 금지용으로도 같이 사용한다.
     public bool IsBusy =>
         currentAction == SurvivorAction.DownHit ||
         currentAction == SurvivorAction.Stunned ||
@@ -63,7 +62,6 @@ public class SurvivorActionState : NetworkBehaviour
             animator = GetComponentInChildren<Animator>();
     }
 
-    // 서버에서 현재 행동 상태를 바꾼다.
     [Server]
     public void SetAct(SurvivorAction act)
     {
@@ -71,8 +69,6 @@ public class SurvivorActionState : NetworkBehaviour
         ApplyState();
     }
 
-    // 특정 행동 상태를 해제한다.
-    // 다른 상태로 이미 바뀌어 있으면 건드리지 않는다.
     [Server]
     public void ClearAct(SurvivorAction act)
     {
@@ -83,7 +79,6 @@ public class SurvivorActionState : NetworkBehaviour
         ApplyState();
     }
 
-    // 힐받는 중 여부 저장
     [Server]
     public void SetHeal(bool value)
     {
@@ -91,22 +86,18 @@ public class SurvivorActionState : NetworkBehaviour
         ApplyUse();
     }
 
-    // Hold 상호작용 중 여부 저장
     [Server]
     public void SetInteract(bool value)
     {
         isDoingInteraction = value;
     }
 
-    // 카메라 스킬 사용 중 여부 저장
     [Server]
     public void SetCam(bool value)
     {
         isCamSkill = value;
     }
 
-    // 지금 카메라 스킬 사용 가능한지 검사
-    // 스킬 스크립트 쪽에서 이 함수만 보고 판단하게 한다.
     public bool CanCam()
     {
         SurvivorState state = GetComponent<SurvivorState>();
@@ -119,6 +110,7 @@ public class SurvivorActionState : NetworkBehaviour
         if (state.IsDowned)
             return false;
 
+        // 감옥 안에서는 카메라 스킬 금지
         if (state.IsImprisoned)
             return false;
 
@@ -150,7 +142,6 @@ public class SurvivorActionState : NetworkBehaviour
         ApplyUse();
     }
 
-    // 상태가 바뀌면 이동 잠금과 상호작용 허용 여부를 갱신
     private void ApplyState()
     {
         ApplyLock();
@@ -158,8 +149,6 @@ public class SurvivorActionState : NetworkBehaviour
     }
 
     // 다운피격, 스턴일 때만 이동 잠금
-    // Vault는 이동을 따로 막는 게 아니라
-    // Window / Pallet 루틴에서 직접 컨트롤하므로 여기서는 잠그지 않는다.
     private void ApplyLock()
     {
         if (move == null)
@@ -180,7 +169,10 @@ public class SurvivorActionState : NetworkBehaviour
     }
 
     // 상태에 따라 SurvivorInteractor 자체를 켜고 끈다.
-    // 이렇게 하면 상호작용 입력이 자연스럽게 막힌다.
+    // 중요:
+    // 감옥 상태는 여기서 막지 않는다.
+    // 감옥 안 상호작용은 SurvivorInteractor.CanUseThis()가
+    // "자기 감옥만 허용"하도록 이미 필터링하고 있기 때문이다.
     public void ApplyUse()
     {
         if (interactor == null)
@@ -198,8 +190,8 @@ public class SurvivorActionState : NetworkBehaviour
         if (state.IsDead)
             canUse = false;
 
-        if (state.IsImprisoned)
-            canUse = false;
+        // 감옥 상태는 Interactor를 끄지 않는다.
+        // 그래야 안에서 탈출 시도 입력을 받을 수 있다.
 
         if (isBeingHealed)
             canUse = false;
@@ -213,8 +205,6 @@ public class SurvivorActionState : NetworkBehaviour
         interactor.enabled = canUse;
     }
 
-    // 다운 피격 연출
-    // 이때는 상호작용, 스킬, 일반 행동을 끊어준다.
     [Server]
     public IEnumerator DownHitRoutine(float time)
     {
@@ -245,8 +235,6 @@ public class SurvivorActionState : NetworkBehaviour
         {
             move.SetMoveLock(true);
             move.StopAnimation();
-
-            // 스킬 애니메이션도 강제로 끈다.
             move.SetCamAnim(false);
         }
 
@@ -254,7 +242,6 @@ public class SurvivorActionState : NetworkBehaviour
             animator.SetTrigger("DownHit");
     }
 
-    // 스턴 연출
     [Server]
     public IEnumerator StunRoutine(float time)
     {
@@ -274,7 +261,6 @@ public class SurvivorActionState : NetworkBehaviour
     [Server]
     public void ForceResetActionServer()
     {
-        // 피격 등으로 인해 현재 진행 중인 강제 행동(트랩 등)을 서버에서 즉시 종료시킴
         currentAction = SurvivorAction.None;
     }
 }
