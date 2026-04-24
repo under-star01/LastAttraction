@@ -22,6 +22,16 @@ public class SurvivorCameraSkill : NetworkBehaviour
     [SerializeField] private CinemachineCamera normalCinemachine;
     [SerializeField] private CinemachineCamera skillCinemachine;
 
+    [Header("카메라 탐지")]
+    [SerializeField] private Transform detectOrigin;        // Ray 시작 기준 위치
+    [SerializeField] private LayerMask killerLayerMask;     // Killer Layer
+    [SerializeField] private float detectDistance = 12f;    // 탐지 거리
+    [SerializeField] private float detectAngle = 60f;       // 부채꼴 시야각
+    [SerializeField] private int rayCount = 15;             // Ray 개수
+    [SerializeField] private float detectInterval = 0.1f;   // 탐지 간격
+    [SerializeField] private float detectHeight = 1.5f;     // 고정 탐지 높이
+    [SerializeField] private bool drawDebugRay = true;      // Scene View Ray 표시
+
     [SyncVar(hook = nameof(OnSkillChanged))]
     private bool isUse;
 
@@ -35,6 +45,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
     private int hideSelfLayer;
     private int survivorLayer;
     private int downedLayer;
+    private float nextDetectTime;
 
     private void Awake()
     {
@@ -127,6 +138,10 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
         if (want != isUse)
             CmdSetSkill(want);
+
+        // 카메라 스킬 사용 중일 때만 Killer 탐지
+        if (isUse)
+            DetectKillerInCameraView();
     }
 
     // 스킬 사용 가능 여부 검사
@@ -174,6 +189,72 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
             // 로컬 UI / 카메라 반영
             ApplyLocalView(newValue);
+        }
+    }
+
+    // 카메라 시야 부채꼴 범위 안에 Killer가 있는지 탐지한다
+    private void DetectKillerInCameraView()
+    {
+        if (Time.time < nextDetectTime)
+            return;
+
+        nextDetectTime = Time.time + detectInterval;
+
+        if (detectOrigin == null)
+            return;
+
+        if (killerLayerMask.value == 0)
+            return;
+
+        int safeRayCount = Mathf.Max(1, rayCount);
+
+        Vector3 origin = detectOrigin.position;
+
+        // Y축 방향으로 Ray를 낭비하지 않도록 생존자 기준 고정 높이에서만 탐지
+        origin.y = transform.position.y + detectHeight;
+
+        Vector3 forward = detectOrigin.forward;
+
+        // 수평 방향만 사용
+        forward.y = 0f;
+
+        if (forward.sqrMagnitude <= 0.001f)
+            forward = transform.forward;
+
+        forward.Normalize();
+
+        float halfAngle = detectAngle * 0.5f;
+
+        for (int i = 0; i < safeRayCount; i++)
+        {
+            float t = 0f;
+
+            if (safeRayCount > 1)
+                t = i / (float)(safeRayCount - 1);
+
+            float currentAngle = Mathf.Lerp(-halfAngle, halfAngle, t);
+
+            Vector3 rayDir = Quaternion.Euler(0f, currentAngle, 0f) * forward;
+
+            bool isHit = Physics.Raycast(
+                origin,
+                rayDir,
+                out RaycastHit hit,
+                detectDistance,
+                killerLayerMask
+            );
+
+            if (drawDebugRay)
+            {
+                Color rayColor = isHit ? Color.red : Color.green;
+                Debug.DrawRay(origin, rayDir * detectDistance, rayColor, detectInterval);
+            }
+
+            if (isHit)
+            {
+                Debug.Log($"[CameraSkill] 카메라 시야 안에서 Killer 탐지: {hit.collider.name}");
+                return;
+            }
         }
     }
 

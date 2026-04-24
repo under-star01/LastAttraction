@@ -2196,7 +2196,7 @@ GameObject:
   - component: {fileID: 2069850198979918394}
   - component: {fileID: 1296585556317203683}
   m_Layer: 6
-  m_Name: Survivor
+  m_Name: Survivor 2
   m_TagString: Survivor
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2384,12 +2384,23 @@ MonoBehaviour:
   input: {fileID: 6204537575143600446}
   move: {fileID: 8330642673507539603}
   act: {fileID: 5606561105763548437}
+  state: {fileID: 0}
   skillCamera: {fileID: 899376854374036102}
   skillUI: {fileID: 0}
   localCameraModel: {fileID: 363499901176236862}
   worldCameraModel: {fileID: 2461079644161338302}
   normalCinemachine: {fileID: 6907075847553500461}
   skillCinemachine: {fileID: 5365576005356907084}
+  detectOrigin: {fileID: 0}
+  killerLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  detectDistance: 12
+  detectAngle: 60
+  rayCount: 15
+  detectInterval: 0.1
+  detectHeight: 1.2
+  drawDebugRay: 1
 --- !u!95 &7436738972924962348
 Animator:
   serializedVersion: 7
@@ -2425,7 +2436,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
   sceneId: 0
-  _assetId: 2858402991
+  _assetId: 1837595638
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
