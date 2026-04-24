@@ -39,7 +39,7 @@ public class KillerState : NetworkBehaviour
     private void Update()
     {
         if (!isLocalPlayer) return;
-        if (Input.GetKeyDown(KeyCode.Alpha1)) ActivateRage();
+        if (Input.GetKeyDown(KeyCode.Alpha1)) CmdTestActivateRage();
     }
 
     [Server]
@@ -97,6 +97,12 @@ public class KillerState : NetworkBehaviour
     {
         if (isRaging) return;
         isRaging = true;
+    }
+
+    [Command]
+    private void CmdTestActivateRage()
+    {
+        ActivateRage();
     }
 
     private void OnRageChanged(bool oldVal, bool newVal)
