@@ -11352,6 +11352,7 @@ GameObject:
   - component: {fileID: 4685030563159806967}
   - component: {fileID: 835159930052555109}
   - component: {fileID: 8367404895667104180}
+  - component: {fileID: 3390365132958246041}
   - component: {fileID: 8329270682292632505}
   - component: {fileID: 1429254782650784602}
   - component: {fileID: 4930780877601674375}
@@ -11515,6 +11516,7 @@ MonoBehaviour:
   moveSpeed: 4
   lungeMultiplier: 1.6
   penaltyMultiplier: 0.4
+  rageSpeedMultiplier: 1.1
   lookSensitivity: 0.2
   followSpeed: 25
 --- !u!114 &8367404895667104180
@@ -11532,6 +11534,29 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+--- !u!114 &3390365132958246041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9199881581034011608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b57b3711f2054a4593b3c5cbfbb69cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KillerRageDetector
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  detectRadius: 20
+  updateInterval: 0.15
+  survivorLayer:
+    serializedVersion: 2
+    m_Bits: 64
+  obstacleLayer:
+    serializedVersion: 2
+    m_Bits: 1024
 --- !u!114 &8329270682292632505
 MonoBehaviour:
   m_ObjectHideFlags: 0
