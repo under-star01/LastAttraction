@@ -12,8 +12,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
     [SerializeField] private ProgressUI progressUI;      // 진행도 UI
 
     [Header("QTE 설정")]
-    [SerializeField] private int minQteCount = 2;        // 최소 QTE 횟수
-    [SerializeField] private int maxQteCount = 4;        // 최대 QTE 횟수
+    [SerializeField] private int minQteCount = 2;          // 최소 QTE 횟수
+    [SerializeField] private int maxQteCount = 4;          // 최대 QTE 횟수
+    [SerializeField] private float qteFailStunTime = 3f; // QTE 실패 시 스턴 시간
 
     private EvidenceZone zone;                           // 이 포인트가 속한 구역
 
@@ -186,16 +187,39 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         if (currentInteractorNetId != sender.identity.netId)
             return;
 
-        // 실패하면 조사 즉시 중단
+        // QTE 실패
         if (!success)
+        {
+            FailQTEServer(sender.identity);
+            return;
+        }
+
+        // QTE 성공하면 다시 조사 진행
+        isWaitingQTE = false;
+        currentQteIndex++;
+    }
+
+    // 서버에서 QTE 실패 처리
+    [Server]
+    private void FailQTEServer(NetworkIdentity identity)
+    {
+        if (identity == null)
         {
             StopServerInteract();
             return;
         }
 
-        // 성공하면 다시 조사 진행
-        isWaitingQTE = false;
-        currentQteIndex++;
+        SurvivorState survivorState = identity.GetComponent<SurvivorState>();
+        if (survivorState == null)
+            survivorState = identity.GetComponentInParent<SurvivorState>();
+
+        // 먼저 조사 상태와 UI를 정리한다.
+        StopServerInteract();
+
+        // 그 다음 생존자에게 공통 스턴 적용
+        // 트랩과 같은 Stun 애니메이션 / IsStunned Bool을 사용한다.
+        if (survivorState != null)
+            survivorState.ApplyStun(qteFailStunTime);
     }
 
     // 서버에서 조사 진행
@@ -353,6 +377,7 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         {
             localMove.SetMoveLock(false);
             localMove.SetSearching(false);
+            localMove.SetCamAnim(false);
         }
 
         if (progressUI != null)

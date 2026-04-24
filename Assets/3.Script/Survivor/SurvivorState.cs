@@ -235,14 +235,21 @@ public class SurvivorState : NetworkBehaviour
         ApplyAllStateServer();
     }
 
+    // 트랩, QTE 실패 등에서 공통으로 사용하는 스턴 함수
     [Server]
-    public void ApplyTrapStun(float duration)
+    public void ApplyStun(float duration)
     {
+        if (duration <= 0f)
+            return;
+
+        // 다운 / 사망 / 감옥 상태에서는 스턴 적용하지 않는다.
         if (IsDowned || IsDead || IsImprisoned)
             return;
 
-        if (actionState != null)
-            StartCoroutine(actionState.StunRoutine(duration));
+        if (actionState == null)
+            return;
+
+        StartCoroutine(actionState.StunRoutine(duration));
     }
 
     // 서버에서 상태 즉시 반영

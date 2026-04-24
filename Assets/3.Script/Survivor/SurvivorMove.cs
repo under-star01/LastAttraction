@@ -664,6 +664,43 @@ public class SurvivorMove : NetworkBehaviour
             animator.SetBool("IsCameraSkill", value);
     }
 
+    // 스턴 bool 애니메이션
+    // 스턴 중에는 다른 애니메이션이 섞이지 않도록 Animator Bool 값을 켜둔다.
+    public void SetStunned(bool value)
+    {
+        if (isServer)
+        {
+            ApplyStunned(value);
+            RpcStunned(value);
+        }
+        else if (isLocalPlayer)
+        {
+            CmdStunned(value);
+        }
+    }
+
+    [Command]
+    private void CmdStunned(bool value)
+    {
+        ApplyStunned(value);
+        RpcStunned(value);
+    }
+
+    [ClientRpc]
+    private void RpcStunned(bool value)
+    {
+        if (isServer)
+            return;
+
+        ApplyStunned(value);
+    }
+
+    private void ApplyStunned(bool value)
+    {
+        if (animator != null)
+            animator.SetBool("IsStunned", value);
+    }
+
     // 이동 애니메이션을 즉시 idle 쪽으로 돌릴 때 사용
     public void StopAnimation()
     {
