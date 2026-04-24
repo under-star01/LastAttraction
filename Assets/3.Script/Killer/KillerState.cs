@@ -10,8 +10,12 @@ public class KillerState : NetworkBehaviour
     [Header("Sync Variables")]
     [SyncVar(hook = nameof(OnConditionChanged))]
     private KillerCondition currentCondition = KillerCondition.Idle;
-
     public KillerCondition CurrentCondition => currentCondition;
+
+    [SyncVar(hook = nameof(OnRageChanged))]
+    private bool isRaging = false;
+    public bool IsRaging => isRaging;
+
 
     public bool CanMove =>
         currentCondition == KillerCondition.Idle ||
@@ -30,6 +34,12 @@ public class KillerState : NetworkBehaviour
     private void Awake()
     {
         animator = GetComponentInChildren<Animator>();
+    }
+
+    private void Update()
+    {
+        if (!isLocalPlayer) return;
+        if (Input.GetKeyDown(KeyCode.Alpha1)) ActivateRage();
     }
 
     [Server]
@@ -80,5 +90,17 @@ public class KillerState : NetworkBehaviour
     {
         // 클라이언트의 요청을 받아 서버에서 실제 상태를 변경합니다.
         ChangeState(newState);
+    }
+
+    [Server]
+    public void ActivateRage()
+    {
+        if (isRaging) return;
+        isRaging = true;
+    }
+
+    private void OnRageChanged(bool oldVal, bool newVal)
+    {
+        
     }
 }

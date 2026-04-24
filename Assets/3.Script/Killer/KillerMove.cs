@@ -13,6 +13,7 @@ public class KillerMove : NetworkBehaviour
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float lungeMultiplier = 1.6f;
     [SerializeField] private float penaltyMultiplier = 0.4f;
+    [SerializeField] private float rageSpeedMultiplier = 1.1f;
     [SerializeField] private float lookSensitivity = 0.2f;
     [SerializeField] private float followSpeed = 25f;
 
@@ -112,6 +113,7 @@ public class KillerMove : NetworkBehaviour
         }
 
         float speed = moveSpeed;
+        if (state.IsRaging) speed *= rageSpeedMultiplier;
         if (state.CurrentCondition == KillerCondition.Lunging) speed *= lungeMultiplier;
         else if (state.CurrentCondition == KillerCondition.Recovering) speed *= penaltyMultiplier;
 

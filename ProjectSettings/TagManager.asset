@@ -26,8 +26,8 @@ TagManager:
   - LocalCameraModel
   - WorldCameraModel
   - OwnerWorldCameraHidden
-  - 
-  - 
+  - SurvivorOutline
+  - SurvivorSilhouette
   - 
   - 
   - 
