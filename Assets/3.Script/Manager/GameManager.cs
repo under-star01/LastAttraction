@@ -1,7 +1,7 @@
 using Mirror;
 using UnityEngine;
 
-public class GameManager : NetworkBehaviour
+public class GameManager : MonoBehaviour
 {
     // 어디서든 접근할 수 있는 GameManager
     public static GameManager Instance { get; private set; }
@@ -28,17 +28,19 @@ public class GameManager : NetworkBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    public override void OnStartServer()
+    private void Start()
     {
-        base.OnStartServer();
-
-        // 서버 시작 시 로비 상태로 입력 차단
-        SetAllSurvivorInput(false);
+        // 서버에서만 초기 입력 차단
+        if (NetworkServer.active)
+            SetAllSurvivorInput(false);
     }
 
-    [Server]
     public void SetAllSurvivorInput(bool value)
     {
+        // 서버가 아니면 실행하지 않음
+        if (!NetworkServer.active)
+            return;
+
         // 현재 입력 상태 저장
         survivorInputEnabled = value;
 
@@ -63,21 +65,22 @@ public class GameManager : NetworkBehaviour
         Debug.Log($"[GameManager] 생존자 입력 상태 변경: {value}");
     }
 
-    [Server]
     public void ToggleAllSurvivorInput()
     {
+        // 서버가 아니면 실행하지 않음
+        if (!NetworkServer.active)
+            return;
+
         // 현재 상태 반대로 변경
         SetAllSurvivorInput(!survivorInputEnabled);
     }
 
-    [Server]
     public void StartGame()
     {
         // 게임 시작 시 입력 허용
         SetAllSurvivorInput(true);
     }
 
-    [Server]
     public void EnterLobby()
     {
         // 로비 진입 시 입력 차단
