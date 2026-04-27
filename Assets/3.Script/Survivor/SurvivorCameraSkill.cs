@@ -284,7 +284,6 @@ public class SurvivorCameraSkill : NetworkBehaviour
             if (isHit && isKiller)
             {
                 lastKillerDetectedTime = Time.time;
-                Debug.Log($"[CameraSkill] 카메라 시야 안에서 Killer 탐지: {hit.collider.name}");
                 return;
             }
         }
