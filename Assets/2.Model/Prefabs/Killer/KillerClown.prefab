@@ -11452,7 +11452,7 @@ MonoBehaviour:
   attackRadius: 1
   survivorLayer:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 262208
   obstacleLayer:
     serializedVersion: 2
     m_Bits: 1024
@@ -11554,7 +11554,7 @@ MonoBehaviour:
   updateInterval: 0.15
   survivorLayer:
     serializedVersion: 2
-    m_Bits: 393280
+    m_Bits: 262208
   obstacleLayer:
     serializedVersion: 2
     m_Bits: 1024
