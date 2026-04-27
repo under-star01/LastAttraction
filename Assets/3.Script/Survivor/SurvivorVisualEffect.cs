@@ -102,7 +102,15 @@ public class SurvivorVisualEffect : MonoBehaviour
             case DetectState.None: targetLayer = _defaultLayerInt; break;
         }
 
-        // 본인과 모든 자식(눈, 머리카락 등 파츠)의 레이어를 한꺼번에 변경
+        // [디버그 추가] 레이어 값이 -1(찾지 못함)인지, 대상 오브젝트가 무엇인지 확인
+        Debug.Log($"[Effect] {gameObject.name}의 상태: {currentState}, 목표 레이어 ID: {targetLayer}");
+
+        if (targetLayer == -1)
+        {
+            Debug.LogError($"[Effect] 레이어 이름을 확인하세요! 현재 입력된 이름: {defaultLayer}, {outlineLayer}, {silhouetteLayer}");
+            return;
+        }
+
         SetLayerRecursive(gameObject, targetLayer);
     }
 

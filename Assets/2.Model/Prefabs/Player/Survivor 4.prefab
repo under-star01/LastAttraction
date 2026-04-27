@@ -3527,6 +3527,7 @@ GameObject:
   - component: {fileID: 7436738972924962348}
   - component: {fileID: 9165850540253019217}
   - component: {fileID: 7660049669671203594}
+  - component: {fileID: 5747250994685647726}
   - component: {fileID: 2069850198979918394}
   m_Layer: 6
   m_Name: Survivor 4
@@ -3814,6 +3815,21 @@ MonoBehaviour:
   rotationSensitivity: 0.01
   positionPrecision: 0.01
   scalePrecision: 0.01
+--- !u!114 &5747250994685647726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05046f2ed66083148a11e7876d70b67a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivorVisualEffect
+  defaultLayer: Survivor
+  outlineLayer: SurvivorOutline
+  silhouetteLayer: SurvivorSilhouette
 --- !u!114 &2069850198979918394
 MonoBehaviour:
   m_ObjectHideFlags: 0
