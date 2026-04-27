@@ -16,6 +16,13 @@ public class SurvivorInput : NetworkBehaviour
 
     public bool CanReceiveInput => canReceiveInput;
 
+    private SurvivorCameraSkill camera;
+
+    private void Awake()
+    {
+        TryGetComponent(out SurvivorCameraSkill camera);
+    }
+
     // 이동 입력
     public Vector2 Move
     {
@@ -179,6 +186,7 @@ public class SurvivorInput : NetworkBehaviour
         // UI 클릭이 가능하도록 커서를 풀어준다.
         if (!value)
         {
+            camera.ApplyLobbyView(false);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             return;
@@ -188,6 +196,7 @@ public class SurvivorInput : NetworkBehaviour
         // 1인칭 조작처럼 커서를 잠근다.
         if (lockCursorWhenInputEnabled)
         {
+            camera.ApplyLobbyView(true);
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }

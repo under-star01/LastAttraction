@@ -2795,6 +2795,7 @@ MonoBehaviour:
   worldCameraModel: {fileID: 2737387791057682604}
   normalCinemachine: {fileID: 6907075847553500461}
   skillCinemachine: {fileID: 5365576005356907084}
+  lobbyCinemachine: {fileID: 4633447833198821572}
   detectOrigin: {fileID: 396289032006621719}
   killerLayerMask:
     serializedVersion: 2

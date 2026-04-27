@@ -959,7 +959,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineCamera
   Priority:
     Enabled: 1
-    m_Value: -10
+    m_Value: 30
   OutputChannel: 1
   StandbyUpdate: 2
   m_StreamingVersion: 20241001
@@ -1167,7 +1167,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineCamera
   Priority:
     Enabled: 1
-    m_Value: 30
+    m_Value: 10
   OutputChannel: 1
   StandbyUpdate: 2
   m_StreamingVersion: 20241001
@@ -2501,6 +2501,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  lockCursorWhenInputEnabled: 1
 --- !u!114 &8330642673507539603
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2568,6 +2569,7 @@ MonoBehaviour:
   syncInterval: 0
   animator: {fileID: 7436738972924962348}
   interactor: {fileID: 0}
+  hitDuration: 0.8
   downHitDuration: 3
   prisonFullTime: 600
   prisonHalfTime: 300
@@ -2630,6 +2632,7 @@ MonoBehaviour:
   worldCameraModel: {fileID: 1955517297303155038}
   normalCinemachine: {fileID: 6907075847553500461}
   skillCinemachine: {fileID: 5365576005356907084}
+  lobbyCinemachine: {fileID: 4633447833198821572}
   detectOrigin: {fileID: 8242838456614497304}
   killerLayerMask:
     serializedVersion: 2
@@ -2643,7 +2646,6 @@ MonoBehaviour:
   detectInterval: 0.1
   detectHeight: 1.5
   drawDebugRay: 1
-  frameImages: []
   normalFrameColor: {r: 1, g: 1, b: 1, a: 1}
   detectedFrameColor: {r: 1, g: 0, b: 0, a: 1}
   detectedHoldTime: 0.25

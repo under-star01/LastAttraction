@@ -22,6 +22,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
     [Header("카메라 위치")]
     [SerializeField] private CinemachineCamera normalCinemachine;
     [SerializeField] private CinemachineCamera skillCinemachine;
+    [SerializeField] private CinemachineCamera lobbyCinemachine;
 
     [Header("카메라 탐지")]
     [SerializeField] private Transform detectOrigin;        // Ray 시작 기준 위치
@@ -444,5 +445,26 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
         if (!value)
             SetFrameDetected(false, true);
+    }
+
+    // 로비 카메라 뷰 적용 메소드
+    public void ApplyLobbyView(bool value)
+    {
+        if (normalCinemachine == null || skillCinemachine == null || lobbyCinemachine == null) return;
+
+        if (value)
+        {
+            lobbyCinemachine.Priority = 30;
+
+            normalCinemachine.Priority = 0;
+            skillCinemachine.Priority = 0;
+        }
+        else
+        {
+            lobbyCinemachine.Priority = 0;
+
+            normalCinemachine.Priority = 30;
+            skillCinemachine.Priority = 0;
+        }
     }
 }
