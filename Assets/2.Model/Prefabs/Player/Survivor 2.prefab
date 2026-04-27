@@ -2644,7 +2644,7 @@ CharacterController:
   serializedVersion: 3
   m_Height: 1.8
   m_Radius: 0.35
-  m_SlopeLimit: 45
+  m_SlopeLimit: 180
   m_StepOffset: 0.1
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
@@ -2914,10 +2914,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05046f2ed66083148a11e7876d70b67a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SurvivorVisualEffect
-  outlineRenderers:
-  - {fileID: 5740691233892207305}
-  silhouetteRenderers:
-  - {fileID: 1909373379124396774}
+  defaultLayer: Survivor
+  silhouetteLayer: SurvivorSilhouette
 --- !u!1 &4309543987903887186
 GameObject:
   m_ObjectHideFlags: 0
