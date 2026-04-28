@@ -44,6 +44,23 @@ public struct RoomProbeResponseMessage : NetworkMessage
     public bool isFull;
 }
 
+// 생존자 -> 서버 : Ready 상태 변경 요청 메세지
+public struct SurvivorReadyRequestMessage : NetworkMessage
+{
+    public bool isReady;
+}
+
+// 살인마 -> 서버 : 게임 시작 요청 메세지
+public struct StartGameRequestMessage : NetworkMessage { }
+
+// 서버 -> 클라 : 로비 상태 동기화 메세지
+public struct LobbyStateMessage : NetworkMessage
+{
+    public int survivorCount;
+    public int readySurvivorCount;
+    public bool canStart;
+}
+
 public class CustomNetworkManager : NetworkManager
 {
     public static CustomNetworkManager Instance { get; private set; }
@@ -62,19 +79,31 @@ public class CustomNetworkManager : NetworkManager
     [Header("Match Settings")]
     [SerializeField] private int maxRoomPlayers = 5;
 
+    [Header("Scene Settings")]
+    [SerializeField] private string inGameSceneName = "InGame";
+
     private KcpTransport kcpTransport;
 
     private JoinRole localJoinRole = JoinRole.None;
+
+    // 서버 기준 접속 역할 관리
     private readonly Dictionary<int, JoinRole> joinedRoles = new();
+
+    // 서버 기준 생존자 프리팹 인덱스 관리
     private readonly Dictionary<int, int> survivorPrefabIndexByConnection = new();
+
+    // 서버 기준 생존자 Ready 상태 관리
+    private readonly Dictionary<int, bool> survivorReadyByConnection = new();
+
+    // 클라이언트가 탐색한 방 정보
     private readonly List<RoomProbeResponseMessage> probedRooms = new();
 
-    private int currentPortIndex = -1; // 현재 탐색중인 포트 Index
-    private bool isSearchingServer; // 현재 서버 탐색 여부
-    private bool isLeavingManually; // 수동으로 나가는 중인지 여부
-    private bool isJoiningFinalRoom; // 최종 입장 시도 중인지 여부
-    private bool joinApproved; // 최종 입장 승인 여부
-    private ushort selectedPort; // 최종 선택된 포트
+    private int currentPortIndex = -1;       // 현재 탐색중인 포트 Index
+    private bool isSearchingServer;          // 현재 서버 탐색 여부
+    private bool isLeavingManually;          // 수동으로 나가는 중인지 여부
+    private bool isJoiningFinalRoom;         // 최종 입장 시도 중인지 여부
+    private bool joinApproved;               // 최종 입장 승인 여부
+    private ushort selectedPort;             // 최종 선택된 포트
 
     private Coroutine connectRoutine;
 
@@ -93,8 +122,10 @@ public class CustomNetworkManager : NetworkManager
     }
 
     public bool IsRoomFull => numPlayers >= maxRoomPlayers;
+
     // 살인마 입장 가능 상태 여부
     public bool CanJoinAsKiller => !HasKiller && !IsRoomFull;
+
     // 생존자 입장 가능 상태 여부
     public bool CanJoinAsSurvivor => HasKiller && !IsRoomFull;
 
@@ -197,7 +228,7 @@ public class CustomNetworkManager : NetworkManager
         // 탐색 상태 초기화
         localJoinRole = role;
         currentPortIndex = -1;
-        isSearchingServer = true; // 탐색 상태로 전환
+        isSearchingServer = true;
         isLeavingManually = false;
         isJoiningFinalRoom = false;
         joinApproved = false;
@@ -238,7 +269,7 @@ public class CustomNetworkManager : NetworkManager
             return;
         }
 
-        // 최종 입장 단계로 전환 (OnClientConnect에서 JoinRequestMessage로 변환)
+        // 최종 입장 단계로 전환
         isJoiningFinalRoom = true;
         StartClientDelayed(selectedPort);
     }
@@ -257,10 +288,8 @@ public class CustomNetworkManager : NetworkManager
 
     private IEnumerator StartClientNextFrame(ushort targetPort)
     {
-        // 약간 지연을 주고 확인
         yield return new WaitForSeconds(0.1f);
 
-        // 접속 가능 상태 확인
         if (isLeavingManually)
         {
             connectRoutine = null;
@@ -280,7 +309,6 @@ public class CustomNetworkManager : NetworkManager
             yield break;
         }
 
-        // 목표 포트로 Client 접속
         kcpTransport.Port = targetPort;
         StartClient();
 
@@ -347,6 +375,55 @@ public class CustomNetworkManager : NetworkManager
 
     #endregion
 
+    #region Lobby Button Request
+
+    // Ready UI 버튼에서 호출
+    public void RequestSurvivorReady(bool isReady)
+    {
+        if (!NetworkClient.isConnected)
+        {
+            Debug.LogWarning("[CustomNetworkManager] 서버에 연결되어 있지 않아 Ready 요청을 보낼 수 없습니다.");
+            return;
+        }
+
+        if (localJoinRole != JoinRole.Survivor)
+        {
+            Debug.LogWarning("[CustomNetworkManager] Survivor가 아니므로 Ready 요청을 보낼 수 없습니다.");
+            return;
+        }
+
+        NetworkClient.Send(new SurvivorReadyRequestMessage
+        {
+            isReady = isReady
+        });
+    }
+
+    // Ready 버튼 OnClick에 바로 연결하기 편한 메소드
+    public void OnClickReadyButton()
+    {
+        RequestSurvivorReady(true);
+    }
+
+    // Start UI 버튼에서 호출
+    public void RequestStartGame()
+    {
+        if (!NetworkClient.isConnected)
+        {
+            Debug.LogWarning("[CustomNetworkManager] 서버에 연결되어 있지 않아 Start 요청을 보낼 수 없습니다.");
+            return;
+        }
+
+        if (localJoinRole != JoinRole.Killer)
+        {
+            Debug.LogWarning("[CustomNetworkManager] Killer가 아니므로 Start 요청을 보낼 수 없습니다.");
+            return;
+        }
+
+        NetworkClient.Send(new StartGameRequestMessage());
+    }
+
+    #endregion
+
     #region Server Lifecycle
 
     public override void OnStartServer()
@@ -356,12 +433,18 @@ public class CustomNetworkManager : NetworkManager
         // 각 메세지 처리할 메소드 등록
         NetworkServer.RegisterHandler<JoinRequestMessage>(OnReceiveJoinRequest, false);
         NetworkServer.RegisterHandler<RoomProbeRequestMessage>(OnReceiveRoomProbeRequest, false);
+
+        // 로비 Ready / Start 메세지 등록
+        NetworkServer.RegisterHandler<SurvivorReadyRequestMessage>(OnReceiveSurvivorReadyRequest, false);
+        NetworkServer.RegisterHandler<StartGameRequestMessage>(OnReceiveStartGameRequest, false);
     }
 
     public override void OnStopServer()
     {
         joinedRoles.Clear();
         survivorPrefabIndexByConnection.Clear();
+        survivorReadyByConnection.Clear();
+
         base.OnStopServer();
     }
 
@@ -381,8 +464,12 @@ public class CustomNetworkManager : NetworkManager
     {
         joinedRoles.Remove(conn.connectionId);
         survivorPrefabIndexByConnection.Remove(conn.connectionId);
+        survivorReadyByConnection.Remove(conn.connectionId);
 
         base.OnServerDisconnect(conn);
+
+        if (NetworkServer.active)
+            BroadcastLobbyState();
     }
 
     #endregion
@@ -397,6 +484,9 @@ public class CustomNetworkManager : NetworkManager
         NetworkClient.RegisterHandler<JoinDeniedMessage>(OnJoinDenied, false);
         NetworkClient.RegisterHandler<JoinAcceptedMessage>(OnJoinAccepted, false);
         NetworkClient.RegisterHandler<RoomProbeResponseMessage>(OnRoomProbeResponse, false);
+
+        // 로비 상태 수신 등록
+        NetworkClient.RegisterHandler<LobbyStateMessage>(OnLobbyStateMessage, false);
     }
 
     public override void OnClientConnect()
@@ -426,34 +516,28 @@ public class CustomNetworkManager : NetworkManager
 
     public override void OnClientDisconnect()
     {
-        // 탐색 실패 여부
         bool wasProbing = isSearchingServer && !joinApproved && !isLeavingManually && !isJoiningFinalRoom;
-        // 최종 입장 실패 여부
         bool finalJoinFailed = isSearchingServer && !joinApproved && !isLeavingManually && isJoiningFinalRoom;
 
         base.OnClientDisconnect();
 
-        // 다음 포트 탐색 실행
         if (wasProbing)
         {
             ProbeNextPort();
             return;
         }
 
-        // 최종 입장 실패 -> 취소
         if (finalJoinFailed)
         {
             Debug.LogWarning("[CustomNetworkManager] 최종 방 입장에 실패했습니다.");
         }
 
-        // 사용자 -> 직접 취소
         if (isLeavingManually)
         {
             ResetClientSearchState();
             return;
         }
 
-        // 최종 승인x -> 탐색 종료x
         if (!joinApproved)
         {
             UIManager.Instance?.ShowLoading(false);
@@ -461,7 +545,6 @@ public class CustomNetworkManager : NetworkManager
         }
     }
 
-    // 거부 메시지 수신 시 적용 메소드
     private void OnJoinDenied(JoinDeniedMessage msg)
     {
         Debug.LogWarning($"[CustomNetworkManager] 입장 거부: {msg.reason}");
@@ -477,7 +560,6 @@ public class CustomNetworkManager : NetworkManager
         }
     }
 
-    // 승인 메시지 수신 시 적용 메소드
     private void OnJoinAccepted(JoinAcceptedMessage msg)
     {
         joinApproved = true;
@@ -486,7 +568,17 @@ public class CustomNetworkManager : NetworkManager
         localJoinRole = (JoinRole)msg.role;
 
         UIManager.Instance?.ShowLoading(false);
-        UIManager.Instance?.DisableCanvas();
+
+        // 역할별 로비 UI 표시
+        if (localJoinRole == JoinRole.Killer)
+        {
+            UIManager.Instance?.ShowKillerLobbyUI();
+            UIManager.Instance?.SetStartButtonInteractable(false);
+        }
+        else if (localJoinRole == JoinRole.Survivor)
+        {
+            UIManager.Instance?.ShowSurvivorLobbyUI();
+        }
 
         Debug.Log($"[CustomNetworkManager] 입장 완료 - Role: {localJoinRole}, Port: {msg.port}");
     }
@@ -497,6 +589,16 @@ public class CustomNetworkManager : NetworkManager
 
         if (NetworkClient.active || NetworkClient.isConnected)
             StopClient();
+    }
+
+    private void OnLobbyStateMessage(LobbyStateMessage msg)
+    {
+        UIManager.Instance?.SetLobbyReadyCount(msg.readySurvivorCount, msg.survivorCount);
+
+        if (localJoinRole == JoinRole.Killer)
+        {
+            UIManager.Instance?.SetStartButtonInteractable(msg.canStart);
+        }
     }
 
     #endregion
@@ -514,17 +616,14 @@ public class CustomNetworkManager : NetworkManager
             isFull = IsRoomFull
         });
 
-        // 일정시간 연결 후 끊기
         StartCoroutine(DisconnectNextFrame(conn));
     }
 
     // 최종 접속 요청 수신 시 적용 메소드
     private void OnReceiveJoinRequest(NetworkConnectionToClient conn, JoinRequestMessage msg)
     {
-        // 역할 복원
         JoinRole requestedRole = (JoinRole)msg.role;
 
-        // 중복 플레이어 확인
         if (conn.identity != null)
         {
             conn.Send(new JoinDeniedMessage { reason = "이미 플레이어가 생성된 연결입니다." });
@@ -532,7 +631,6 @@ public class CustomNetworkManager : NetworkManager
             return;
         }
 
-        // 입장 가능 여부 확인
         if (!CanAcceptRole(requestedRole, out string denyReason))
         {
             conn.Send(new JoinDeniedMessage { reason = denyReason });
@@ -540,7 +638,6 @@ public class CustomNetworkManager : NetworkManager
             return;
         }
 
-        // 실제 플레이어 생성 시도
         if (!TryCreatePlayer(conn, requestedRole, out string createFailReason))
         {
             conn.Send(new JoinDeniedMessage { reason = createFailReason });
@@ -548,15 +645,136 @@ public class CustomNetworkManager : NetworkManager
             return;
         }
 
-        // 역할 등록 및 접속 승인 메세지 전송
+        // 역할 등록
         joinedRoles[conn.connectionId] = requestedRole;
+
+        // 생존자는 입장 직후 Ready false로 초기화
+        if (requestedRole == JoinRole.Survivor)
+            survivorReadyByConnection[conn.connectionId] = false;
 
         conn.Send(new JoinAcceptedMessage
         {
             role = (int)requestedRole,
             port = kcpTransport.Port
         });
+
+        BroadcastLobbyState();
     }
+
+    // 생존자 Ready 요청 수신
+    private void OnReceiveSurvivorReadyRequest(NetworkConnectionToClient conn, SurvivorReadyRequestMessage msg)
+    {
+        if (!joinedRoles.TryGetValue(conn.connectionId, out JoinRole role))
+        {
+            Debug.LogWarning("[CustomNetworkManager] 역할이 등록되지 않은 연결에서 Ready 요청이 들어왔습니다.");
+            return;
+        }
+
+        if (role != JoinRole.Survivor)
+        {
+            Debug.LogWarning("[CustomNetworkManager] Survivor가 아닌 연결에서 Ready 요청이 들어왔습니다.");
+            return;
+        }
+
+        survivorReadyByConnection[conn.connectionId] = msg.isReady;
+
+        Debug.Log($"[CustomNetworkManager] Survivor Ready 변경 - Conn: {conn.connectionId}, Ready: {msg.isReady}");
+
+        BroadcastLobbyState();
+    }
+
+    // 살인마 Start 요청 수신
+    private void OnReceiveStartGameRequest(NetworkConnectionToClient conn, StartGameRequestMessage msg)
+    {
+        if (!joinedRoles.TryGetValue(conn.connectionId, out JoinRole role))
+        {
+            Debug.LogWarning("[CustomNetworkManager] 역할이 등록되지 않은 연결에서 Start 요청이 들어왔습니다.");
+            return;
+        }
+
+        if (role != JoinRole.Killer)
+        {
+            Debug.LogWarning("[CustomNetworkManager] Killer가 아닌 연결에서 Start 요청이 들어왔습니다.");
+            return;
+        }
+
+        if (!CanStartGame())
+        {
+            Debug.LogWarning("[CustomNetworkManager] 게임 시작 조건을 만족하지 못했습니다.");
+            BroadcastLobbyState();
+            return;
+        }
+
+        MoveToGameScene();
+    }
+
+    #endregion
+
+    #region Lobby State
+
+    private void BroadcastLobbyState()
+    {
+        if (!NetworkServer.active)
+            return;
+
+        LobbyStateMessage msg = new LobbyStateMessage
+        {
+            survivorCount = GetCurrentSurvivorCount(),
+            readySurvivorCount = GetReadySurvivorCount(),
+            canStart = CanStartGame()
+        };
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn != null && conn.isReady)
+                conn.Send(msg);
+        }
+    }
+
+    private bool CanStartGame()
+    {
+        return HasKiller && AreAllSurvivorsReady();
+    }
+
+    private bool AreAllSurvivorsReady()
+    {
+        int survivorCount = 0;
+        int readyCount = 0;
+
+        foreach (var pair in joinedRoles)
+        {
+            if (pair.Value != JoinRole.Survivor)
+                continue;
+
+            survivorCount++;
+
+            if (survivorReadyByConnection.TryGetValue(pair.Key, out bool isReady) && isReady)
+                readyCount++;
+        }
+
+        // 현재 접속한 생존자가 1명 이상이고, 접속한 생존자 전원이 Ready면 true
+        return survivorCount > 0 && survivorCount == readyCount;
+    }
+
+    private int GetReadySurvivorCount()
+    {
+        int count = 0;
+
+        foreach (var pair in joinedRoles)
+        {
+            if (pair.Value != JoinRole.Survivor)
+                continue;
+
+            if (survivorReadyByConnection.TryGetValue(pair.Key, out bool isReady) && isReady)
+                count++;
+        }
+
+        return count;
+    }
+
+    #endregion
+
+    #region Role / Spawn
 
     // 입장 가능 여부 반환 메소드
     private bool CanAcceptRole(JoinRole role, out string reason)
@@ -642,14 +860,6 @@ public class CustomNetworkManager : NetworkManager
         return true;
     }
 
-    private IEnumerator DisconnectNextFrame(NetworkConnectionToClient conn)
-    {
-        yield return null;
-
-        if (conn != null)
-            conn.Disconnect();
-    }
-
     private GameObject GetSurvivorPrefab(int survivorIndex)
     {
         if (survivorPrefabs == null || survivorPrefabs.Count == 0)
@@ -686,9 +896,28 @@ public class CustomNetworkManager : NetworkManager
         return false;
     }
 
+    private Transform GetSurvivorSpawnPoint(int survivorIndex)
+    {
+        if (survivorSpawnPoints == null || survivorSpawnPoints.Count == 0)
+            return null;
+
+        if (survivorIndex < 0 || survivorIndex >= survivorSpawnPoints.Count)
+            return null;
+
+        return survivorSpawnPoints[survivorIndex];
+    }
+
     #endregion
 
     #region Utils
+
+    private IEnumerator DisconnectNextFrame(NetworkConnectionToClient conn)
+    {
+        yield return null;
+
+        if (conn != null)
+            conn.Disconnect();
+    }
 
     private ushort GetPortFromArgs()
     {
@@ -722,33 +951,22 @@ public class CustomNetworkManager : NetworkManager
         return count;
     }
 
-    private Transform GetSurvivorSpawnPoint(int survivorIndex)
-    {
-        if (survivorSpawnPoints == null || survivorSpawnPoints.Count == 0)
-            return null;
-
-        if (survivorIndex < 0 || survivorIndex >= survivorSpawnPoints.Count)
-            return null;
-
-        return survivorSpawnPoints[survivorIndex];
-    }
-
     public void MoveToGameScene()
     {
         if (!NetworkServer.active)
         {
-            Debug.LogWarning("[CustomNetworkManager] 서버가 활성화되어 있지 않아 Game 씬으로 이동할 수 없습니다.");
+            Debug.LogWarning("[CustomNetworkManager] 서버가 활성화되어 있지 않아 InGame 씬으로 이동할 수 없습니다.");
             return;
         }
 
-        if (string.IsNullOrWhiteSpace("Game"))
+        if (string.IsNullOrWhiteSpace(inGameSceneName))
         {
-            Debug.LogError("[CustomNetworkManager] Game씬이 존재하지 않습니다.");
+            Debug.LogError("[CustomNetworkManager] InGame 씬 이름이 설정되지 않았습니다.");
             return;
         }
 
-        Debug.Log($"[CustomNetworkManager] Game씬으로 이동");
-        ServerChangeScene("Game");
+        Debug.Log($"[CustomNetworkManager] {inGameSceneName} 씬으로 이동");
+        ServerChangeScene(inGameSceneName);
     }
 
     #endregion
