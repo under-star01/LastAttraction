@@ -11,6 +11,10 @@ public class UploadComputer : NetworkBehaviour, IInteractable
     [SyncVar]
     private bool isOpen;
 
+    // ProgressUI에 보여줄 공유 업로드 진행도다.
+    [SyncVar]
+    private float uploadProgress01;
+
     // 이 컴퓨터를 현재 사용 중인 생존자 netId 목록이다.
     private readonly HashSet<uint> users = new HashSet<uint>();
 
@@ -54,9 +58,6 @@ public class UploadComputer : NetworkBehaviour, IInteractable
         if (GameManager.Instance == null)
             return;
 
-        if (GameManager.Instance.GateOpened)
-            return;
-
         GameManager.Instance.AddUpload(users.Count);
     }
 
@@ -67,11 +68,20 @@ public class UploadComputer : NetworkBehaviour, IInteractable
         isOpen = value;
     }
 
+    // GameManager가 서버 progress를 UI용 SyncVar로 전달할 때 호출한다.
+    [Server]
+    public void SetProgress(float value)
+    {
+        uploadProgress01 = Mathf.Clamp01(value);
+    }
+
     // 업로드 완료 시 모든 사용자와 로컬 UI 상태를 정리한다.
     [Server]
     public void StopAllUsers()
     {
+        isOpen = false;
         users.Clear();
+
         RpcStopAll();
     }
 
@@ -197,12 +207,6 @@ public class UploadComputer : NetworkBehaviour, IInteractable
         if (!isOpen)
             return false;
 
-        if (GameManager.Instance == null)
-            return false;
-
-        if (GameManager.Instance.GateOpened)
-            return false;
-
         if (localInteractor == null || localState == null)
             return false;
 
@@ -247,7 +251,7 @@ public class UploadComputer : NetworkBehaviour, IInteractable
             localInteractor.HideProgress(this, resetProgress);
     }
 
-    // 업로드 중인 로컬 플레이어에게 GameManager의 공유 progress를 보여준다.
+    // 업로드 중인 로컬 플레이어에게 동기화된 공유 progress를 보여준다.
     private void UpdateUI()
     {
         if (!isUploading)
@@ -256,10 +260,7 @@ public class UploadComputer : NetworkBehaviour, IInteractable
         if (localInteractor == null)
             return;
 
-        if (GameManager.Instance == null)
-            return;
-
-        localInteractor.ShowProgress(this, GameManager.Instance.UploadProgress01);
+        localInteractor.ShowProgress(this, uploadProgress01);
     }
 
     // 범위 안에 있는 로컬 플레이어에게 상호작용 가능 여부를 갱신한다.

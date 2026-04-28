@@ -414,7 +414,7 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         if (localQTEUI != null)
             localQTEUI.ForceClose(false);
 
-        // NetworkIdentity가 붙은 오브젝트는 SetActive(false) 하지 않는다.
+        // gameObject.SetActive(false)는 사용하지 않는다.
     }
 
     // 내 로컬 플레이어가 조사 중일 때만 ProgressUI를 표시한다.
