@@ -2573,7 +2573,8 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  gateObject: {fileID: 885737345}
+  gateRenderer: {fileID: 730931936}
+  gateCollider: {fileID: 730931935}
 --- !u!4 &885737348
 Transform:
   m_ObjectHideFlags: 0
@@ -3890,9 +3891,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9bf16d8564b606549a45c2221ce3d71d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
   survivorInputEnabled: 0
   needEvidenceCount: 0
   uploadTime: 60
