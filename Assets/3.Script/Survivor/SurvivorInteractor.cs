@@ -249,11 +249,14 @@ public class SurvivorInteractor : NetworkBehaviour
         currentInteractable = best;
     }
 
-    // 우선순위
+    // 우선순위가 높은 상호작용 대상을 먼저 선택한다.
     private int GetPriority(IInteractable interactable)
     {
         if (interactable is Prison)
             return 1000;
+
+        if (interactable is UploadComputer)
+            return 800;
 
         if (interactable is SurvivorHeal)
             return 300;

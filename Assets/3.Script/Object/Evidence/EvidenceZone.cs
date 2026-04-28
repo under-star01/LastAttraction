@@ -5,23 +5,29 @@ public class EvidenceZone : MonoBehaviour
 {
     [SerializeField] private EvidencePoint[] points;
 
-    // 이 구역에서 진짜 증거 1개
+    // 이 구역에서 선택된 진짜 증거 1개다.
     private EvidencePoint realEvidencePoint;
+
+    // 같은 구역이 중복 완료 처리되는 것을 막는다.
+    private bool isFound;
 
     private void Start()
     {
-        // 서버에서만 진짜 증거 선택
+        // 서버에서만 진짜 증거 선택과 구역 등록을 처리한다.
         if (!NetworkServer.active)
             return;
 
         if (points == null || points.Length == 0)
             points = GetComponentsInChildren<EvidencePoint>(true);
 
-        SelectRandomEvidenceServer();
+        if (GameManager.Instance != null)
+            GameManager.Instance.AddZone(this);
+
+        PickReal();
     }
 
-    // 서버만 여러 포인트 중 하나를 랜덤으로 진짜 증거로 선택
-    private void SelectRandomEvidenceServer()
+    // 서버에서 여러 EvidencePoint 중 하나를 진짜 증거로 고른다.
+    private void PickReal()
     {
         if (points == null || points.Length == 0)
             return;
@@ -40,19 +46,20 @@ public class EvidenceZone : MonoBehaviour
         Debug.Log($"{name} : 진짜 증거는 {realEvidencePoint.name}");
     }
 
-    // 진짜 증거가 발견됐을 때 호출됨
+    // 진짜 증거가 발견되면 GameManager에 완료를 보고한다.
     public void OnRealEvidenceFound(EvidencePoint point)
     {
-        // 서버에서만 처리
         if (!NetworkServer.active)
             return;
 
+        if (isFound)
+            return;
+
+        isFound = true;
+
         Debug.Log($"{name} : 진짜 증거 발견 완료 - {point.name}");
 
-        // 나중에 여기서:
-        // 총 증거 개수 증가
-        // 문 열기
-        // 목표 진행도 갱신
-        // 같은 처리 추가 
+        if (GameManager.Instance != null)
+            GameManager.Instance.AddEvidence(this);
     }
 }
