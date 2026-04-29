@@ -2053,157 +2053,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0808e826e43f6054a9ad35652e963d3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Prison
---- !u!1 &746813346
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 746813347}
-  - component: {fileID: 746813350}
-  - component: {fileID: 746813351}
-  - component: {fileID: 746813352}
-  m_Layer: 0
-  m_Name: NetworkManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &746813347
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 746813346}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &746813350
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 746813346}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6b0fecffa3f624585964b0d0eb21b18e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Mirror.Transports::kcp2k.KcpTransport
-  port: 7777
-  DualMode: 1
-  NoDelay: 1
-  Interval: 10
-  Timeout: 10000
-  RecvBufferSize: 7361536
-  SendBufferSize: 7361536
-  FastResend: 2
-  ReceiveWindowSize: 4096
-  SendWindowSize: 4096
-  MaxRetransmit: 40
-  MaximizeSocketBuffers: 1
-  ReliableMaxMessageSize: 297433
-  UnreliableMaxMessageSize: 1194
-  debugLog: 0
-  statisticsGUI: 0
-  statisticsLog: 0
---- !u!114 &746813351
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 746813346}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 20230af5cb524bf49a54901cc9da62b4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CustomNetworkManager
-  dontDestroyOnLoad: 1
-  runInBackground: 1
-  headlessStartMode: 0
-  editorAutoStart: 0
-  sendRate: 60
-  offlineScene: 
-  onlineScene: 
-  offlineSceneLoadDelay: 0
-  transport: {fileID: 746813350}
-  networkAddress: 13.209.98.238
-  maxConnections: 5
-  disconnectInactiveConnections: 0
-  disconnectInactiveTimeout: 60
-  authenticator: {fileID: 0}
-  playerPrefab: {fileID: 0}
-  autoCreatePlayer: 0
-  playerSpawnMethod: 0
-  spawnPrefabs:
-  - {fileID: 4927261843557937582, guid: 470a07f3f0fd0274ea04be167aa0f731, type: 3}
-  - {fileID: 1259102208159664560, guid: eed0311fd466def4485fbef09acaae03, type: 3}
-  - {fileID: 3325040267953218945, guid: 63c20eccf90c6844aadab5e4b9b03a0a, type: 3}
-  - {fileID: 9199881581034011608, guid: 46d143b9a00f94443a11aafd2467486d, type: 3}
-  - {fileID: 2267120541990146072, guid: 464b89d658834834ea5abed8d7bb6ee7, type: 3}
-  - {fileID: 36595172533659229, guid: 7e28d92277551844fa6503d4adf3aae8, type: 3}
-  - {fileID: 4049048245582396780, guid: 9de506a33e3fece4c94fe8254ef8952c, type: 3}
-  - {fileID: 4072989509792940907, guid: 69959e905f33b2f4ba6e3241b66b0c30, type: 3}
-  - {fileID: 4072989509792940907, guid: d1cf51325c7ac654a9f9d355178fcf2f, type: 3}
-  - {fileID: 4072989509792940907, guid: b4fc31c6b3d6d684a84624ef63734330, type: 3}
-  - {fileID: 4072989509792940907, guid: f3d75685d03c1b74194bd1bef2617a64, type: 3}
-  - {fileID: 2948879085556891257, guid: 6a846bf8956fc22459bd034cee3bb808, type: 3}
-  - {fileID: 4541725823791181778, guid: 53d28a4617461e141a996f85cdfab0c6, type: 3}
-  - {fileID: 7681559504342553459, guid: a07f6da5260b7bb4e9af254a3034f3c7, type: 3}
-  - {fileID: 321564683795887707, guid: dd5e2cc5be8c8b640b118ff0a9bd5c60, type: 3}
-  exceptionsDisconnect: 1
-  snapshotSettings:
-    bufferTimeMultiplier: 2
-    bufferLimit: 32
-    catchupNegativeThreshold: -1
-    catchupPositiveThreshold: 1
-    catchupSpeed: 0.019999999552965164
-    slowdownSpeed: 0.03999999910593033
-    driftEmaDuration: 1
-    dynamicAdjustment: 1
-    dynamicAdjustmentTolerance: 1
-    deliveryTimeEmaDuration: 2
-  evaluationMethod: 0
-  evaluationInterval: 3
-  timeInterpolationGui: 0
-  serverPorts: 611e621e631e
-  killerPrefab: {fileID: 9199881581034011608, guid: 46d143b9a00f94443a11aafd2467486d, type: 3}
-  survivorPrefabs:
-  - {fileID: 4072989509792940907, guid: 69959e905f33b2f4ba6e3241b66b0c30, type: 3}
-  - {fileID: 4072989509792940907, guid: d1cf51325c7ac654a9f9d355178fcf2f, type: 3}
-  - {fileID: 4072989509792940907, guid: b4fc31c6b3d6d684a84624ef63734330, type: 3}
-  - {fileID: 4072989509792940907, guid: f3d75685d03c1b74194bd1bef2617a64, type: 3}
-  killerSpawnPoint: {fileID: 8884054094056992866}
-  survivorSpawnPoints:
-  - {fileID: 852451604819413679}
-  - {fileID: 1660334512827883044}
-  - {fileID: 2002867327353675634}
-  - {fileID: 6869168274988472984}
-  maxRoomPlayers: 5
---- !u!114 &746813352
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 746813346}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6442dc8070ceb41f094e44de0bf87274, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Mirror::Mirror.NetworkManagerHUD
-  offsetX: 0
-  offsetY: 0
 --- !u!1 &801857424
 GameObject:
   m_ObjectHideFlags: 0
@@ -2721,8 +2570,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIManager
   killerButton: {fileID: 374057172}
   survivorButton: {fileID: 1226449983}
-  loadingPanel: {fileID: 250621163}
   startButton: {fileID: 1647897499}
+  readyButton: {fileID: 0}
+  returnButton: {fileID: 0}
+  readyCountText: {fileID: 0}
+  loadingPanel: {fileID: 250621163}
 --- !u!4 &1340424656
 Transform:
   m_ObjectHideFlags: 0
@@ -5936,7 +5788,6 @@ SceneRoots:
   - {fileID: 421889593}
   - {fileID: 1340424656}
   - {fileID: 591203397}
-  - {fileID: 746813347}
   - {fileID: 2130187010}
   - {fileID: 6065116513270031941}
   - {fileID: 621794175}
