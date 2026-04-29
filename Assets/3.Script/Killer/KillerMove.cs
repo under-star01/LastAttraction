@@ -53,8 +53,8 @@ public class KillerMove : NetworkBehaviour
         }
         if (audioListener != null) audioListener.enabled = true;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        //Cursor.lockState = CursorLockMode.Locked;
+        //Cursor.visible = false;
     }
 
     private void Update()
