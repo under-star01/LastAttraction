@@ -407,6 +407,13 @@ public class CustomNetworkManager : NetworkManager
     // Start UI 버튼에서 호출
     public void RequestStartGame()
     {
+        Debug.Log(
+            $"[CustomNetworkManager] Start 요청 시도 / " +
+            $"isConnected: {NetworkClient.isConnected}, " +
+            $"ready: {NetworkClient.ready}, " +
+            $"localJoinRole: {localJoinRole}"
+        );
+
         if (!NetworkClient.isConnected)
         {
             Debug.LogWarning("[CustomNetworkManager] 서버에 연결되어 있지 않아 Start 요청을 보낼 수 없습니다.");
@@ -686,6 +693,8 @@ public class CustomNetworkManager : NetworkManager
     // 살인마 Start 요청 수신
     private void OnReceiveStartGameRequest(NetworkConnectionToClient conn, StartGameRequestMessage msg)
     {
+        Debug.Log($"[CustomNetworkManager] 서버 Start 요청 수신 / Conn: {conn.connectionId}");
+
         if (!joinedRoles.TryGetValue(conn.connectionId, out JoinRole role))
         {
             Debug.LogWarning("[CustomNetworkManager] 역할이 등록되지 않은 연결에서 Start 요청이 들어왔습니다.");
@@ -698,13 +707,24 @@ public class CustomNetworkManager : NetworkManager
             return;
         }
 
-        if (!CanStartGame())
+        bool canStart = CanStartGame();
+
+        Debug.Log(
+            $"[CustomNetworkManager] 시작 조건 확인 / " +
+            $"CanStart: {canStart}, " +
+            $"HasKiller: {HasKiller}, " +
+            $"Survivor: {GetReadySurvivorCount()}/{GetCurrentSurvivorCount()}"
+        );
+
+        if (!canStart)
         {
             Debug.LogWarning("[CustomNetworkManager] 게임 시작 조건을 만족하지 못했습니다.");
             BroadcastLobbyState();
             return;
         }
 
+
+        Debug.Log("[CustomNetworkManager] 게임 시작 조건 만족. 씬 이동 실행");
         MoveToGameScene();
     }
 
@@ -953,6 +973,12 @@ public class CustomNetworkManager : NetworkManager
 
     public void MoveToGameScene()
     {
+        Debug.Log(
+            $"[CustomNetworkManager] MoveToGameScene 호출 / " +
+            $"NetworkServer.active: {NetworkServer.active}, " +
+            $"inGameSceneName: {inGameSceneName}"
+        );
+
         if (!NetworkServer.active)
         {
             Debug.LogWarning("[CustomNetworkManager] 서버가 활성화되어 있지 않아 InGame 씬으로 이동할 수 없습니다.");
