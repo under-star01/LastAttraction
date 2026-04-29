@@ -227,4 +227,9 @@ public class UIManager : MonoBehaviour
     {
         ShowRoleSelectUI();
     }
+
+    public void MoveScene()
+    {
+        CustomNetworkManager.Instance.MoveToGameScene();
+    }
 }
