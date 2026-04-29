@@ -26,6 +26,7 @@ public class Pallet : NetworkBehaviour, IInteractable
     [SerializeField] private float stunTime = 1.2f;              // 판자 스턴 시간
 
     // 판자가 내려졌는지 여부다.
+    // Prison의 isDoorOpen처럼 상태를 SyncVar로 동기화하고, hook에서 클라이언트 애니메이션을 실행한다.
     [SyncVar(hook = nameof(OnDroppedChanged))]
     private bool isDropped;
 
@@ -56,7 +57,7 @@ public class Pallet : NetworkBehaviour, IInteractable
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
 
-        // 현재 SyncVar 상태에 맞게 콜라이더를 적용한다.
+        // 시작 시 현재 SyncVar 상태에 맞게 콜라이더를 적용한다.
         ApplyDroppedState(isDropped);
     }
 
@@ -65,8 +66,12 @@ public class Pallet : NetworkBehaviour, IInteractable
         // Mirror 기본 클라이언트 시작 처리를 실행한다.
         base.OnStartClient();
 
-        // 늦게 접속한 클라이언트도 현재 판자 상태를 적용한다.
+        // 늦게 접속한 클라이언트도 현재 판자 상태에 맞게 콜라이더를 적용한다.
         ApplyDroppedState(isDropped);
+
+        // 이미 내려진 상태로 접속했다면 판자 Animator도 내려진 상태로 맞춘다.
+        if (isDropped)
+            PlayPalletTrigger("Drop");
     }
 
     private void Update()
@@ -287,8 +292,13 @@ public class Pallet : NetworkBehaviour, IInteractable
         if (move != null)
             move.PlayAnimation("Drop");
 
-        // 모든 클라이언트에서 판자 내리기 애니메이션을 재생한다.
-        RpcPlayPalletTrigger("Drop");
+        // 중요:
+        // 판자 자체 Drop 애니메이션은 ClientRpc로 직접 실행하지 않는다.
+        // isDropped가 true로 바뀌면 각 클라이언트의 OnDroppedChanged에서 Drop Trigger를 실행한다.
+        isDropped = true;
+
+        // 서버에서도 즉시 콜라이더 상태를 적용한다.
+        ApplyDroppedState(true);
 
         // 내려오는 판자 안에 겹친 생존자를 정리한다.
         PushOutServer();
@@ -298,12 +308,6 @@ public class Pallet : NetworkBehaviour, IInteractable
 
         // 내리기 연출 시간만큼 기다린다.
         yield return new WaitForSeconds(dropActionTime);
-
-        // 판자를 내려진 상태로 변경한다.
-        isDropped = true;
-
-        // 서버에서도 즉시 콜라이더 상태를 적용한다.
-        ApplyDroppedState(true);
 
         // CharacterController를 다시 켠다.
         if (controller != null)
@@ -520,7 +524,7 @@ public class Pallet : NetworkBehaviour, IInteractable
         if (killerAnimator != null)
             killerAnimator.SetTrigger("Break");
 
-        // 모든 클라이언트에서 판자 부수기 애니메이션을 재생한다.
+        // 부수기는 isDropped 같은 상태 변경이 아니라 일회성 연출이므로 RPC로 유지한다.
         RpcPlayPalletTrigger("Break");
 
         // 부수기 시간만큼 기다린다.
@@ -768,11 +772,15 @@ public class Pallet : NetworkBehaviour, IInteractable
         localInteractor.SetInteractable(this);
     }
 
-    // 판자 내려짐 상태가 동기화되면 클라이언트에서도 콜라이더를 바꾼다.
+    // 판자 내려짐 상태가 동기화되면 클라이언트에서 콜라이더와 애니메이션을 적용한다.
     private void OnDroppedChanged(bool oldValue, bool newValue)
     {
         // 내려짐 상태에 맞는 콜라이더 상태를 적용한다.
         ApplyDroppedState(newValue);
+
+        // false -> true로 바뀌는 순간에만 Drop 애니메이션을 실행한다.
+        if (!oldValue && newValue)
+            PlayPalletTrigger("Drop");
     }
 
     // 세워짐 / 내려짐 상태에 맞게 콜라이더를 전환한다.
@@ -787,13 +795,29 @@ public class Pallet : NetworkBehaviour, IInteractable
             droppedCollider.enabled = dropped;
     }
 
-    // 모든 클라이언트에서 판자 애니메이션 Trigger를 실행한다.
+    // 판자 Animator Trigger를 실행한다.
+    private void PlayPalletTrigger(string triggerName)
+    {
+        // 애니메이터가 없으면 실행하지 않는다.
+        if (animator == null)
+        {
+            Debug.LogWarning($"[Pallet] Animator가 연결되지 않았습니다: {name}", this);
+            return;
+        }
+
+        // 같은 Trigger가 남아 있을 수 있으므로 한번 초기화한다.
+        animator.ResetTrigger(triggerName);
+
+        // Trigger를 실행한다.
+        animator.SetTrigger(triggerName);
+    }
+
+    // 부수기처럼 상태 SyncVar가 없는 일회성 연출은 RPC로 실행한다.
     [ClientRpc]
     private void RpcPlayPalletTrigger(string triggerName)
     {
-        // 애니메이터가 있으면 Trigger를 실행한다.
-        if (animator != null)
-            animator.SetTrigger(triggerName);
+        // 클라이언트에서 판자 Trigger를 실행한다.
+        PlayPalletTrigger(triggerName);
     }
 
     // 액터가 현재 왼쪽/오른쪽 중 어느 쪽에 있는지 구한다.
