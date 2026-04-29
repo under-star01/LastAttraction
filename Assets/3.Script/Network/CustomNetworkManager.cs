@@ -684,7 +684,7 @@ public class CustomNetworkManager : NetworkManager
     }
 
     // 살인마 Start 요청 수신
-    public void OnReceiveStartGameRequest(NetworkConnectionToClient conn, StartGameRequestMessage msg)
+    private void OnReceiveStartGameRequest(NetworkConnectionToClient conn, StartGameRequestMessage msg)
     {
         if (!joinedRoles.TryGetValue(conn.connectionId, out JoinRole role))
         {
@@ -951,7 +951,7 @@ public class CustomNetworkManager : NetworkManager
         return count;
     }
 
-    private void MoveToGameScene()
+    public void MoveToGameScene()
     {
         if (!NetworkServer.active)
         {

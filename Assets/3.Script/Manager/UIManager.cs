@@ -104,7 +104,7 @@ public class UIManager : MonoBehaviour
         ShowRoleSelectUI();
     }
 
-    public void OnClickReadyButton()
+    private void OnClickReadyButton()
     {
         if (CustomNetworkManager.Instance == null)
         {
@@ -119,7 +119,7 @@ public class UIManager : MonoBehaviour
         UpdateReadyButtonView();
     }
 
-    public void OnClickStartButton()
+    private void OnClickStartButton()
     {
         if (CustomNetworkManager.Instance == null)
         {
@@ -226,5 +226,10 @@ public class UIManager : MonoBehaviour
     public void DisableCanvas()
     {
         ShowRoleSelectUI();
+    }
+
+    public void MoveScene()
+    {
+        CustomNetworkManager.Instance.MoveToGameScene();
     }
 }
