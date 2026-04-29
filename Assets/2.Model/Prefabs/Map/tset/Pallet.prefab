@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 6901615392935112166}
   - component: {fileID: 833865828154330898}
   m_Layer: 0
-  m_Name: Pallets
+  m_Name: Pallet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
