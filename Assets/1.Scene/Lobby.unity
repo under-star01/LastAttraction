@@ -2094,11 +2094,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   audioDataList:
-  - key: 0
-    clip: {fileID: 0}
+  - key: 1
+    clip: {fileID: 8300000, guid: e1c1f6c7f9b13694fb7c6f59b079e237, type: 3}
     volume: 1
-    minDistance: 0
-    maxDistance: 0
+    minDistance: 1
+    maxDistance: 16
+  - key: 2
+    clip: {fileID: 8300000, guid: f813958d81d86464186d6dabb829b4b8, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 8
+  - key: 3
+    clip: {fileID: 8300000, guid: cd902335d9aa89840b8a878e5929b307, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 8
+  - key: 4
+    clip: {fileID: 8300000, guid: 6e144ae3788eb4842977f10901e2ba17, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 8
+  - key: 5
+    clip: {fileID: 8300000, guid: 346e795e133c9b240b0b6af615371554, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 16
   audioSource2D: {fileID: 621794173}
 --- !u!4 &621794175
 Transform:

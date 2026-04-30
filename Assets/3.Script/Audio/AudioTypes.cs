@@ -22,11 +22,10 @@ public enum AudioKey
 {
     None,
 
-    ButtonClick,
-    PalletDrop,
-    WindowVault,
-    KillerAttack,
-    EvidenceSearch,
-    PrisonOpen,
-    PrisonClose
+    //생존자
+    SurvivorFootstep,       // 발소리
+    SurvivorHealLoop,       // 힐
+    SurvivorEvidenceLoop,   // 증거
+    SurvivorUploadLoop,     // 업로드
+    SurvivorPrisonLoop      // 감옥
 }

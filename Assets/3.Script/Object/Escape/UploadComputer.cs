@@ -82,6 +82,8 @@ public class UploadComputer : NetworkBehaviour, IInteractable
         isOpen = false;
         users.Clear();
 
+        StopUploadLoopSound();
+
         RpcStopAll();
     }
 
@@ -157,7 +159,13 @@ public class UploadComputer : NetworkBehaviour, IInteractable
             return;
         }
 
+        bool wasEmpty = users.Count == 0;
+
         users.Add(sender.identity.netId);
+
+        // 첫 사용자가 업로드를 시작했을 때만 루프 사운드 시작
+        if (wasEmpty && users.Count > 0)
+            StartUploadLoopSound();
 
         if (actionState != null)
         {
@@ -174,6 +182,9 @@ public class UploadComputer : NetworkBehaviour, IInteractable
             return;
 
         users.Remove(sender.identity.netId);
+
+        if (users.Count <= 0)
+            StopUploadLoopSound();
 
         SurvivorActionState actionState = sender.identity.GetComponent<SurvivorActionState>();
 
@@ -276,6 +287,27 @@ public class UploadComputer : NetworkBehaviour, IInteractable
             localInteractor.SetInteractable(this);
         else
             localInteractor.ClearInteractable(this);
+    }
+
+    // 사운드
+    [Server]
+    private void StartUploadLoopSound()
+    {
+        NetworkAudioManager.StartLoopAudioForEveryone(
+            netId,
+            AudioKey.SurvivorUploadLoop,
+            AudioDimension.Sound3D,
+            transform.position
+        );
+    }
+
+    [Server]
+    private void StopUploadLoopSound()
+    {
+        NetworkAudioManager.StopLoopAudioForEveryone(
+            netId,
+            AudioKey.SurvivorUploadLoop
+        );
     }
 
     // 로컬 생존자가 Trigger 범위에 들어오면 상호작용 후보로 등록한다.

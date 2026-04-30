@@ -202,6 +202,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
 
         // 이번 조사에서 발생할 QTE 타이밍을 새로 생성한다.
         SetupQTEPointsServer();
+
+        // 증거 조사 루프 사운드 시작
+        StartLoopSound();
     }
 
     // 클라이언트가 서버에 조사 종료를 요청한다.
@@ -351,6 +354,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
     [Server]
     private void StopServerInteract()
     {
+        // 조사 루프 사운드 종료
+        StopLoopSound();
+
         // 조사 중 상태를 해제한다.
         isInteracting = false;
 
@@ -377,6 +383,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
     [Server]
     private void CompleteServer()
     {
+        // 완료로 끝나도 루프 사운드는 반드시 종료
+        StopLoopSound();
+
         // 완료 상태를 true로 변경한다.
         isCompleted = true;
 
@@ -713,6 +722,27 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         // 이동 컴포넌트가 있으면 Searching Bool을 적용한다.
         if (localMove != null)
             localMove.SetSearching(value);
+    }
+
+    // 사운드
+    [Server]
+    private void StartLoopSound()
+    {
+        NetworkAudioManager.StartLoopAudioForEveryone(
+            netId,
+            AudioKey.SurvivorEvidenceLoop,
+            AudioDimension.Sound3D,
+            transform.position
+        );
+    }
+
+    [Server]
+    private void StopLoopSound()
+    {
+        NetworkAudioManager.StopLoopAudioForEveryone(
+            netId,
+            AudioKey.SurvivorEvidenceLoop
+        );
     }
 
     // 로컬 생존자가 증거 범위 안에 들어오면 호출된다.
