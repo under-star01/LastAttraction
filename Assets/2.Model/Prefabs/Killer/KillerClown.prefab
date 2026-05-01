@@ -11535,6 +11535,12 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   isRaging: 0
+  rageBuildThreshold: 1
+  rageDuration: 10
+  detectRange: 15
+  survivorLayer:
+    serializedVersion: 2
+    m_Bits: 393280
 --- !u!114 &3390365132958246041
 MonoBehaviour:
   m_ObjectHideFlags: 0
