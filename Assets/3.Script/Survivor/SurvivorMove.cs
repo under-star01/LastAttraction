@@ -23,6 +23,10 @@ public class SurvivorMove : NetworkBehaviour
     [SerializeField] private float minPitch = -60f;
     [SerializeField] private float maxPitch = 60f;
 
+    [Header("발소리")]
+    [SerializeField] private AudioKey footstepKey = AudioKey.SurvivorFootstep;
+    [SerializeField] private float minFootstepInterval = 0.2f;
+
     [Header("컨트롤러 높이")]
     [SerializeField] private float standHeight = 1.8f;
     [SerializeField] private Vector3 standCenter = new Vector3(0f, 0.9f, 0f);
@@ -40,6 +44,7 @@ public class SurvivorMove : NetworkBehaviour
     private float localYaw;
     private float localPitch;
     private float yVelocity;
+    private float lastFootstepTime;
 
     private bool isMoveLocked;
 
@@ -717,5 +722,35 @@ public class SurvivorMove : NetworkBehaviour
     {
         if (moveState != null)
             moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
+    }
+
+    // Animation Event에서 호출할 함수
+    // Walk / Run 애니메이션의 발이 땅에 닿는 프레임에 이 함수를 이벤트로 넣는다.
+    public void Footstep()
+    {
+        // 모든 클라이언트의 Animator에서 Animation Event가 호출될 수 있다.
+        // 그래서 실제 서버 요청은 내 로컬 플레이어만 보내야 중복 재생이 안 된다.
+        if (!isLocalPlayer)
+            return;
+
+        // 블렌드 트리에서 Walk / Run 이벤트가 동시에 호출될 수 있으므로
+        // 너무 짧은 간격의 발소리는 무시한다.
+        if (Time.time < lastFootstepTime + minFootstepInterval)
+            return;
+
+        lastFootstepTime = Time.time;
+
+        CmdPlayFootstep();
+    }
+
+    // 로컬 플레이어가 서버에 발소리 재생을 요청한다.
+    [Command]
+    private void CmdPlayFootstep()
+    {
+        NetworkAudioManager.PlayAudioForEveryone(
+            footstepKey,
+            AudioDimension.Sound3D,
+            transform.position
+        );
     }
 }

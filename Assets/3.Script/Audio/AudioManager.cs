@@ -19,6 +19,10 @@ public class AudioManager : MonoBehaviour
     // 오디오를 빠르게 찾기 위한 Dictionary
     private Dictionary<AudioKey, AudioData> audioDataMap = new Dictionary<AudioKey, AudioData>();
 
+    // 루프 사운드를 관리하기 위한 Dictionary
+    // key는 네트워크 오브젝트 netId + AudioKey 조합으로 만든다.
+    private Dictionary<string, GameObject> loopAudioMap = new Dictionary<string, GameObject>();
+
     private void Awake()
     {
         // 싱글톤 중복 방지
@@ -117,6 +121,75 @@ public class AudioManager : MonoBehaviour
 
         // 재생 끝나면 임시 오브젝트 삭제
         Destroy(tempAudioObject, data.clip.length + 0.1f);
+    }
+
+    // 루프 사운드 시작
+    // loopId는 네트워크에서 같은 루프 사운드를 구분하기 위한 ID다.
+    public void StartLoopAudio(
+        uint ownerNetId,
+        AudioKey key,
+        AudioListenerTarget listenerTarget,
+        AudioDimension dimension,
+        Vector3 worldPosition)
+    {
+        if (!CanThisClientHear(listenerTarget))
+            return;
+
+        if (!audioDataMap.TryGetValue(key, out AudioData data))
+            return;
+
+        if (data == null || data.clip == null)
+            return;
+
+        string loopId = GetLoopId(ownerNetId, key);
+
+        // 이미 같은 루프가 재생 중이면 중복 생성하지 않는다.
+        if (loopAudioMap.ContainsKey(loopId))
+            return;
+
+        GameObject loopObject = new GameObject("Loop_Audio_" + key + "_" + ownerNetId);
+        loopObject.transform.position = worldPosition;
+
+        AudioSource source = loopObject.AddComponent<AudioSource>();
+        source.clip = data.clip;
+        source.volume = data.volume;
+        source.loop = true;
+        source.playOnAwake = false;
+
+        if (dimension == AudioDimension.Sound3D)
+        {
+            source.spatialBlend = 1f;
+            source.minDistance = data.minDistance;
+            source.maxDistance = data.maxDistance;
+            source.rolloffMode = AudioRolloffMode.Linear;
+        }
+        else
+        {
+            source.spatialBlend = 0f;
+        }
+
+        source.Play();
+
+        loopAudioMap.Add(loopId, loopObject);
+    }
+
+    // 루프 사운드 종료
+    public void StopLoopAudio(uint ownerNetId, AudioKey key)
+    {
+        string loopId = GetLoopId(ownerNetId, key);
+
+        if (!loopAudioMap.TryGetValue(loopId, out GameObject loopObject))
+            return;
+
+        loopAudioMap.Remove(loopId);
+
+        if (loopObject != null)
+            Destroy(loopObject);
+    }
+
+    private string GetLoopId(uint ownerNetId, AudioKey key)
+    {
+        return ownerNetId + "_" + key;
     }
 
     // 현재 이 클라이언트가 이 소리를 들어야 하는지 판정

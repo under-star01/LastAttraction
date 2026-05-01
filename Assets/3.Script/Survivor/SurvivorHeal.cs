@@ -141,6 +141,9 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         isHealing = true;
         healer = sender.identity.netId;
 
+        // 힐 루프 사운드 시작
+        StartHealLoopSound();
+
         if (targetActionState != null)
             targetActionState.SetHeal(true);
 
@@ -211,6 +214,8 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
     [Server]
     private void StopHeal()
     {
+        StopHealLoopSound();
+
         uint stoppedHealer = healer;
 
         isHealing = false;
@@ -228,6 +233,8 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
     [Server]
     private void CompleteHeal()
     {
+        StopHealLoopSound();
+
         uint stoppedHealer = healer;
 
         isHealing = false;
@@ -405,6 +412,38 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
             localTargetInteractor = targetInteractor;
     }
 
+    [TargetRpc]
+    private void TargetLockTarget(NetworkConnection target, bool value)
+    {
+        if (targetMove == null)
+            return;
+
+        targetMove.SetMoveLock(value);
+
+        if (value)
+            targetMove.StopAnimation();
+    }
+
+    [Server]
+    private void StartHealLoopSound()
+    {
+        NetworkAudioManager.StartLoopAudioForEveryone(
+            netId,
+            AudioKey.SurvivorHealLoop,
+            AudioDimension.Sound3D,
+            transform.position
+        );
+    }
+
+    [Server]
+    private void StopHealLoopSound()
+    {
+        NetworkAudioManager.StopLoopAudioForEveryone(
+            netId,
+            AudioKey.SurvivorHealLoop
+        );
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Survivor"))
@@ -464,15 +503,4 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
         localHealerActionState = null;
     }
 
-    [TargetRpc]
-    private void TargetLockTarget(NetworkConnection target, bool value)
-    {
-        if (targetMove == null)
-            return;
-
-        targetMove.SetMoveLock(value);
-
-        if (value)
-            targetMove.StopAnimation();
-    }
 }

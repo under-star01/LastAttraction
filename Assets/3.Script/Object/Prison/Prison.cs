@@ -327,6 +327,9 @@ public class Prison : NetworkBehaviour, IInteractable
         isInteracting = true;
         currentUserId = actorState.netId;
         progress = 0f;
+
+        // 감옥 상호작용 루프 사운드 시작
+        StartPrisonLoopSound();
     }
 
     // 실제 Hold 종료
@@ -340,6 +343,8 @@ public class Prison : NetworkBehaviour, IInteractable
     [Server]
     private void StopInteract()
     {
+        StopPrisonLoopSound();
+
         isInteracting = false;
         currentUserId = 0;
         progress = 0f;
@@ -584,6 +589,35 @@ public class Prison : NetworkBehaviour, IInteractable
         localMove.SetSearching(false);
     }
 
+    // 진행도 UI / Searching 강제 종료
+    [ClientRpc]
+    private void RpcStopLocalUI()
+    {
+        StopLocalInteractFx();
+
+        if (localInteractor != null)
+            localInteractor.HideProgress(this, true);
+    }
+
+    [Server]
+    private void StartPrisonLoopSound()
+    {
+        NetworkAudioManager.StartLoopAudioForEveryone(
+            netId,
+            AudioKey.SurvivorPrisonLoop,
+            AudioDimension.Sound3D,
+            transform.position
+        );
+    }
+
+    [Server]
+    private void StopPrisonLoopSound()
+    {
+        NetworkAudioManager.StopLoopAudioForEveryone(
+            netId,
+            AudioKey.SurvivorPrisonLoop
+        );
+    }
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Survivor"))
@@ -646,13 +680,4 @@ public class Prison : NetworkBehaviour, IInteractable
         }
     }
 
-    // 진행도 UI / Searching 강제 종료
-    [ClientRpc]
-    private void RpcStopLocalUI()
-    {
-        StopLocalInteractFx();
-
-        if (localInteractor != null)
-            localInteractor.HideProgress(this, true);
-    }
 }
