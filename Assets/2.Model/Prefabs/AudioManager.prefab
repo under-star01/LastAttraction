@@ -48,7 +48,7 @@ MonoBehaviour:
   audioDataList:
   - key: 1
     clip: {fileID: 8300000, guid: e1c1f6c7f9b13694fb7c6f59b079e237, type: 3}
-    volume: 1
+    volume: 0.5
     minDistance: 1
     maxDistance: 16
   - key: 2
