@@ -51,7 +51,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
     [Header("Rage 전용 상태")]
     [SyncVar]
-    private bool isRecordingKiller = false;
+    [SerializeField] private bool isRecordingKiller = false;
     public bool IsRecordingKiller => isRecordingKiller;
 
     // 자주 쓰는 레이어 번호 캐시
