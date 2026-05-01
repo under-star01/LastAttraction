@@ -49,6 +49,11 @@ public class SurvivorCameraSkill : NetworkBehaviour
     // 로컬 플레이어 UI / 카메라 준비 완료 여부
     private bool isLocalReady;
 
+    [Header("Rage 전용 상태")]
+    [SyncVar]
+    private bool isRecordingKiller = false;
+    public bool IsRecordingKiller => isRecordingKiller;
+
     // 자주 쓰는 레이어 번호 캐시
     private int camWorldLayer;
     private int hideSelfLayer;
@@ -294,6 +299,12 @@ public class SurvivorCameraSkill : NetworkBehaviour
     {
         bool detected = Time.time <= lastKillerDetectedTime + detectedHoldTime;
         SetFrameDetected(detected);
+
+        // 촬영 상태가 변경될 때만 서버에 Command 보냄
+        if (isLocalPlayer && isRecordingKiller != detected)
+        {
+            CmdSetRecordingKiller(detected);
+        }
     }
 
     // 프레임 UI 색상 변경
@@ -460,5 +471,12 @@ public class SurvivorCameraSkill : NetworkBehaviour
             normalCinemachine.Priority = 30;
             skillCinemachine.Priority = 0;
         }
+    }
+
+
+    [Command]
+    private void CmdSetRecordingKiller(bool value)
+    {
+        isRecordingKiller = value;
     }
 }

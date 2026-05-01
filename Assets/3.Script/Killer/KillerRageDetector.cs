@@ -16,23 +16,34 @@ public class KillerRageDetector : NetworkBehaviour
     // 현재 시각효과가 적용된 생존자 추적 (정리용)
     private HashSet<SurvivorVisualEffect> activeEffects = new();
 
-    public void SetActive(bool value)
+    private KillerState killerState;
+
+    private void Awake()
     {
-        isActive = value;
-        Debug.Log($"[RageDetector] SetActive({value}) 호출됨");
-        if (!value) ClearAllEffects();
+        killerState = GetComponent<KillerState>();
     }
 
     private void Update()
     {
-        // 킬러 로컬 클라이언트에서만 실행 (시각효과는 킬러 화면에만 필요)
-        if (!isLocalPlayer || !isActive) return;
+        if (!isLocalPlayer || killerState == null || !killerState.IsRaging)
+        {
+            // 분노가 끝났을 때 한 번만 효과를 정리하도록 로직 추가 가능
+            if (activeEffects.Count > 0) ClearAllEffects();
+            return;
+        }
 
         timer += Time.deltaTime;
         if (timer < updateInterval) return;
         timer = 0f;
 
         DetectSurvivors();
+    }
+
+    public void SetActive(bool value)
+    {
+        isActive = value;
+        Debug.Log($"[RageDetector] SetActive({value}) 호출됨");
+        if (!value) ClearAllEffects();
     }
 
     private void DetectSurvivors()
