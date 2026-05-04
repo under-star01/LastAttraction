@@ -2519,6 +2519,7 @@ MonoBehaviour:
   - {fileID: 2002867327353675634}
   - {fileID: 6869168274988472984}
   maxRoomPlayers: 5
+  inGameSceneName: InGame
 --- !u!114 &746813352
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3634,8 +3635,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIManager
   killerButton: {fileID: 374057172}
   survivorButton: {fileID: 1226449983}
+  startButton: {fileID: 3303635167484897631}
+  readyButton: {fileID: 5365321611949368140}
+  returnButton: {fileID: 421554610}
+  readyCountText: {fileID: 4149838607756346627}
   loadingPanel: {fileID: 250621163}
-  startButton: {fileID: 1647897499}
 --- !u!4 &1340424656
 Transform:
   m_ObjectHideFlags: 0
@@ -5806,7 +5810,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1340424655}
         m_TargetAssemblyTypeName: UIManager, Assembly-CSharp
         m_MethodName: OnClickStartButton
         m_Mode: 1
@@ -6488,7 +6492,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1340424655}
         m_TargetAssemblyTypeName: UIManager, Assembly-CSharp
         m_MethodName: OnClickReadyButton
         m_Mode: 1
