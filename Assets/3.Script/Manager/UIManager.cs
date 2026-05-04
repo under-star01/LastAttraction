@@ -9,13 +9,14 @@ public class UIManager : MonoBehaviour
     [Header("Role Select Buttons")]
     [SerializeField] private Button killerButton;
     [SerializeField] private Button survivorButton;
-    [SerializeField] private Button returnButton;
 
-    [Header("Start Game UI")]
-    [SerializeField] private GameObject startGameUI;
+    [Header("Lobby Buttons")]
     [SerializeField] private Button startButton;
     [SerializeField] private Button readyButton;
-    [SerializeField] private TMP_Text readyCntText;
+    [SerializeField] private Button returnButton;
+
+    [Header("Lobby Text")]
+    [SerializeField] private TMP_Text readyCountText;
 
     [Header("Loading UI")]
     [SerializeField] private GameObject loadingPanel;
@@ -32,42 +33,8 @@ public class UIManager : MonoBehaviour
 
         Instance = this;
 
-        BindButtons();
         ShowRoleSelectUI();
         ShowLoading(false);
-    }
-
-    private void BindButtons()
-    {
-        if (killerButton != null)
-        {
-            killerButton.onClick.RemoveAllListeners();
-            killerButton.onClick.AddListener(OnClickConnectKiller);
-        }
-
-        if (survivorButton != null)
-        {
-            survivorButton.onClick.RemoveAllListeners();
-            survivorButton.onClick.AddListener(OnClickConnectSurvivor);
-        }
-
-        if (returnButton != null)
-        {
-            returnButton.onClick.RemoveAllListeners();
-            returnButton.onClick.AddListener(OnClickBackButton);
-        }
-
-        if (startButton != null)
-        {
-            startButton.onClick.RemoveAllListeners();
-            startButton.onClick.AddListener(OnClickStartButton);
-        }
-
-        if (readyButton != null)
-        {
-            readyButton.onClick.RemoveAllListeners();
-            readyButton.onClick.AddListener(OnClickReadyButton);
-        }
     }
 
     public void OnClickConnectKiller()
@@ -98,13 +65,12 @@ public class UIManager : MonoBehaviour
             return;
 
         isReady = false;
-        UpdateReadyButtonView();
 
         CustomNetworkManager.Instance.BackToRoleSelect();
         ShowRoleSelectUI();
     }
 
-    private void OnClickReadyButton()
+    public void OnClickReadyButton()
     {
         if (CustomNetworkManager.Instance == null)
         {
@@ -115,10 +81,11 @@ public class UIManager : MonoBehaviour
         isReady = !isReady;
 
         CustomNetworkManager.Instance.RequestSurvivorReady(isReady);
+
         UpdateReadyButtonView();
     }
 
-    private void OnClickStartButton()
+    public void OnClickStartButton()
     {
         if (CustomNetworkManager.Instance == null)
         {
@@ -139,15 +106,13 @@ public class UIManager : MonoBehaviour
     {
         SetButtonActive(killerButton, true);
         SetButtonActive(survivorButton, true);
-        SetButtonActive(returnButton, false);
-
-        if (startGameUI != null)
-            startGameUI.SetActive(false);
 
         SetButtonActive(startButton, false);
         SetButtonActive(readyButton, false);
+        SetButtonActive(returnButton, false);
 
-        SetReadyCntActive(false);
+        SetReadyCountActive(false);
+
         SetStartButtonInteractable(false);
 
         isReady = false;
@@ -159,30 +124,29 @@ public class UIManager : MonoBehaviour
     {
         SetButtonActive(killerButton, false);
         SetButtonActive(survivorButton, false);
-        SetButtonActive(returnButton, true);
-
-        if (startGameUI != null)
-            startGameUI.SetActive(true);
 
         SetButtonActive(startButton, true);
         SetButtonActive(readyButton, false);
-        SetReadyCntActive(true);
+        SetButtonActive(returnButton, true);
+
+        SetReadyCountActive(true);
 
         SetStartButtonInteractable(false);
+
+        isReady = false;
+        UpdateReadyButtonView();
     }
 
     public void ShowSurvivorLobbyUI()
     {
         SetButtonActive(killerButton, false);
         SetButtonActive(survivorButton, false);
-        SetButtonActive(returnButton, true);
-
-        if (startGameUI != null)
-            startGameUI.SetActive(true);
 
         SetButtonActive(startButton, false);
         SetButtonActive(readyButton, true);
-        SetReadyCntActive(true);
+        SetButtonActive(returnButton, true);
+
+        SetReadyCountActive(true);
 
         isReady = false;
         UpdateReadyButtonView();
@@ -196,8 +160,8 @@ public class UIManager : MonoBehaviour
 
     public void SetLobbyReadyCount(int readyCount, int survivorCount)
     {
-        if (readyCntText != null)
-            readyCntText.text = $"{readyCount}/{survivorCount}";
+        if (readyCountText != null)
+            readyCountText.text = $"{readyCount}/{survivorCount}";
     }
 
     private void SetButtonActive(Button button, bool isActive)
@@ -206,10 +170,10 @@ public class UIManager : MonoBehaviour
             button.gameObject.SetActive(isActive);
     }
 
-    private void SetReadyCntActive(bool isActive)
+    private void SetReadyCountActive(bool isActive)
     {
-        if (readyCntText != null)
-            readyCntText.gameObject.SetActive(isActive);
+        if (readyCountText != null)
+            readyCountText.gameObject.SetActive(isActive);
     }
 
     private void UpdateReadyButtonView()
@@ -217,10 +181,12 @@ public class UIManager : MonoBehaviour
         if (readyButton == null)
             return;
 
-        TMP_Text text = readyButton.GetComponentInChildren<TMP_Text>();
+        TMP_Text buttonText = readyButton.GetComponentInChildren<TMP_Text>();
 
-        if (text != null)
-            text.text = isReady ? "READY" : "READY?";
+        if (buttonText == null)
+            return;
+
+        buttonText.text = isReady ? "READY" : "READY?";
     }
 
     public void DisableCanvas()
