@@ -90,13 +90,6 @@ public class SurvivorCameraSkill : NetworkBehaviour
         if (worldCameraModel != null)
             worldCameraModel.SetActive(false);
 
-        // 시작 시 내 플레이어가 아니면 시네머신도 꺼져 있어야 안전하다
-        if (normalCinemachine != null)
-            normalCinemachine.gameObject.SetActive(false);
-
-        if (skillCinemachine != null)
-            skillCinemachine.gameObject.SetActive(false);
-
         // 사용할 레이어 이름
         camWorldLayer = LayerMask.NameToLayer("CamWorld");
         hideSelfLayer = LayerMask.NameToLayer("HideSelf");
@@ -126,11 +119,8 @@ public class SurvivorCameraSkill : NetworkBehaviour
             if (skillCamera != null)
                 skillCamera.enabled = false;
 
-            if (normalCinemachine != null)
-                normalCinemachine.gameObject.SetActive(false);
-
-            if (skillCinemachine != null)
-                skillCinemachine.gameObject.SetActive(false);
+            if (cinemachineRoot != null)
+                cinemachineRoot.SetActive(false);
         }
     }
 

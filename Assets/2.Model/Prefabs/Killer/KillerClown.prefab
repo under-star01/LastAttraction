@@ -11595,7 +11595,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  CinemachineRoot: {fileID: 0}
+  CinemachineRoot: {fileID: 6295356391260149270}
   animator: {fileID: 7977360239449139302}
   lobbyCam: {fileID: 8121535058403711786}
   normalCam: {fileID: 5329497903047732280}

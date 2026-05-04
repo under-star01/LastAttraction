@@ -35,6 +35,27 @@ public class KillerMove : NetworkBehaviour
 
     [SyncVar] private float syncedYaw, syncedPitch, syncedMoveSpeed;
 
+    public override void OnStartLocalPlayer()
+    {
+        base.OnStartLocalPlayer();
+
+        ApplyViewByState();
+    }
+
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+
+        DontDestroyOnLoad(gameObject);
+    }
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+
+        DontDestroyOnLoad(gameObject);
+    }
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -47,13 +68,6 @@ public class KillerMove : NetworkBehaviour
         // ÇÁ¸®ÆÕ »ý¼º Á÷ÈÄ¿¡´Â ¸ðµç Virtual Camera ¿ì¼±¼øÀ§¸¦ ³·ÃçµÐ´Ù.
         SetCameraPriority(lobbyCam, false);
         SetCameraPriority(normalCam, false);
-    }
-
-    public override void OnStartLocalPlayer()
-    {
-        base.OnStartLocalPlayer();
-
-        ApplyViewByState();
     }
 
     private void Update()
