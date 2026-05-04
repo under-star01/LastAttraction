@@ -4,7 +4,7 @@ using System.Collections;
 using UnityEngine.Rendering;          // GraphicsSettings ÂüÁ¶¿ë
 using UnityEngine.Rendering.Universal;
 
-public enum KillerCondition { Idle, Lunging, Recovering, Hit, Vaulting, Breaking, Incage, Planting }
+public enum KillerCondition { Idle, Lunging, Recovering, Hit, Vaulting, Breaking, Incage, Planting, Lobby }
 
 public class KillerState : NetworkBehaviour
 {
@@ -12,7 +12,7 @@ public class KillerState : NetworkBehaviour
 
     [Header("Sync Variables")]
     [SyncVar(hook = nameof(OnConditionChanged))]
-    private KillerCondition currentCondition = KillerCondition.Idle;
+    private KillerCondition currentCondition = KillerCondition.Lobby;
     public KillerCondition CurrentCondition => currentCondition;
 
     [SyncVar(hook = nameof(OnRageChanged))]
@@ -39,7 +39,8 @@ public class KillerState : NetworkBehaviour
         currentCondition != KillerCondition.Hit &&
         currentCondition != KillerCondition.Vaulting &&
         currentCondition != KillerCondition.Breaking &&
-        currentCondition != KillerCondition.Incage;
+        currentCondition != KillerCondition.Incage &&
+        currentCondition != KillerCondition.Lobby;
 
     public bool CanAttack => currentCondition == KillerCondition.Idle;
 

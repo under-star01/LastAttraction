@@ -2519,6 +2519,7 @@ MonoBehaviour:
   - {fileID: 2002867327353675634}
   - {fileID: 6869168274988472984}
   maxRoomPlayers: 5
+  inGameSceneName: InGame
 --- !u!114 &746813352
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3634,8 +3635,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIManager
   killerButton: {fileID: 374057172}
   survivorButton: {fileID: 1226449983}
-  loadingPanel: {fileID: 250621163}
   startButton: {fileID: 1647897499}
+  readyButton: {fileID: 0}
+  returnButton: {fileID: 0}
+  readyCountText: {fileID: 0}
+  loadingPanel: {fileID: 250621163}
 --- !u!4 &1340424656
 Transform:
   m_ObjectHideFlags: 0

@@ -61,18 +61,46 @@ public class KillerMove : NetworkBehaviour
     {
         if (isLocalPlayer)
         {
-            if (state.CanLook) UpdateLocalLook();
-            CmdSetMoveInput(input.Move, localYaw, localPitch);
+            if (!NetworkClient.active || !NetworkClient.ready)
+                return;
+
+            // 테스트용 F3: Lobby <-> Idle 전환
+            if (Input.GetKeyDown(KeyCode.F3))
+                CmdDebugToggleState();
+
+            if (state.CanLook)
+                UpdateLocalLook();
+
+            Vector2 moveInput = state.CanMove ? input.Move : Vector2.zero;
+
+            // Lobby 상태에서는 Command 자체를 보내지 않음
+            if (state.CanMove || state.CanLook)
+            {
+                CmdSetMoveInput(moveInput, localYaw, localPitch);
+            }
 
             if (animator != null)
-                animator.SetFloat("Speed", input.Move.magnitude, 0.1f, Time.deltaTime);
+                animator.SetFloat("Speed", moveInput.magnitude, 0.1f, Time.deltaTime);
         }
         else
         {
             ApplyRemoteLook();
+
             if (animator != null)
                 animator.SetFloat("Speed", syncedMoveSpeed, 0.1f, Time.deltaTime);
         }
+    }
+
+    [Command]
+    private void CmdDebugToggleState()
+    {
+        if (state == null)
+            return;
+
+        if (state.CurrentCondition == KillerCondition.Lobby)
+            state.ChangeState(KillerCondition.Idle);
+        else
+            state.ChangeState(KillerCondition.Lobby);
     }
 
     private void FixedUpdate() { if (isServer) ServerTickMovement(); }
