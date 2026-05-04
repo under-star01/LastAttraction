@@ -16,22 +16,25 @@ public class GameManager : NetworkBehaviour
     [Header("살인마 탐지 목표")]
     [SerializeField] private bool requireKillerDetectionForUpload = true;
 
-    // 살인마를 총 몇 초 탐지해야 업로드 컴퓨터가 열리는지
-    // 120초 = 2분
+    // 살인마를 총 몇 초 탐지해야 업로드 컴퓨터가 열리는지 설정한다.
     [SerializeField] private float needKillerDetectTime = 120f;
 
-    // 서버에서 실제로 계산하는 누적 탐지 시간
+    // 서버에서 실제로 계산하는 누적 탐지 시간이다.
     [SerializeField] private float killerDetectProgress;
 
-    // 현재 살인마를 탐지 중인 생존자 수
+    // 현재 살인마를 탐지 중인 생존자 수다.
     [SerializeField] private int currentKillerDetectUserCount;
 
-    // 현재 적용 중인 탐지 배율
+    // 현재 적용 중인 탐지 배율이다.
     [SerializeField] private float currentKillerDetectMultiplier;
 
-    // 클라이언트 UI 표시용 동기화 값
+    // 클라이언트 UI 표시용 탐지 진행도다.
     [SyncVar] private float syncedKillerDetectProgress;
+
+    // 클라이언트 UI 표시용 탐지 인원 수다.
     [SyncVar] private int syncedKillerDetectUserCount;
+
+    // 클라이언트 UI 표시용 탐지 배율이다.
     [SyncVar] private float syncedKillerDetectMultiplier;
 
     [Header("업로드")]
@@ -40,6 +43,9 @@ public class GameManager : NetworkBehaviour
 
     [Header("탈출문")]
     [SerializeField] private EscapeGate[] escapeGates;
+
+    [Header("탈출문 개방 대기")]
+    [SerializeField] private float gateOpenDelay = 60f;
 
     // 맵에 있는 EvidenceZone들을 서버에서 등록해둔다.
     private readonly HashSet<EvidenceZone> zones = new HashSet<EvidenceZone>();
@@ -56,6 +62,12 @@ public class GameManager : NetworkBehaviour
     // 서버에서만 관리하는 공유 업로드 진행도다.
     private float uploadProgress;
 
+    // 업로드 완료 후 문이 열리기 전 대기 중인지 여부다.
+    private bool isWaitingGateOpen;
+
+    // 탈출문이 열리기까지 남은 시간이다.
+    private float gateRemainTime;
+
     // 탈출문이 열렸는지 여부다.
     private bool gateOpened;
 
@@ -64,18 +76,33 @@ public class GameManager : NetworkBehaviour
     public int NeedEvidenceCount => GetNeedCount();
     public bool CanUpload => canUpload;
     public bool GateOpened => gateOpened;
-
+    public bool IsWaitingGateOpen => isWaitingGateOpen;
+    public float GateRemainTime => gateRemainTime;
+    public float GateOpenDelay => gateOpenDelay;
     public float NeedKillerDetectTime => needKillerDetectTime;
+
+    public bool IsEvidenceComplete
+    {
+        get
+        {
+            int needCount = GetNeedCount();
+
+            if (needCount <= 0)
+                return false;
+
+            return foundEvidenceCount >= needCount;
+        }
+    }
 
     public float KillerDetectProgress
     {
         get
         {
-            // 서버에서는 실제 계산값 사용
+            // 서버에서는 실제 계산값을 사용한다.
             if (NetworkServer.active)
                 return killerDetectProgress;
 
-            // 클라이언트에서는 SyncVar로 받은 값 사용
+            // 클라이언트에서는 SyncVar로 받은 값을 사용한다.
             return syncedKillerDetectProgress;
         }
     }
@@ -84,9 +111,11 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
+            // 서버에서는 실제 탐지 인원 수를 사용한다.
             if (NetworkServer.active)
                 return currentKillerDetectUserCount;
 
+            // 클라이언트에서는 SyncVar로 받은 값을 사용한다.
             return syncedKillerDetectUserCount;
         }
     }
@@ -95,9 +124,11 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
+            // 서버에서는 실제 탐지 배율을 사용한다.
             if (NetworkServer.active)
                 return currentKillerDetectMultiplier;
 
+            // 클라이언트에서는 SyncVar로 받은 값을 사용한다.
             return syncedKillerDetectMultiplier;
         }
     }
@@ -106,9 +137,11 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
+            // 탐지 목표를 사용하지 않으면 항상 완료로 본다.
             if (!requireKillerDetectionForUpload)
                 return true;
 
+            // 목표 시간이 0 이하이면 항상 완료로 본다.
             if (needKillerDetectTime <= 0f)
                 return true;
 
@@ -120,9 +153,11 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
+            // 탐지 목표를 사용하지 않으면 UI는 100%로 표시한다.
             if (!requireKillerDetectionForUpload)
                 return 1f;
 
+            // 목표 시간이 0 이하이면 UI는 100%로 표시한다.
             if (needKillerDetectTime <= 0f)
                 return 1f;
 
@@ -134,10 +169,23 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
+            // 업로드 시간이 0 이하이면 완료로 처리한다.
             if (uploadTime <= 0f)
                 return 1f;
 
             return Mathf.Clamp01(uploadProgress / uploadTime);
+        }
+    }
+
+    public float GateRemain01
+    {
+        get
+        {
+            // 대기 시간이 0 이하이면 0으로 처리한다.
+            if (gateOpenDelay <= 0f)
+                return 0f;
+
+            return Mathf.Clamp01(gateRemainTime / gateOpenDelay);
         }
     }
 
@@ -152,9 +200,6 @@ public class GameManager : NetworkBehaviour
 
         // 현재 GameManager를 싱글턴으로 저장한다.
         Instance = this;
-
-        // NetworkIdentity가 붙는 구조이므로,
-        // 씬 오브젝트로 두고 호스트 / 클라이언트가 같은 씬을 사용하게 한다.
     }
 
     private void Start()
@@ -166,11 +211,12 @@ public class GameManager : NetworkBehaviour
 
     private void Update()
     {
-        // 살인마 탐지 목표 계산은 서버에서만 한다.
+        // 서버에서만 목표 진행과 문 개방 타이머를 계산한다.
         if (!NetworkServer.active)
             return;
 
         UpdateKillerDetectGoal();
+        TickGateOpenTimer();
     }
 
     // 모든 생존자의 입력 가능 여부를 서버에서 바꾼다.
@@ -254,8 +300,8 @@ public class GameManager : NetworkBehaviour
             return;
         }
 
-        // 이미 업로드가 열렸거나 문이 열렸으면 더 이상 탐지 목표를 올리지 않는다.
-        if (canUpload || gateOpened)
+        // 업로드 가능 / 문 대기 / 문 열림 상태에서는 탐지 진행을 멈춘다.
+        if (canUpload || isWaitingGateOpen || gateOpened)
         {
             SyncKillerDetectState();
             return;
@@ -278,14 +324,14 @@ public class GameManager : NetworkBehaviour
         currentKillerDetectUserCount = detectingCount;
         currentKillerDetectMultiplier = GetKillerDetectMultiplier(detectingCount);
 
-        // 아무도 살인마를 탐지 중이 아니면 진행도 증가 없음
+        // 아무도 살인마를 탐지 중이 아니면 진행도 증가 없음.
         if (currentKillerDetectMultiplier <= 0f)
         {
             SyncKillerDetectState();
             return;
         }
 
-        // 탐지 중인 생존자 수에 따른 배율로 공용 게이지 증가
+        // 탐지 중인 생존자 수에 따른 배율로 공용 게이지를 증가시킨다.
         killerDetectProgress += Time.deltaTime * currentKillerDetectMultiplier;
         killerDetectProgress = Mathf.Clamp(killerDetectProgress, 0f, needKillerDetectTime);
 
@@ -315,8 +361,7 @@ public class GameManager : NetworkBehaviour
 
             SurvivorState survivorState = conn.identity.GetComponent<SurvivorState>();
 
-            // 다운 / 사망 / 감옥 상태는 카메라 스킬 자체가 꺼지는 구조지만,
-            // 안전하게 한 번 더 제외한다.
+            // 다운 / 사망 / 감옥 상태는 안전하게 제외한다.
             if (survivorState != null)
             {
                 if (survivorState.IsDead || survivorState.IsDowned || survivorState.IsImprisoned)
@@ -330,7 +375,7 @@ public class GameManager : NetworkBehaviour
         return count;
     }
 
-    // 탐지 중인 생존자 수에 따른 진행 속도 배율
+    // 탐지 중인 생존자 수에 따른 진행 속도 배율을 반환한다.
     private float GetKillerDetectMultiplier(int userCount)
     {
         switch (userCount)
@@ -366,7 +411,7 @@ public class GameManager : NetworkBehaviour
         if (!NetworkServer.active)
             return;
 
-        if (canUpload || gateOpened)
+        if (canUpload || isWaitingGateOpen || gateOpened)
             return;
 
         int needCount = GetNeedCount();
@@ -378,7 +423,7 @@ public class GameManager : NetworkBehaviour
         if (foundEvidenceCount < needCount)
             return;
 
-        // 조건 2. 살인마를 총 2분 탐지해야 한다.
+        // 조건 2. 살인마 탐지 목표를 완료해야 한다.
         if (!IsKillerDetectComplete)
         {
             Debug.Log(
@@ -409,7 +454,7 @@ public class GameManager : NetworkBehaviour
         if (!canUpload)
             return;
 
-        if (gateOpened)
+        if (isWaitingGateOpen || gateOpened)
             return;
 
         if (userCount <= 0)
@@ -440,8 +485,66 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    // 업로드 완료 시 모든 컴퓨터를 멈추고 탈출문을 연다.
+    // 업로드 완료 시 컴퓨터를 멈추고 탈출문 개방 대기를 시작한다.
     private void FinishUpload()
+    {
+        if (!NetworkServer.active)
+            return;
+
+        if (isWaitingGateOpen || gateOpened)
+            return;
+
+        canUpload = false;
+        isWaitingGateOpen = true;
+        gateRemainTime = gateOpenDelay;
+
+        Debug.Log("[GameManager] 업로드 완료. 탈출문 개방 대기 시작.");
+
+        for (int i = 0; i < uploadComputers.Length; i++)
+        {
+            if (uploadComputers[i] != null)
+                uploadComputers[i].StopAllUsers();
+        }
+
+        SyncGateTimer();
+    }
+
+    // 업로드 완료 후 탈출문이 열리기까지 남은 시간을 감소시킨다.
+    private void TickGateOpenTimer()
+    {
+        if (!isWaitingGateOpen)
+            return;
+
+        if (gateOpened)
+            return;
+
+        gateRemainTime -= Time.deltaTime;
+
+        if (gateRemainTime <= 0f)
+        {
+            gateRemainTime = 0f;
+            SyncGateTimer();
+            OpenGates();
+            return;
+        }
+
+        SyncGateTimer();
+    }
+
+    // 문 개방 대기 시간을 모든 업로드 컴퓨터의 SyncVar로 전달한다.
+    private void SyncGateTimer()
+    {
+        float remain01 = GateRemain01;
+
+        for (int i = 0; i < uploadComputers.Length; i++)
+        {
+            if (uploadComputers[i] != null)
+                uploadComputers[i].SetGateTimer(isWaitingGateOpen, gateRemainTime, gateOpenDelay, remain01);
+        }
+    }
+
+    // 대기 시간이 끝나면 모든 탈출문을 연다.
+    private void OpenGates()
     {
         if (!NetworkServer.active)
             return;
@@ -450,14 +553,14 @@ public class GameManager : NetworkBehaviour
             return;
 
         gateOpened = true;
-        canUpload = false;
+        isWaitingGateOpen = false;
 
-        Debug.Log("[GameManager] 업로드 완료. 탈출문 자동 개방.");
+        Debug.Log("[GameManager] 대기 시간 종료. 탈출문 자동 개방.");
 
         for (int i = 0; i < uploadComputers.Length; i++)
         {
             if (uploadComputers[i] != null)
-                uploadComputers[i].StopAllUsers();
+                uploadComputers[i].SetGateOpened();
         }
 
         for (int i = 0; i < escapeGates.Length; i++)

@@ -3143,6 +3143,65 @@ RectTransform:
   m_AnchoredPosition: {x: -5, y: 0}
   m_SizeDelta: {x: -20, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1281190898
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1281190899}
+  - component: {fileID: 1281190900}
+  m_Layer: 5
+  m_Name: ObjectiveProgressUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1281190899
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1281190898}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1305761449}
+  - {fileID: 1477011219}
+  m_Father: {fileID: 1770418633}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 50, y: -50}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1281190900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1281190898}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6e3c5f695c952f4d8ce73d4ff5278c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectiveProgressUI
+  root: {fileID: 1281190898}
+  objectiveSlider: {fileID: 1305761451}
+  objectiveText: {fileID: 1477011221}
+  targetComputer: {fileID: 353558518}
+  cameraGoalText: "\uC0B4\uC778\uB9C8\uB97C \uCD2C\uC601\uD558\uACE0 \uC99D\uAC70\uB97C
+    \uC218\uC9D1"
+  waitingEvidenceText: "\uC99D\uAC70 \uC218\uC9D1 \uB300\uAE30"
+  uploadGoalText: "\uCEF4\uD4E8\uD130\uC5D0 \uC99D\uAC70\uB97C \uC5C5\uB85C\uB4DC"
+  gateTimerText: "\uD0C8\uCD9C\uBB38 \uAC1C\uBC29\uAE4C\uC9C0 \uB0A8\uC740\uC2DC\uAC04"
 --- !u!1 &1305761448
 GameObject:
   m_ObjectHideFlags: 0
@@ -3153,9 +3212,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1305761449}
   - component: {fileID: 1305761451}
-  - component: {fileID: 1305761450}
   m_Layer: 5
-  m_Name: CameraProgressUI
+  m_Name: Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3176,28 +3234,13 @@ RectTransform:
   - {fileID: 413035229}
   - {fileID: 1232370918}
   - {fileID: 1037899848}
-  m_Father: {fileID: 1770418633}
+  m_Father: {fileID: 1281190899}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 405, y: -80}
+  m_AnchoredPosition: {x: 404, y: -125}
   m_SizeDelta: {x: 160, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1305761450
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1305761448}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6e3c5f695c952f4d8ce73d4ff5278c4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CameraProgressUI
-  root: {fileID: 1305761448}
-  detectSlider: {fileID: 1305761451}
-  hideWhenComplete: 1
 --- !u!114 &1305761451
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3237,13 +3280,13 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 1
+  m_Interactable: 0
   m_TargetGraphic: {fileID: 543046837}
   m_FillRect: {fileID: 777706957}
   m_HandleRect: {fileID: 0}
   m_Direction: 0
   m_MinValue: 0
-  m_MaxValue: 10
+  m_MaxValue: 1
   m_WholeNumbers: 0
   m_Value: 0
   m_OnValueChanged:
@@ -3630,6 +3673,101 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1424439584}
   m_CullTransparentMesh: 1
+--- !u!1 &1477011218
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1477011219}
+  - component: {fileID: 1477011222}
+  - component: {fileID: 1477011221}
+  - component: {fileID: 1477011220}
+  m_Layer: 5
+  m_Name: ObjectiveText
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1477011219
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1477011218}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1281190899}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 207, y: -50}
+  m_SizeDelta: {x: 307.02, y: 58.1789}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1477011220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1477011218}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 1}
+  m_EffectDistance: {x: 2, y: -2}
+  m_UseGraphicAlpha: 1
+--- !u!114 &1477011221
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1477011218}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FontData:
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_FontSize: 48
+    m_FontStyle: 0
+    m_BestFit: 0
+    m_MinSize: 4
+    m_MaxSize: 53
+    m_Alignment: 0
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
+    m_LineSpacing: 1
+  m_Text: ObjectiveText
+--- !u!222 &1477011222
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1477011218}
+  m_CullTransparentMesh: 1
 --- !u!1 &1550719185
 GameObject:
   m_ObjectHideFlags: 0
@@ -3806,7 +3944,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -100}
+  m_AnchoredPosition: {x: 0, y: -150}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1671428804
@@ -4055,8 +4193,8 @@ RectTransform:
   - {fileID: 1647897500}
   - {fileID: 250621164}
   - {fileID: 1556038586}
-  - {fileID: 1305761449}
   - {fileID: 2105633324}
+  - {fileID: 1281190899}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -5779,6 +5917,18 @@ PrefabInstance:
     - target: {fileID: 818829217378554934, guid: 4c82b32668a05134682696e790d7408d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
+      propertyPath: uploadTime
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
+      propertyPath: gateOpenDelay
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
+      propertyPath: needKillerDetectTime
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
       propertyPath: 'escapeGates.Array.data[0]'

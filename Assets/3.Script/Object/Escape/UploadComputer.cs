@@ -11,9 +11,29 @@ public class UploadComputer : NetworkBehaviour, IInteractable
     [SyncVar]
     private bool isOpen;
 
-    // ProgressUI에 보여줄 공유 업로드 진행도다.
+    // 목표 UI에 보여줄 공유 업로드 진행도다.
     [SyncVar]
     private float uploadProgress01;
+
+    // 문 개방 대기 UI를 표시할지 여부다.
+    [SyncVar]
+    private bool gateTimerVisible;
+
+    // 문이 열리기까지 남은 시간이다.
+    [SyncVar]
+    private float gateRemainTime;
+
+    // 문 개방 대기 전체 시간이다.
+    [SyncVar]
+    private float gateDelayTime;
+
+    // 문 개방 대기 UI Slider 값이다.
+    [SyncVar]
+    private float gateRemain01;
+
+    // 탈출문이 열렸는지 여부다.
+    [SyncVar]
+    private bool gateOpened;
 
     // 이 컴퓨터를 현재 사용 중인 생존자 netId 목록이다.
     private readonly HashSet<uint> users = new HashSet<uint>();
@@ -34,6 +54,13 @@ public class UploadComputer : NetworkBehaviour, IInteractable
     private bool isUploading;
 
     public bool IsOpen => isOpen;
+    public float UploadProgress01 => uploadProgress01;
+
+    public bool GateTimerVisible => gateTimerVisible;
+    public float GateRemainTime => gateRemainTime;
+    public float GateDelayTime => gateDelayTime;
+    public float GateRemain01 => gateRemain01;
+    public bool GateOpened => gateOpened;
 
     private void Update()
     {
@@ -41,8 +68,8 @@ public class UploadComputer : NetworkBehaviour, IInteractable
         if (isServer)
             TickUpload();
 
-        // 로컬 플레이어에게 기존 ProgressUI로 공유 진행도를 보여준다.
-        UpdateUI();
+        // 로컬 플레이어가 업로드 중이면 기존 상호작용 ProgressUI를 보여준다.
+        UpdateInteractProgressUI();
 
         // 로컬 플레이어가 범위 안에 있으면 상호작용 후보 상태를 갱신한다.
         RefreshUse();
@@ -61,18 +88,40 @@ public class UploadComputer : NetworkBehaviour, IInteractable
         GameManager.Instance.AddUpload(users.Count);
     }
 
-    // GameManager가 모든 증거 완료 후 컴퓨터를 활성화할 때 호출한다.
+    // GameManager가 모든 목표 완료 후 컴퓨터를 활성화할 때 호출한다.
     [Server]
     public void SetOpen(bool value)
     {
         isOpen = value;
     }
 
-    // GameManager가 서버 progress를 UI용 SyncVar로 전달할 때 호출한다.
+    // GameManager가 서버 업로드 progress를 UI용 SyncVar로 전달할 때 호출한다.
     [Server]
     public void SetProgress(float value)
     {
         uploadProgress01 = Mathf.Clamp01(value);
+    }
+
+    // GameManager가 문 개방 대기 시간을 UI용 SyncVar로 전달할 때 호출한다.
+    [Server]
+    public void SetGateTimer(bool visible, float remainTime, float delayTime, float remain01)
+    {
+        gateTimerVisible = visible;
+        gateRemainTime = Mathf.Max(0f, remainTime);
+        gateDelayTime = Mathf.Max(0f, delayTime);
+        gateRemain01 = Mathf.Clamp01(remain01);
+        gateOpened = false;
+    }
+
+    // 탈출문이 실제로 열렸을 때 목표 UI를 숨기기 위해 호출한다.
+    [Server]
+    public void SetGateOpened()
+    {
+        gateTimerVisible = false;
+        gateRemainTime = 0f;
+        gateRemain01 = 0f;
+        gateOpened = true;
+        isOpen = false;
     }
 
     // 업로드 완료 시 모든 사용자와 로컬 UI 상태를 정리한다.
@@ -132,7 +181,7 @@ public class UploadComputer : NetworkBehaviour, IInteractable
             return;
         }
 
-        if (GameManager.Instance == null || GameManager.Instance.GateOpened)
+        if (GameManager.Instance == null || GameManager.Instance.GateOpened || GameManager.Instance.IsWaitingGateOpen)
         {
             TargetStop(sender);
             return;
@@ -163,7 +212,7 @@ public class UploadComputer : NetworkBehaviour, IInteractable
 
         users.Add(sender.identity.netId);
 
-        // 첫 사용자가 업로드를 시작했을 때만 루프 사운드 시작
+        // 첫 사용자가 업로드를 시작했을 때만 루프 사운드를 시작한다.
         if (wasEmpty && users.Count > 0)
             StartUploadLoopSound();
 
@@ -183,6 +232,7 @@ public class UploadComputer : NetworkBehaviour, IInteractable
 
         users.Remove(sender.identity.netId);
 
+        // 마지막 사용자가 손을 떼면 업로드 루프 사운드를 끈다.
         if (users.Count <= 0)
             StopUploadLoopSound();
 
@@ -216,6 +266,9 @@ public class UploadComputer : NetworkBehaviour, IInteractable
     private bool CanStart()
     {
         if (!isOpen)
+            return false;
+
+        if (gateTimerVisible || gateOpened)
             return false;
 
         if (localInteractor == null || localState == null)
@@ -262,8 +315,8 @@ public class UploadComputer : NetworkBehaviour, IInteractable
             localInteractor.HideProgress(this, resetProgress);
     }
 
-    // 업로드 중인 로컬 플레이어에게 동기화된 공유 progress를 보여준다.
-    private void UpdateUI()
+    // 업로드 중인 로컬 플레이어에게 기존 상호작용 ProgressUI를 보여준다.
+    private void UpdateInteractProgressUI()
     {
         if (!isUploading)
             return;
@@ -289,7 +342,7 @@ public class UploadComputer : NetworkBehaviour, IInteractable
             localInteractor.ClearInteractable(this);
     }
 
-    // 사운드
+    // 업로드 루프 사운드를 시작한다.
     [Server]
     private void StartUploadLoopSound()
     {
@@ -301,6 +354,7 @@ public class UploadComputer : NetworkBehaviour, IInteractable
         );
     }
 
+    // 업로드 루프 사운드를 종료한다.
     [Server]
     private void StopUploadLoopSound()
     {

@@ -27,7 +27,7 @@ public class EscapeGate : NetworkBehaviour
         ApplyOpen(isOpen);
     }
 
-    // 업로드가 완료되면 GameManager가 서버에서 호출한다.
+    // 문 개방 대기 시간이 끝나면 GameManager가 서버에서 호출한다.
     [Server]
     public void Open()
     {
