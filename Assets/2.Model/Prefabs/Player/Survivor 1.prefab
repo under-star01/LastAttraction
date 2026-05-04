@@ -837,7 +837,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2859212466978346225}
+  m_Father: {fileID: 5586677685503652947}
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!114 &9045611878678895512
 MonoBehaviour:
@@ -943,7 +943,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2859212466978346225}
+  m_Father: {fileID: 5586677685503652947}
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!114 &4633447833198821572
 MonoBehaviour:
@@ -1146,12 +1146,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2013035584447060845}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 1, z: -4.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2859212466978346225}
+  m_Father: {fileID: 5586677685503652947}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6907075847553500461
 MonoBehaviour:
@@ -2532,6 +2532,8 @@ MonoBehaviour:
   mouseSensitivity: 0.08
   minPitch: 0
   maxPitch: 30
+  footstepKey: 1
+  minFootstepInterval: 0.2
   standHeight: 1.8
   standCenter: {x: 0, y: 0.9, z: 0}
   crouchHeight: 0.9
@@ -2631,6 +2633,7 @@ MonoBehaviour:
   skillUI: {fileID: 0}
   localCameraModel: {fileID: 2458870675417667234}
   worldCameraModel: {fileID: 1955517297303155038}
+  cinemachineRoot: {fileID: 6124647547961288203}
   normalCinemachine: {fileID: 6907075847553500461}
   skillCinemachine: {fileID: 5365576005356907084}
   lobbyCinemachine: {fileID: 4633447833198821572}
@@ -2650,6 +2653,7 @@ MonoBehaviour:
   normalFrameColor: {r: 1, g: 1, b: 1, a: 1}
   detectedFrameColor: {r: 1, g: 0, b: 0, a: 1}
   detectedHoldTime: 0.25
+  isRecordingKiller: 0
 --- !u!95 &7436738972924962348
 Animator:
   serializedVersion: 7
@@ -4295,6 +4299,41 @@ Transform:
   - {fileID: 9137969021899068704}
   m_Father: {fileID: 5493097845678793005}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6124647547961288203
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5586677685503652947}
+  m_Layer: 6
+  m_Name: CInemachineRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &5586677685503652947
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6124647547961288203}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3905389052990962079}
+  - {fileID: 3397773355558395822}
+  - {fileID: 5330205222421736794}
+  - {fileID: 8220968550766265854}
+  m_Father: {fileID: 2859212466978346225}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6198483868362251667
 GameObject:
   m_ObjectHideFlags: 0
@@ -5432,12 +5471,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8052692729864094507}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.7, y: 1.5, z: -2.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2859212466978346225}
+  m_Father: {fileID: 5586677685503652947}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5365576005356907084
 MonoBehaviour:
@@ -5766,10 +5805,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 3905389052990962079}
-  - {fileID: 3397773355558395822}
-  - {fileID: 5330205222421736794}
-  - {fileID: 8220968550766265854}
+  - {fileID: 5586677685503652947}
   m_Father: {fileID: 8308895304835925812}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8482305589215525966

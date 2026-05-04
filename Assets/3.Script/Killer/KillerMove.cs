@@ -5,7 +5,7 @@ using Unity.Cinemachine;
 public class KillerMove : NetworkBehaviour
 {
     [Header("ÂüÁ¶")]
-    [SerializeField] private Transform cameraPitchRoot;
+    [SerializeField] private Transform CinemachineRoot;
     [SerializeField] private Animator animator;
 
     [Header("Virtual Cameras")]
@@ -108,24 +108,25 @@ public class KillerMove : NetworkBehaviour
 
         transform.rotation = Quaternion.Euler(0f, localYaw, 0f);
 
-        if (cameraPitchRoot != null)
-            cameraPitchRoot.localRotation = Quaternion.Euler(localPitch, 0f, 0f);
+        if (CinemachineRoot != null)
+            CinemachineRoot.localRotation = Quaternion.Euler(localPitch, 0f, 0f);
     }
 
     private void ApplyRemoteLook()
     {
         transform.rotation = Quaternion.Euler(0f, syncedYaw, 0f);
 
-        if (cameraPitchRoot != null)
-            cameraPitchRoot.localRotation = Quaternion.Euler(syncedPitch, 0f, 0f);
+        if (CinemachineRoot != null)
+            CinemachineRoot.localRotation = Quaternion.Euler(syncedPitch, 0f, 0f);
     }
 
     private void ApplyViewByState()
     {
-        if (!isLocalPlayer || state == null)
+        if (!isLocalPlayer || CinemachineRoot == null)
             return;
 
         bool isLobby = state.CurrentCondition == KillerCondition.Lobby;
+        CinemachineRoot.gameObject.SetActive(true);
 
         SetCameraPriority(lobbyCam, isLobby);
         SetCameraPriority(normalCam, !isLobby);
