@@ -188,6 +188,13 @@ public class SurvivorMove : NetworkBehaviour
             playerListener.enabled = true;
     }
 
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+
+        DontDestroyOnLoad(gameObject);
+    }
+
     public override void OnStartClient()
     {
         base.OnStartClient();
@@ -200,6 +207,8 @@ public class SurvivorMove : NetworkBehaviour
             if (playerListener != null)
                 playerListener.enabled = false;
         }
+
+        DontDestroyOnLoad(gameObject);
     }
 
     private void Update()

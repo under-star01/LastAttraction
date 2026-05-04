@@ -20,6 +20,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
     [SerializeField] private GameObject worldCameraModel;   // 월드에 보이는 카메라 모델
 
     [Header("카메라 위치")]
+    [SerializeField] private GameObject cinemachineRoot;
     [SerializeField] private CinemachineCamera normalCinemachine;
     [SerializeField] private CinemachineCamera skillCinemachine;
     [SerializeField] private CinemachineCamera lobbyCinemachine;
@@ -89,13 +90,6 @@ public class SurvivorCameraSkill : NetworkBehaviour
         if (worldCameraModel != null)
             worldCameraModel.SetActive(false);
 
-        // 시작 시 내 플레이어가 아니면 시네머신도 꺼져 있어야 안전하다
-        if (normalCinemachine != null)
-            normalCinemachine.gameObject.SetActive(false);
-
-        if (skillCinemachine != null)
-            skillCinemachine.gameObject.SetActive(false);
-
         // 사용할 레이어 이름
         camWorldLayer = LayerMask.NameToLayer("CamWorld");
         hideSelfLayer = LayerMask.NameToLayer("HideSelf");
@@ -111,11 +105,8 @@ public class SurvivorCameraSkill : NetworkBehaviour
         isLocalReady = true;
 
         // 내 플레이어의 시네머신만 활성화
-        if (normalCinemachine != null)
-            normalCinemachine.gameObject.SetActive(true);
-
-        if (skillCinemachine != null)
-            skillCinemachine.gameObject.SetActive(true);
+        if (cinemachineRoot != null)
+            cinemachineRoot.SetActive(true);
     }
 
     public override void OnStartClient()
@@ -128,11 +119,8 @@ public class SurvivorCameraSkill : NetworkBehaviour
             if (skillCamera != null)
                 skillCamera.enabled = false;
 
-            if (normalCinemachine != null)
-                normalCinemachine.gameObject.SetActive(false);
-
-            if (skillCinemachine != null)
-                skillCinemachine.gameObject.SetActive(false);
+            if (cinemachineRoot != null)
+                cinemachineRoot.SetActive(false);
         }
     }
 
