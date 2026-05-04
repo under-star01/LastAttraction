@@ -1,3 +1,4 @@
+using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,11 +20,7 @@ public class ObjectiveProgressUI : MonoBehaviour
 
     private void Awake()
     {
-        // 루트가 비어 있으면 자기 자신을 루트로 사용한다.
-        if (root == null)
-            root = gameObject;
-
-        // Slider는 0~1 값을 사용한다.
+        // Slider는 0~1 값으로만 사용한다.
         if (objectiveSlider != null)
         {
             objectiveSlider.minValue = 0f;
@@ -32,11 +29,19 @@ public class ObjectiveProgressUI : MonoBehaviour
             objectiveSlider.interactable = false;
         }
 
+        // 시작할 때는 UI 내용만 초기화한다.
         Hide();
     }
 
     private void Update()
     {
+        // 생존자로 플레이 중일 때만 목표 UI를 보여준다.
+        if (!IsLocalSurvivor())
+        {
+            Hide();
+            return;
+        }
+
         GameManager gm = GameManager.Instance;
 
         if (gm == null)
@@ -59,7 +64,7 @@ public class ObjectiveProgressUI : MonoBehaviour
             return;
         }
 
-        // 업로드 컴퓨터가 열렸거나 업로드가 조금이라도 진행됐다면 업로드 게이지를 보여준다.
+        // 업로드 컴퓨터가 열렸거나 업로드가 진행됐다면 업로드 게이지를 보여준다.
         if (targetComputer != null && (targetComputer.IsOpen || targetComputer.UploadProgress01 > 0f))
         {
             ShowUploadGoal();
@@ -68,6 +73,20 @@ public class ObjectiveProgressUI : MonoBehaviour
 
         // 업로드가 아직 열리지 않았다면 카메라 목표 게이지를 보여준다.
         ShowCameraGoal(gm);
+    }
+
+    // 현재 로컬 플레이어가 생존자인지 확인한다.
+    private bool IsLocalSurvivor()
+    {
+        // 역할 선택 정보가 있으면 그 값을 우선 사용한다.
+        if (CustomNetworkManager.Instance != null)
+            return CustomNetworkManager.Instance.CurrentLocalJoinRole == JoinRole.Survivor;
+
+        // 예외적으로 NetworkManager가 없으면 로컬 플레이어 태그로 확인한다.
+        if (NetworkClient.localPlayer != null)
+            return NetworkClient.localPlayer.CompareTag("Survivor");
+
+        return false;
     }
 
     // 문이 열렸는지 GameManager 또는 UploadComputer 상태로 판단한다.
