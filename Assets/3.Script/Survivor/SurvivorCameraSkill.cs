@@ -327,11 +327,11 @@ public class SurvivorCameraSkill : NetworkBehaviour
     // ¾À UI Ã£±â
     private void BindUI()
     {
-        if (LobbySceneBinder.Instance != null)
-            frameImages = LobbySceneBinder.Instance.GetFrameUI();
+        if (SceneBinder.Instance != null)
+            frameImages = SceneBinder.Instance.GetFrameUI();
 
-        if (skillUI == null && LobbySceneBinder.Instance != null)
-            skillUI = LobbySceneBinder.Instance.GetCameraSkillUI();
+        if (skillUI == null && SceneBinder.Instance != null)
+            skillUI = SceneBinder.Instance.GetCameraSkillUI();
 
         if (skillUI == null)
             skillUI = FindFirstObjectByType<CameraSkillUI>(FindObjectsInactive.Include);

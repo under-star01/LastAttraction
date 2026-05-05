@@ -132,30 +132,11 @@ public class SurvivorInput : NetworkBehaviour
         }
     }
 
-    private void Update()
-    {
-        if (!isLocalPlayer)
-            return;
-
-        // 테스트용 F3 입력 토글
-        if (Input.GetKeyDown(KeyCode.F3))
-            CmdDebugToggleLocalInput();
-    }
-
     // 서버에서 호출하는 입력 상태 변경 함수
     [Server]
     public void SetInputEnabledServer(bool value)
     {
         canReceiveInput = value;
-    }
-
-    // F3 테스트용
-    // 로컬 생존자가 서버에 입력 상태 토글을 요청한다.
-    [Command]
-    private void CmdDebugToggleLocalInput()
-    {
-        // F3을 누른 이 생존자만 입력 상태 변경
-        SetInputEnabledServer(!canReceiveInput);
     }
 
     // 실제 입력값을 읽어도 되는지 검사

@@ -61,6 +61,12 @@ public struct LobbyStateMessage : NetworkMessage
     public bool canStart;
 }
 
+// 서버 -> 클라 : 씬 전환 UI 표시 상태
+public struct ChangeSceneUIMessage : NetworkMessage
+{
+    public bool isShow;
+}
+
 public class CustomNetworkManager : NetworkManager
 {
     public static CustomNetworkManager Instance { get; private set; }
@@ -71,10 +77,6 @@ public class CustomNetworkManager : NetworkManager
     [Header("Role Prefabs")]
     [SerializeField] private GameObject killerPrefab;
     [SerializeField] private List<GameObject> survivorPrefabs = new();
-
-    [Header("Spawn Points")]
-    [SerializeField] private Transform killerSpawnPoint;
-    [SerializeField] private List<Transform> survivorSpawnPoints = new();
 
     [Header("Match Settings")]
     [SerializeField] private int maxRoomPlayers = 5;
@@ -437,6 +439,7 @@ public class CustomNetworkManager : NetworkManager
         NetworkClient.RegisterHandler<JoinAcceptedMessage>(OnJoinAccepted, false);
         NetworkClient.RegisterHandler<RoomProbeResponseMessage>(OnRoomProbeResponse, false);
         NetworkClient.RegisterHandler<LobbyStateMessage>(OnLobbyStateMessage, false);
+        NetworkClient.RegisterHandler<ChangeSceneUIMessage>(OnChangeSceneUIMessage, false);
     }
 
     public override void OnClientConnect()
@@ -544,6 +547,11 @@ public class CustomNetworkManager : NetworkManager
 
         if (localJoinRole == JoinRole.Killer)
             UIManager.Instance?.SetStartButtonInteractable(msg.canStart);
+    }
+
+    private void OnChangeSceneUIMessage(ChangeSceneUIMessage msg)
+    {
+        ChangeSceneUI.Instance?.Show(msg.isShow);
     }
 
     #endregion
@@ -712,11 +720,17 @@ public class CustomNetworkManager : NetworkManager
         Transform spawnPoint = null;
         int survivorIndex = -1;
 
+        if (SceneBinder.Instance == null)
+        {
+            reason = "현재 씬에서 SceneBinder를 찾지 못했습니다.";
+            return false;
+        }
+
         switch (role)
         {
             case JoinRole.Killer:
                 prefabToSpawn = killerPrefab;
-                spawnPoint = killerSpawnPoint;
+                spawnPoint = SceneBinder.Instance.GetKillerSpawnPoint();
                 break;
 
             case JoinRole.Survivor:
@@ -729,7 +743,7 @@ public class CustomNetworkManager : NetworkManager
                 }
 
                 prefabToSpawn = GetSurvivorPrefab(survivorIndex);
-                spawnPoint = GetSurvivorSpawnPoint(survivorIndex);
+                spawnPoint = SceneBinder.Instance.GetSurvivorSpawnPoint(survivorIndex);
                 break;
         }
 
@@ -790,15 +804,128 @@ public class CustomNetworkManager : NetworkManager
         return false;
     }
 
-    private Transform GetSurvivorSpawnPoint(int survivorIndex)
+    #endregion
+
+    #region Scene Change
+
+    public override void OnServerSceneChanged(string sceneName)
     {
-        if (survivorSpawnPoints == null || survivorSpawnPoints.Count == 0)
-            return null;
+        base.OnServerSceneChanged(sceneName);
 
-        if (survivorIndex < 0 || survivorIndex >= survivorSpawnPoints.Count)
-            return null;
+        if (sceneName == inGameSceneName)
+        {
+            StartCoroutine(SetupInGameScene());
+        }
+    }
 
-        return survivorSpawnPoints[survivorIndex];
+    private IEnumerator SetupInGameScene()
+    {
+        // InGame 씬 오브젝트들이 생성될 시간 확보
+        yield return new WaitForSeconds(0.25f);
+
+        float timeout = 3f;
+        float elapsed = 0f;
+
+        while (SceneBinder.Instance == null && elapsed < timeout)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (SceneBinder.Instance == null)
+        {
+            Debug.LogWarning("[CustomNetworkManager] InGame 씬에서 SceneBinder를 찾지 못했습니다.");
+            BroadcastChangeSceneUI(false);
+            yield break;
+        }
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null)
+            {
+                Debug.LogWarning("[CustomNetworkManager] conn이 null입니다.");
+                continue;
+            }
+
+            if (conn.identity == null)
+            {
+                Debug.LogWarning($"[CustomNetworkManager] Conn {conn.connectionId} identity가 null입니다.");
+                continue;
+            }
+
+            if (!joinedRoles.TryGetValue(conn.connectionId, out JoinRole role))
+            {
+                Debug.LogWarning($"[CustomNetworkManager] Conn {conn.connectionId} role을 찾지 못했습니다.");
+                continue;
+            }
+
+            Transform spawnPoint = GetSpawnPointForConnection(conn);
+
+            if (spawnPoint == null)
+            {
+                Debug.LogWarning($"[CustomNetworkManager] Conn {conn.connectionId}, Role {role}의 SpawnPoint를 찾지 못했습니다.");
+                continue;
+            }
+
+            Debug.Log($"[CustomNetworkManager] InGame 배치 / Conn:{conn.connectionId} / Role:{role} / Player:{conn.identity.name} / Spawn:{spawnPoint.name} / Pos:{spawnPoint.position}");
+
+            KillerMove killerMove = conn.identity.GetComponent<KillerMove>();
+
+            if (killerMove != null)
+            {
+                killerMove.ServerTeleportTo(spawnPoint.position, spawnPoint.rotation);
+                continue;
+            }
+
+            conn.identity.transform.SetPositionAndRotation(
+                spawnPoint.position,
+                spawnPoint.rotation
+            );
+        }
+
+        // 인게임 상태 적용
+        ApplyInGameStateToAllPlayers();
+
+        // 암전 상태 2초 유지
+        yield return new WaitForSeconds(2f);
+
+        // Fade Out 시작
+        BroadcastChangeSceneUI(false);
+    }
+
+    private void ApplyInGameStateToAllPlayers()
+    {
+        if (!NetworkServer.active)
+            return;
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null || conn.identity == null)
+                continue;
+
+            if (!joinedRoles.TryGetValue(conn.connectionId, out JoinRole role))
+                continue;
+
+            if (role == JoinRole.Killer)
+            {
+                KillerMove killerMove = conn.identity.GetComponent<KillerMove>();
+
+                if (killerMove != null)
+                    killerMove.SetInGameStateServer();
+
+                continue;
+            }
+
+            if (role == JoinRole.Survivor)
+            {
+                SurvivorInput survivorInput = conn.identity.GetComponent<SurvivorInput>();
+
+                if (survivorInput != null)
+                    survivorInput.SetInputEnabledServer(true);
+
+                continue;
+            }
+        }
     }
 
     #endregion
@@ -850,8 +977,65 @@ public class CustomNetworkManager : NetworkManager
         if (!NetworkServer.active || string.IsNullOrWhiteSpace(inGameSceneName))
             return;
 
+        StartCoroutine(MoveToGameSceneRoutine());
+    }
+
+    private IEnumerator MoveToGameSceneRoutine()
+    {
+        // Fade In 시작
+        BroadcastChangeSceneUI(true);
+
+        // Fade In 1초 대기
+        yield return new WaitForSeconds(1f);
+
+        // 화면이 완전히 암전된 뒤 씬 이동
         ServerChangeScene(inGameSceneName);
     }
+
+    private Transform GetSpawnPointForConnection(NetworkConnectionToClient conn)
+    {
+        if (conn == null)
+            return null;
+
+        if (SceneBinder.Instance == null)
+            return null;
+
+        if (!joinedRoles.TryGetValue(conn.connectionId, out JoinRole role))
+            return null;
+
+        if (role == JoinRole.Killer)
+            return SceneBinder.Instance.GetKillerSpawnPoint();
+
+        if (role == JoinRole.Survivor)
+        {
+            if (!survivorPrefabIndexByConnection.TryGetValue(conn.connectionId, out int survivorIndex))
+                return null;
+
+            return SceneBinder.Instance.GetSurvivorSpawnPoint(survivorIndex);
+        }
+
+        return null;
+    }
+
+    private void BroadcastChangeSceneUI(bool value)
+    {
+        if (!NetworkServer.active)
+            return;
+
+        ChangeSceneUIMessage msg = new ChangeSceneUIMessage
+        {
+            isShow = value
+        };
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null)
+                continue;
+
+            conn.Send(msg);
+        }
+    }
+
 
     #endregion
 }

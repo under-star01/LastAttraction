@@ -1,6 +1,7 @@
 using Mirror;
 using UnityEngine;
 using Unity.Cinemachine;
+using System.Collections;
 
 public class KillerMove : NetworkBehaviour
 {
@@ -80,10 +81,6 @@ public class KillerMove : NetworkBehaviour
             if (state == null || input == null)
                 return;
 
-            // 테스트용 F3: Lobby <-> Idle 전환
-            if (Input.GetKeyDown(KeyCode.F3))
-                CmdDebugLobbyState();
-
             // 상태가 바뀐 경우에만 카메라 Priority / Cursor 갱신
             if (!hasAppliedCondition || lastAppliedCondition != state.CurrentCondition)
                 ApplyViewByState();
@@ -160,16 +157,34 @@ public class KillerMove : NetworkBehaviour
         cam.Priority = isActive ? activeCameraPriority : inactiveCameraPriority;
     }
 
-    [Command]
-    private void CmdDebugLobbyState()
+    [Server]
+    public void SetInGameStateServer()
     {
         if (state == null)
             return;
 
-        if (state.CurrentCondition == KillerCondition.Lobby)
-            state.ChangeState(KillerCondition.Idle);
-        else
-            state.ChangeState(KillerCondition.Lobby);
+        // Lobby -> Idle
+        state.ChangeState(KillerCondition.Idle);
+
+        serverMoveInput = Vector2.zero;
+        syncedMoveSpeed = 0f;
+
+        if (connectionToClient != null)
+            TargetRefreshViewByState(connectionToClient);
+    }
+
+    [TargetRpc]
+    private void TargetRefreshViewByState(NetworkConnectionToClient target)
+    {
+        StartCoroutine(RefreshViewNextFrame());
+    }
+
+    private IEnumerator RefreshViewNextFrame()
+    {
+        yield return null;
+
+        hasAppliedCondition = false;
+        ApplyViewByState();
     }
 
     [Command]
@@ -237,5 +252,59 @@ public class KillerMove : NetworkBehaviour
             yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
 
         controller.Move(new Vector3(0f, yVelocity, 0f) * Time.fixedDeltaTime);
+    }
+
+    [Server]
+    public void ServerTeleportTo(Vector3 position, Quaternion rotation)
+    {
+        float yaw = rotation.eulerAngles.y;
+
+        serverMoveInput = Vector2.zero;
+        serverYaw = yaw;
+
+        syncedYaw = yaw;
+        syncedPitch = 0f;
+        syncedMoveSpeed = 0f;
+
+        localPitch = 0f;
+        yVelocity = 0f;
+
+        ApplyTeleport(position, rotation);
+
+        if (connectionToClient != null)
+            TargetTeleportTo(connectionToClient, position, rotation);
+    }
+
+    [TargetRpc]
+    private void TargetTeleportTo(NetworkConnectionToClient target, Vector3 position, Quaternion rotation)
+    {
+        float yaw = rotation.eulerAngles.y;
+
+        localYaw = yaw;
+        localPitch = 0f;
+
+        ApplyTeleport(position, rotation);
+
+        if (CinemachineRoot != null)
+            CinemachineRoot.localRotation = Quaternion.identity;
+
+        ApplyViewByState();
+    }
+
+    private void ApplyTeleport(Vector3 position, Quaternion rotation)
+    {
+        bool wasControllerEnabled = false;
+
+        if (controller != null)
+        {
+            wasControllerEnabled = controller.enabled;
+            controller.enabled = false;
+        }
+
+        transform.SetPositionAndRotation(position, rotation);
+        Physics.SyncTransforms();
+
+        if (controller != null)
+            controller.enabled = wasControllerEnabled;
     }
 }
