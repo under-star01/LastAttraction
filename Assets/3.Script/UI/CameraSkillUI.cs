@@ -15,7 +15,6 @@ public class CameraSkillUI : MonoBehaviour
     private void Awake()
     {
         BindTexture();
-        gameObject.SetActive(false);
     }
 
     private void OnEnable()

@@ -6,8 +6,6 @@ public class SurvivorMove : NetworkBehaviour
     [Header("ÂüÁ¶")]
     [SerializeField] private Transform cameraYawRoot;
     [SerializeField] private Transform cameraPitchRoot;
-    [SerializeField] private Camera playerCamera;
-    [SerializeField] private AudioListener playerListener;
     [SerializeField] private Transform modelRoot;
     [SerializeField] private Animator animator;
 
@@ -169,28 +167,27 @@ public class SurvivorMove : NetworkBehaviour
 
         if (animator != null)
             animator.applyRootMotion = false;
-
-        if (playerCamera != null)
-            playerCamera.enabled = false;
-
-        if (playerListener != null)
-            playerListener.enabled = false;
     }
 
     public override void OnStartLocalPlayer()
     {
         base.OnStartLocalPlayer();
 
-        if (playerCamera != null)
-            playerCamera.enabled = true;
+        if (cameraYawRoot != null)
+            localYaw = cameraYawRoot.localEulerAngles.y;
 
-        if (playerListener != null)
-            playerListener.enabled = true;
+        ApplyCam();
     }
 
     public override void OnStartServer()
     {
         base.OnStartServer();
+
+        if (modelRoot != null)
+            syncedModelYaw = modelRoot.eulerAngles.y;
+
+        if (cameraYawRoot != null)
+            syncedYaw = cameraYawRoot.localEulerAngles.y;
 
         DontDestroyOnLoad(gameObject);
     }
@@ -198,15 +195,6 @@ public class SurvivorMove : NetworkBehaviour
     public override void OnStartClient()
     {
         base.OnStartClient();
-
-        if (!isLocalPlayer)
-        {
-            if (playerCamera != null)
-                playerCamera.enabled = false;
-
-            if (playerListener != null)
-                playerListener.enabled = false;
-        }
 
         DontDestroyOnLoad(gameObject);
     }

@@ -616,6 +616,14 @@ public class CustomNetworkManager : NetworkManager
         if (!joinedRoles.TryGetValue(conn.connectionId, out JoinRole role) || role != JoinRole.Killer)
             return;
 
+        LobbyStateMessage lobbyState = GetLobbyState();
+
+        if (!lobbyState.canStart)
+        {
+            Debug.LogWarning("[CustomNetworkManager] 아직 게임을 시작할 수 있는 상태가 아닙니다.");
+            return;
+        }
+
         MoveToGameScene();
     }
 
