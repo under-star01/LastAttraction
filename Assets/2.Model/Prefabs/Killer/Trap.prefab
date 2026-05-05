@@ -1055,6 +1055,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   stunDuration: 3
+  destroyDelay: 3
   animator: {fileID: 6791640163031684750}
 --- !u!135 &7945759237201735083
 SphereCollider:

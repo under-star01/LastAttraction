@@ -2370,8 +2370,6 @@ MonoBehaviour:
   syncInterval: 0
   cameraYawRoot: {fileID: 8308895304835925812}
   cameraPitchRoot: {fileID: 2859212466978346225}
-  playerCamera: {fileID: 0}
-  playerListener: {fileID: 0}
   modelRoot: {fileID: 8174374209964335500}
   animator: {fileID: 7436738972924962348}
   walkSpeed: 2
