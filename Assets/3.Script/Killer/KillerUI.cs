@@ -34,7 +34,19 @@ public class KillerUI : MonoBehaviour
             trapTarget = SceneBinder.Instance.GetKillerTrapTarget();
         }
 
-        // 가져온 오브젝트에서 Image 컴포넌트 추출
+        // 2. 만약 바인더가 실패했다면 이름으로 직접 검색 (안전장치)
+        if (attackTarget == null)
+        {
+            // Hierarchy에 있는 실제 슬라이더 오브젝트 이름을 넣으세요
+            attackTarget = GameObject.Find("Killer_Skill1");
+        }
+
+        if (trapTarget == null)
+        {
+            trapTarget = GameObject.Find("Killer_Skill2"); // 혹은 동일한 오브젝트
+        }
+
+        // 3. 찾은 오브젝트에서 이미지 컴포넌트 추출
         if (attackTarget != null)
             attackIcon = attackTarget.GetComponentInChildren<Image>();
 

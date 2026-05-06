@@ -27,7 +27,6 @@ public class KillerState : NetworkBehaviour
 
     [Header("Rage ÆÄÆ¼Å¬ VFX")]
     [SerializeField] private ParticleSystem vfxImplosion;
-    [SerializeField] private ParticleSystem vfxShockwave;
 
     private float currentRageBuildTime = 0f;
 
@@ -52,6 +51,11 @@ public class KillerState : NetworkBehaviour
     {
         animator = GetComponentInChildren<Animator>();
         InitURPFeature();
+    }
+
+    private void Start()
+    {
+        if (vfxImplosion != null) vfxImplosion.Stop();
     }
 
     private void Update()
@@ -219,7 +223,7 @@ public class KillerState : NetworkBehaviour
             detector?.SetActive(true);
 
             if (vfxImplosion != null) vfxImplosion.Play();
-            if (vfxShockwave != null) vfxShockwave.Play();
+            //if (vfxShockwave != null) vfxShockwave.Play();
         }
         else
         {
@@ -228,7 +232,7 @@ public class KillerState : NetworkBehaviour
             detector?.SetActive(false);
 
             if (vfxImplosion != null) vfxImplosion.Stop();
-            if (vfxShockwave != null) vfxShockwave.Stop();
+            //if (vfxShockwave != null) vfxShockwave.Stop();
         }
     }
 }
