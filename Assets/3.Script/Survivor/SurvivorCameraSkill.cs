@@ -23,6 +23,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
     [SerializeField] private GameObject cinemachineRoot;
     [SerializeField] private CinemachineCamera normalCinemachine;
     [SerializeField] private CinemachineCamera skillCinemachine;
+    [SerializeField] private CinemachineCamera resultCinemachine;
 
     [Header("카메라 탐지")]
     [SerializeField] private Transform detectOrigin;        // Ray 시작 기준 위치
@@ -472,6 +473,35 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
         if (skillCinemachine != null)
             skillCinemachine.Priority = 0;
+
+        if (resultCinemachine != null)
+            resultCinemachine.Priority = 0;
+
+        if (skillCamera != null)
+            skillCamera.enabled = false;
+
+        if (skillUI != null)
+            skillUI.Hide();
+
+        if (localCameraModel != null)
+            localCameraModel.SetActive(false);
+
+        SetFrameDetected(false, true);
+    }
+
+    public void ApplyResultView()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (normalCinemachine != null)
+            normalCinemachine.Priority = 0;
+
+        if (skillCinemachine != null)
+            skillCinemachine.Priority = 0;
+
+        if (resultCinemachine != null)
+            resultCinemachine.Priority = 30;
 
         if (skillCamera != null)
             skillCamera.enabled = false;

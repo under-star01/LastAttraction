@@ -11,11 +11,17 @@ public class InGameUIManager : MonoBehaviour
 {
     public static InGameUIManager Instance { get; private set; }
 
-    [Header("생존자 UI 슬롯")]
+    [Header("공통 상태 UI")]
+    [SerializeField] private GameObject survivorSlotsObject;
     [SerializeField] private SurvivorPlayerUI[] survivorSlots; // Survivor1~4 슬롯
 
-    [Header("내 행동 UI")]
+    [Header("생존자 전용 UI")]
     [SerializeField] private LocalActionUI localActionUI;
+    [SerializeField] private GameObject objectiveProgressUIObject;
+    [SerializeField] private GameObject skillUI_Survivor;
+
+    [Header("살인마 전용 UI")]
+    [SerializeField] private GameObject skillUI_Killer;
 
     [Header("결과 UI")]
     [SerializeField] private GameObject resultUI;
@@ -56,6 +62,14 @@ public class InGameUIManager : MonoBehaviour
     {
         RefreshSceneObjects();
         HideAllSlots();
+
+        if (resultUI != null)
+            resultUI.SetActive(false);
+
+        if (CustomNetworkManager.Instance != null)
+            SetRoleUI(CustomNetworkManager.Instance.CurrentLocalJoinRole);
+        else
+            SetRoleUI(JoinRole.None);
     }
 
     private void Update()
@@ -199,6 +213,21 @@ public class InGameUIManager : MonoBehaviour
         return NetworkClient.localPlayer.GetComponent<KillerInput>() != null;
     }
 
+    public void SetRoleUI(JoinRole role)
+    {
+        bool isSurvivor = role == JoinRole.Survivor;
+        bool isKiller = role == JoinRole.Killer;
+
+        if (skillUI_Survivor != null)
+            skillUI_Survivor.SetActive(isSurvivor);
+
+        if (skillUI_Killer != null)
+            skillUI_Killer.SetActive(isKiller);
+
+        if (objectiveProgressUIObject != null)
+            objectiveProgressUIObject.SetActive(isSurvivor);
+    }
+
     private void HideAllSlots()
     {
         if (survivorSlots == null)
@@ -216,15 +245,22 @@ public class InGameUIManager : MonoBehaviour
 
     public void ShowResultUI()
     {
-        HideAllSlots();
+        if (objectiveProgressUIObject != null)
+            objectiveProgressUIObject.SetActive(false);
 
-        if (localActionUI != null)
-            localActionUI.gameObject.SetActive(false);
+        if (survivorSlotsObject != null)
+            survivorSlotsObject.SetActive(false);
+
+        if (skillUI_Survivor != null)
+            skillUI_Survivor.SetActive(false);
+
+        if (skillUI_Killer != null)
+            skillUI_Killer.SetActive(false);
 
         if (resultUI != null)
             resultUI.SetActive(true);
 
-        Debug.Log("[InGameUIManager] ResultUI 활성화");
+        Debug.Log("[InGameUIManager] 기존 UI 비활성화 / ResultUI 활성화");
     }
 
     // DB 닉네임 가져오기

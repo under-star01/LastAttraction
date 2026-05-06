@@ -559,7 +559,7 @@ public class SurvivorMove : NetworkBehaviour
 
         if (modelRoot != null)
         {
-            modelRoot.rotation = rotation;
+            modelRoot.localRotation = Quaternion.Euler(0f, 180f, 0f);
             syncedModelYaw = modelRoot.eulerAngles.y;
         }
 
@@ -931,30 +931,24 @@ public class SurvivorMove : NetworkBehaviour
     [Server]
     private IEnumerator EscapeResultRoutine()
     {
-        // 1. 탈출한 플레이어에게만 검은 화면으로 Fade Out
-        TargetSetBlackout(connectionToClient, true);
-
-        // ChangeSceneUI의 fadeDuration과 맞춤
+        TargetSetBlackout(true);
         yield return new WaitForSeconds(1f);
 
-        // 2. 검은 화면 상태에서 결과 위치로 이동
         MoveToResultPoint();
 
-        // 위치 이동 직후 살짝 유지
-        yield return new WaitForSeconds(0.2f);
-
-        // 3. 검은 화면 해제 Fade In
-        TargetSetBlackout(connectionToClient, false);
-
-        // 화면이 돌아온 뒤 ResultUI 표시
-        yield return new WaitForSeconds(0.5f);
+        if (camSkill != null)
+            camSkill.ApplyResultView();
 
         if (InGameUIManager.Instance != null)
             InGameUIManager.Instance.ShowResultUI();
+
+        yield return new WaitForSeconds(2f);
+
+        TargetSetBlackout(false);
     }
 
     [TargetRpc]
-    private void TargetSetBlackout(NetworkConnectionToClient target, bool value)
+    private void TargetSetBlackout(bool value)
     {
         if (ChangeSceneUI.Instance != null)
             ChangeSceneUI.Instance.Show(value);
