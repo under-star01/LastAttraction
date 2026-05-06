@@ -238,7 +238,7 @@ MonoBehaviour:
   doorBlocker: {fileID: 5011544511096184759}
   interactTime: 2
   escapeChance: 20
-  failPenalty: 0
+  failPenalty: 10
 --- !u!114 &7850716686287419300
 MonoBehaviour:
   m_ObjectHideFlags: 0

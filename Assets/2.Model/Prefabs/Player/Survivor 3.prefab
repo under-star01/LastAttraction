@@ -2839,8 +2839,8 @@ MonoBehaviour:
   interactor: {fileID: 0}
   hitDuration: 0.8
   downHitDuration: 3
-  prisonFullTime: 600
-  prisonHalfTime: 300
+  prisonFullTime: 300
+  prisonHalfTime: 150
 --- !u!114 &9042901668219853417
 MonoBehaviour:
   m_ObjectHideFlags: 0
