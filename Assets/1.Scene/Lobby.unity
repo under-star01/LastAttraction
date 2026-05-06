@@ -1794,6 +1794,8 @@ MonoBehaviour:
   - {fileID: 8299052277759403933}
   - {fileID: 7329744039908808154}
   - {fileID: 7653918584967381055}
+  killerAttackTarget: {fileID: 0}
+  killerTrapTarget: {fileID: 0}
 --- !u!1 &711047124
 GameObject:
   m_ObjectHideFlags: 0
@@ -6397,7 +6399,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8301801967420447738}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Floor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7161,7 +7163,7 @@ GameObject:
   - component: {fileID: 7076664009997317633}
   - component: {fileID: 7076664009997317632}
   - component: {fileID: 7076664009997317647}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: SM_Floor_LOD1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7250,7 +7252,7 @@ GameObject:
   - component: {fileID: 7076664009997317637}
   - component: {fileID: 7076664009997317636}
   - component: {fileID: 7076664009997317635}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: SM_Floor_LOD0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7331,7 +7333,7 @@ GameObject:
   - component: {fileID: 7076664009997317641}
   - component: {fileID: 7076664009997317640}
   - component: {fileID: 7076664009997317687}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: SM_Floor_LOD3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7420,7 +7422,7 @@ GameObject:
   - component: {fileID: 7076664009997317645}
   - component: {fileID: 7076664009997317644}
   - component: {fileID: 7076664009997317643}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: SM_Floor_LOD2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7495,7 +7497,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7076664009997317657}
   - component: {fileID: 7076664009997317656}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: SM_Floor0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
