@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8981232273727585520}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: BluffTitler Model Layer 8
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -41,7 +41,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4804550218360457273}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: BluffTitler Show
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -77,7 +77,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9163327874705582806}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: BluffTitler Sketch Layer 4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -111,7 +111,7 @@ GameObject:
   - component: {fileID: 7687236711711786326}
   - component: {fileID: 1667389586761409154}
   - component: {fileID: 3116851426402529552}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -200,7 +200,7 @@ GameObject:
   - component: {fileID: 190906515335793244}
   - component: {fileID: 9154046084228085785}
   - component: {fileID: 6921658366389402347}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -287,7 +287,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4774388696325551624}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: BluffTitler Model Layer 5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -321,7 +321,7 @@ GameObject:
   - component: {fileID: 7422332903739502111}
   - component: {fileID: 4837993516948746808}
   - component: {fileID: 7445001950755707383}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Sketch
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -410,7 +410,7 @@ GameObject:
   - component: {fileID: 3330390130538585186}
   - component: {fileID: 6805615498100398644}
   - component: {fileID: 8353355801875762635}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName0.001
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -497,7 +497,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 967579495631585422}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: BluffTitler Model Layer 6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -538,7 +538,7 @@ GameObject:
   - component: {fileID: 7600922380707700683}
   - component: {fileID: 853492490913106379}
   - component: {fileID: 3868154430365219020}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName.001
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -625,7 +625,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2192379634604829573}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: BluffTitler Model Layer 9
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -659,7 +659,7 @@ GameObject:
   - component: {fileID: 7483022234755579574}
   - component: {fileID: 2072987550522344654}
   - component: {fileID: 256443335043915283}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -748,7 +748,7 @@ GameObject:
   - component: {fileID: 892990491183963366}
   - component: {fileID: 6133686044509488187}
   - component: {fileID: 2188217836607850182}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -837,7 +837,7 @@ GameObject:
   - component: {fileID: 3756411559485885497}
   - component: {fileID: 8594622160982785290}
   - component: {fileID: 840367582643794581}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName3.001
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -930,7 +930,7 @@ GameObject:
   - component: {fileID: 6491595325273016188}
   - component: {fileID: 3058712000937655205}
   - component: {fileID: 7945759237201735083}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Trap
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1089,7 +1089,7 @@ GameObject:
   - component: {fileID: 4093615425729778716}
   - component: {fileID: 3445785608671171500}
   - component: {fileID: 7746178271984145247}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1178,7 +1178,7 @@ GameObject:
   - component: {fileID: 4348474379154332243}
   - component: {fileID: 3619568140984439527}
   - component: {fileID: 8683568297454699802}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1267,7 +1267,7 @@ GameObject:
   - component: {fileID: 6712875556561551067}
   - component: {fileID: 5554735620269487102}
   - component: {fileID: 5839911671243473509}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1356,7 +1356,7 @@ GameObject:
   - component: {fileID: 2603660506642723454}
   - component: {fileID: 4371974934961403708}
   - component: {fileID: 1235144692291037461}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: NoName2
   m_TagString: Untagged
   m_Icon: {fileID: 0}

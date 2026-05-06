@@ -15,6 +15,11 @@ public class SceneBinder : MonoBehaviour
     [SerializeField] private QTEUI qteUI;
     [SerializeField] private CameraSkillUI cameraSkillUI;
     [SerializeField] private Image[] frameUI;
+    [SerializeField] private GameObject killerAttackTarget;
+    [SerializeField] private GameObject killerTrapTarget;
+
+    public GameObject GetKillerAttackTarget() => killerAttackTarget;
+    public GameObject GetKillerTrapTarget() => killerTrapTarget;
 
     private void Awake()
     {

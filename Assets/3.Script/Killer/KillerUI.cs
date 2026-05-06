@@ -4,14 +4,14 @@ using UnityEngine.UI;
 public class KillerUI : MonoBehaviour
 {
     [Header("공격 UI (왼쪽)")]
-    [SerializeField] private GameObject attack_Target;
+    [SerializeField] private GameObject attackTarget;
     private Image attackIcon;
     [SerializeField] private Color normalColor = Color.red;
     [SerializeField] private Color pressedColor = Color.gray;
     [SerializeField] private float pressedScale = 0.9f;
 
     [Header("트랩 UI (오른쪽)")]
-    [SerializeField] private GameObject trap_Target;
+    [SerializeField] private GameObject trapTarget;
     private Image trapFillIcon;
     [SerializeField] private Color cooldownColor = Color.gray;
     [SerializeField] private Color readyColor = Color.red;
@@ -28,11 +28,18 @@ public class KillerUI : MonoBehaviour
         state = killer.GetComponent<KillerState>();
         trapHandler = killer.GetComponent<TrapHandler>();
 
-        if (attack_Target != null)
-            attackIcon = attack_Target.GetComponentInChildren<Image>();
+        if (SceneBinder.Instance != null)
+        {
+            attackTarget = SceneBinder.Instance.GetKillerAttackTarget();
+            trapTarget = SceneBinder.Instance.GetKillerTrapTarget();
+        }
 
-        if (trap_Target != null)
-            trapFillIcon = trap_Target.GetComponentInChildren<Image>();
+        // 가져온 오브젝트에서 Image 컴포넌트 추출
+        if (attackTarget != null)
+            attackIcon = attackTarget.GetComponentInChildren<Image>();
+
+        if (trapTarget != null)
+            trapFillIcon = trapTarget.GetComponentInChildren<Image>();
     }
 
     private void Update()

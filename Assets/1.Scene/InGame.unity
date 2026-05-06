@@ -2415,6 +2415,8 @@ MonoBehaviour:
   - {fileID: 8299052277759403933}
   - {fileID: 7329744039908808154}
   - {fileID: 7653918584967381055}
+  killerAttackTarget: {fileID: 25304566}
+  killerTrapTarget: {fileID: 200133388}
 --- !u!1 &625351543
 GameObject:
   m_ObjectHideFlags: 0

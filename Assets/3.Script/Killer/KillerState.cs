@@ -25,6 +25,10 @@ public class KillerState : NetworkBehaviour
     [SerializeField] private float detectRange = 15f;          // 감지 거리
     [SerializeField] private LayerMask survivorLayer;          // 생존자 레이어
 
+    [Header("Rage 파티클 VFX")]
+    [SerializeField] private ParticleSystem vfxImplosion;
+    [SerializeField] private ParticleSystem vfxShockwave;
+
     private float currentRageBuildTime = 0f;
 
     private ScriptableRendererFeature rageEffectFeature; // URP 전용 피처
@@ -213,12 +217,18 @@ public class KillerState : NetworkBehaviour
         {
             var detector = GetComponent<KillerRageDetector>();
             detector?.SetActive(true);
+
+            if (vfxImplosion != null) vfxImplosion.Play();
+            if (vfxShockwave != null) vfxShockwave.Play();
         }
         else
         {
             // 3. 분노가 끝났을 때 뒷정리 (실루엣 지우기 등)
             var detector = GetComponent<KillerRageDetector>();
             detector?.SetActive(false);
+
+            if (vfxImplosion != null) vfxImplosion.Stop();
+            if (vfxShockwave != null) vfxShockwave.Stop();
         }
     }
 }
