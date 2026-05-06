@@ -44,6 +44,10 @@ public class GameManager : NetworkBehaviour
     [Header("탈출문")]
     [SerializeField] private EscapeGate[] escapeGates;
 
+    [Header("게임 종료 위치")]
+    [SerializeField] private Transform[] survivorResultPoints;
+    [SerializeField] private Transform killerResultPoint;
+
     [Header("탈출문 개방 대기")]
     [SerializeField] private float gateOpenDelay = 60f;
 
@@ -80,6 +84,7 @@ public class GameManager : NetworkBehaviour
     public float GateRemainTime => gateRemainTime;
     public float GateOpenDelay => gateOpenDelay;
     public float NeedKillerDetectTime => needKillerDetectTime;
+    public Transform KillerResultPoint => killerResultPoint;
 
     public bool IsEvidenceComplete
     {
@@ -577,5 +582,33 @@ public class GameManager : NetworkBehaviour
             return needEvidenceCount;
 
         return zones.Count;
+    }
+
+    [Server]
+    public Transform GetSurvivorResultPoint(SurvivorMove targetSurvivor)
+    {
+        if (targetSurvivor == null)
+            return null;
+
+        if (targetSurvivor.connectionToClient == null)
+            return null;
+
+        if (survivorResultPoints == null || survivorResultPoints.Length == 0)
+            return null;
+
+        if (CustomNetworkManager.Instance == null)
+            return null;
+
+        if (!CustomNetworkManager.Instance.TryGetSurvivorIndex(
+                targetSurvivor.connectionToClient,
+                out int survivorIndex))
+        {
+            return null;
+        }
+
+        if (survivorIndex < 0 || survivorIndex >= survivorResultPoints.Length)
+            return null;
+
+        return survivorResultPoints[survivorIndex];
     }
 }

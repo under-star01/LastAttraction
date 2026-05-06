@@ -17,6 +17,9 @@ public class InGameUIManager : MonoBehaviour
     [Header("내 행동 UI")]
     [SerializeField] private LocalActionUI localActionUI;
 
+    [Header("결과 UI")]
+    [SerializeField] private GameObject resultUI;
+
     [Header("상태 대체 아이콘")]
     [SerializeField] private Sprite downedIcon;
     [SerializeField] private Sprite imprisonedIcon;
@@ -209,6 +212,19 @@ public class InGameUIManager : MonoBehaviour
             survivorSlots[i].Clear();
             survivorSlots[i].SetVisible(false);
         }
+    }
+
+    public void ShowResultUI()
+    {
+        HideAllSlots();
+
+        if (localActionUI != null)
+            localActionUI.gameObject.SetActive(false);
+
+        if (resultUI != null)
+            resultUI.SetActive(true);
+
+        Debug.Log("[InGameUIManager] ResultUI 활성화");
     }
 
     // DB 닉네임 가져오기

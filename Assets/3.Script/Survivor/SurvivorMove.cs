@@ -1,4 +1,5 @@
 using Mirror;
+using System.Collections;
 using UnityEngine;
 
 public class SurvivorMove : NetworkBehaviour
@@ -523,6 +524,54 @@ public class SurvivorMove : NetworkBehaviour
         controller.center = center;
     }
 
+    [Server]
+    private void MoveToResultPoint()
+    {
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("[SurvivorMove] GameManager.Instance가 없습니다.");
+            return;
+        }
+
+        Transform resultPoint = GameManager.Instance.GetSurvivorResultPoint(this);
+
+        if (resultPoint == null)
+        {
+            Debug.LogWarning("[SurvivorMove] Survivor 결과 위치를 찾지 못했습니다.");
+            return;
+        }
+
+        ServerTeleportTo(resultPoint.position, resultPoint.rotation);
+
+        Debug.Log("[SurvivorMove] 결과 위치로 이동 완료.");
+    }
+
+    [Server]
+    public void ServerTeleportTo(Vector3 position, Quaternion rotation)
+    {
+        if (controller != null)
+            controller.enabled = false;
+
+        transform.SetPositionAndRotation(position, rotation);
+
+        if (controller != null)
+            controller.enabled = true;
+
+        if (modelRoot != null)
+        {
+            modelRoot.rotation = rotation;
+            syncedModelYaw = modelRoot.eulerAngles.y;
+        }
+
+        if (cameraYawRoot != null)
+        {
+            syncedYaw = rotation.eulerAngles.y;
+            serverYaw = syncedYaw;
+        }
+
+        yVelocity = 0f;
+    }
+
     // 트리거 애니메이션 실행
     public void PlayAnimation(string triggerName)
     {
@@ -874,11 +923,42 @@ public class SurvivorMove : NetworkBehaviour
         if (moveState != null)
             moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
 
-        // 다음 단계에서 여기 연결
-        // 1. ChangeSceneUI.Show()
-        // 2. 결과 표시 위치로 이동
-        // 3. ResultUI 활성화
+        StartCoroutine(EscapeResultRoutine());
 
         Debug.Log("[SurvivorMove] Escape arrived.");
+    }
+
+    [Server]
+    private IEnumerator EscapeResultRoutine()
+    {
+        // 1. 탈출한 플레이어에게만 검은 화면으로 Fade Out
+        TargetSetBlackout(connectionToClient, true);
+
+        // ChangeSceneUI의 fadeDuration과 맞춤
+        yield return new WaitForSeconds(1f);
+
+        // 2. 검은 화면 상태에서 결과 위치로 이동
+        MoveToResultPoint();
+
+        // 위치 이동 직후 살짝 유지
+        yield return new WaitForSeconds(0.2f);
+
+        // 3. 검은 화면 해제 Fade In
+        TargetSetBlackout(connectionToClient, false);
+
+        // 화면이 돌아온 뒤 ResultUI 표시
+        yield return new WaitForSeconds(0.5f);
+
+        if (InGameUIManager.Instance != null)
+            InGameUIManager.Instance.ShowResultUI();
+    }
+
+    [TargetRpc]
+    private void TargetSetBlackout(NetworkConnectionToClient target, bool value)
+    {
+        if (ChangeSceneUI.Instance != null)
+            ChangeSceneUI.Instance.Show(value);
+
+        Debug.Log($"[SurvivorMove] 개인 블랙아웃 상태 변경: {value}");
     }
 }

@@ -208,6 +208,16 @@ public class CustomNetworkManager : NetworkManager
         ResetClientSearchState();
     }
 
+    public bool TryGetSurvivorIndex(NetworkConnectionToClient conn, out int survivorIndex)
+    {
+        survivorIndex = -1;
+
+        if (conn == null)
+            return false;
+
+        return survivorPrefabIndexByConnection.TryGetValue(conn.connectionId, out survivorIndex);
+    }
+
     private void BeginRoleSearch(JoinRole role)
     {
         if (role != JoinRole.Killer && role != JoinRole.Survivor)
@@ -911,6 +921,14 @@ public class CustomNetworkManager : NetworkManager
             if (killerMove != null)
             {
                 killerMove.ServerTeleportTo(spawnPoint.position, spawnPoint.rotation);
+                continue;
+            }
+
+            SurvivorMove survivorMove = conn.identity.GetComponent<SurvivorMove>();
+
+            if (survivorMove != null)
+            {
+                survivorMove.ServerTeleportTo(spawnPoint.position, spawnPoint.rotation);
                 continue;
             }
 
