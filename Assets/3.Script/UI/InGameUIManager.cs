@@ -29,6 +29,7 @@ public class InGameUIManager : MonoBehaviour
 
     [Header("살인마 전용 UI")]
     [SerializeField] private GameObject skillUI_Killer;
+    [SerializeField] private KillerSkillUI killerSkillUI;
 
     [Header("결과 UI")]
     [SerializeField] private GameObject resultUI;
@@ -112,6 +113,11 @@ public class InGameUIManager : MonoBehaviour
     public Image[] GetFrameUI()
     {
         return frameUI;
+    }
+
+    public KillerSkillUI GetKillerSkillUI()
+    {
+        return killerSkillUI;
     }
 
     // 씬 안의 생존자와 상호작용 오브젝트를 찾는다.
