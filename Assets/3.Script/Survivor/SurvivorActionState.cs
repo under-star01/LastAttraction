@@ -21,20 +21,15 @@ public class SurvivorActionState : NetworkBehaviour
     [SerializeField] private SurvivorInteractor interactor;
     [SerializeField] private Animator animator;
 
-    // 현재 대표 행동 상태
-    // 서버에서 변경되면 클라이언트에도 동기화된다.
     [SyncVar(hook = nameof(OnActChanged))]
     private SurvivorAction currentAction = SurvivorAction.None;
 
-    // 힐을 받고 있는 중인지
     [SyncVar(hook = nameof(OnHealChanged))]
     private bool isBeingHealed;
 
-    // Hold 상호작용을 진행 중인지
     [SyncVar]
     private bool isDoingInteraction;
 
-    // 우클릭 카메라 스킬을 사용 중인지
     [SyncVar]
     private bool isCamSkill;
 
@@ -61,7 +56,6 @@ public class SurvivorActionState : NetworkBehaviour
             animator = GetComponentInChildren<Animator>();
     }
 
-    // 서버에서 현재 행동 상태 설정
     [Server]
     public void SetAct(SurvivorAction act)
     {
@@ -69,7 +63,6 @@ public class SurvivorActionState : NetworkBehaviour
         ApplyState();
     }
 
-    // 특정 행동 상태일 때만 해제
     [Server]
     public void ClearAct(SurvivorAction act)
     {
@@ -80,7 +73,6 @@ public class SurvivorActionState : NetworkBehaviour
         ApplyState();
     }
 
-    // 힐 받는 상태 설정
     [Server]
     public void SetHeal(bool value)
     {
@@ -88,21 +80,18 @@ public class SurvivorActionState : NetworkBehaviour
         ApplyUse();
     }
 
-    // Hold 상호작용 중인지 저장
     [Server]
     public void SetInteract(bool value)
     {
         isDoingInteraction = value;
     }
 
-    // 카메라 스킬 사용 상태 저장
     [Server]
     public void SetCam(bool value)
     {
         isCamSkill = value;
     }
 
-    // 카메라 스킬 사용 가능 여부
     public bool CanCam()
     {
         SurvivorState state = GetComponent<SurvivorState>();
@@ -115,7 +104,6 @@ public class SurvivorActionState : NetworkBehaviour
         if (state.IsDowned)
             return false;
 
-        // 감옥 안에서는 카메라 스킬 금지
         if (state.IsImprisoned)
             return false;
 
@@ -137,13 +125,11 @@ public class SurvivorActionState : NetworkBehaviour
         return true;
     }
 
-    // 행동 상태가 동기화되면 클라이언트에서도 이동/상호작용 제한을 반영한다.
     private void OnActChanged(SurvivorAction oldValue, SurvivorAction newValue)
     {
         ApplyState();
     }
 
-    // 힐 받는 상태가 바뀌면 상호작용 가능 여부를 갱신한다.
     private void OnHealChanged(bool oldValue, bool newValue)
     {
         ApplyUse();
@@ -155,7 +141,7 @@ public class SurvivorActionState : NetworkBehaviour
         ApplyUse();
     }
 
-    // DownHit, Stunned 상태에서는 이동을 막는다
+    // DownHit, Stunned 상태에서는 이동을 막는다.
     private void ApplyLock()
     {
         if (move == null)
@@ -171,12 +157,11 @@ public class SurvivorActionState : NetworkBehaviour
 
         move.SetMoveLock(lockMove);
 
-        // 이동 잠금 상태에서는 이동 애니메이션을 Idle 쪽으로 정리한다.
         if (lockMove)
             move.StopAnimation();
     }
 
-    // 상태에 따라 SurvivorInteractor 자체를 켜고 끈다.
+    // 상태에 따라 SurvivorInteractor 사용 가능 여부를 바꾼다.
     public void ApplyUse()
     {
         if (interactor == null)
@@ -207,15 +192,12 @@ public class SurvivorActionState : NetworkBehaviour
     }
 
     // 일반 피격 연출
-    // Healthy -> Injured가 될 때 사용한다.
-    // DownHit과 다르게 이동 잠금 없이 Hit 애니메이션만 재생한다.
     [Server]
     public IEnumerator HitRoutine(float time)
     {
         if (time <= 0f)
             yield break;
 
-        // 더 강한 행동 상태일 때는 일반 Hit으로 덮어쓰지 않는다.
         if (currentAction == SurvivorAction.DownHit)
             yield break;
 
@@ -229,18 +211,17 @@ public class SurvivorActionState : NetworkBehaviour
         isCamSkill = false;
         isDoingInteraction = false;
 
+        // 서버 루틴이므로 소유 클라이언트에게 실제 상호작용 종료를 요청한다.
         if (interactor != null)
-            interactor.ForceStopInteract();
+            interactor.ForceStopInteractFromServer();
 
         if (move != null)
         {
-            // 피격 시작 전 다른 행동 애니메이션을 정리한다.
             move.SetCamAnim(false);
             move.SetSearching(false);
             move.SetVaulting(false);
             move.SetStunned(false);
 
-            // 실제 일반 피격 애니메이션 실행
             move.PlayAnimation("Hit");
         }
         else if (animator != null)
@@ -252,7 +233,6 @@ public class SurvivorActionState : NetworkBehaviour
             animator.SetTrigger("Hit");
         }
 
-        // Hit은 이동 잠금 상태가 아니므로 ApplyState를 호출해도 이동은 막히지 않는다.
         ApplyState();
 
         yield return new WaitForSeconds(time);
@@ -272,12 +252,12 @@ public class SurvivorActionState : NetworkBehaviour
         isCamSkill = false;
         isDoingInteraction = false;
 
-        // DownHit이 스턴보다 우선이므로 스턴 Bool이 남아있으면 제거
         if (move != null)
             move.SetStunned(false);
 
+        // 서버 루틴이므로 소유 클라이언트에게 실제 상호작용 종료를 요청한다.
         if (interactor != null)
-            interactor.ForceStopInteract();
+            interactor.ForceStopInteractFromServer();
 
         ApplyState();
 
@@ -295,6 +275,7 @@ public class SurvivorActionState : NetworkBehaviour
     [ClientRpc]
     private void RpcDownHit()
     {
+        // 이 함수는 클라이언트에서 실행되므로 기존 ForceStopInteract를 직접 호출해도 된다.
         if (interactor != null)
             interactor.ForceStopInteract();
 
@@ -303,7 +284,6 @@ public class SurvivorActionState : NetworkBehaviour
             move.SetMoveLock(true);
             move.StopAnimation();
 
-            // 다른 행동 애니메이션 정리
             move.SetCamAnim(false);
             move.SetSearching(false);
             move.SetVaulting(false);
@@ -321,11 +301,9 @@ public class SurvivorActionState : NetworkBehaviour
         if (time <= 0f)
             yield break;
 
-        // 다운 피격 중이면 스턴으로 덮어쓰지 않는다.
         if (currentAction == SurvivorAction.DownHit)
             yield break;
 
-        // 이미 스턴 중이면 중복 스턴 방지
         if (currentAction == SurvivorAction.Stunned)
             yield break;
 
@@ -333,24 +311,18 @@ public class SurvivorActionState : NetworkBehaviour
         isCamSkill = false;
         isDoingInteraction = false;
 
-        // 진행 중인 상호작용 강제 종료
+        // 서버 루틴이므로 소유 클라이언트에게 실제 상호작용 종료를 요청한다.
         if (interactor != null)
-            interactor.ForceStopInteract();
+            interactor.ForceStopInteractFromServer();
 
         if (move != null)
         {
-            // 스턴 시작 전 다른 행동 Bool 정리
             move.SetCamAnim(false);
             move.SetSearching(false);
             move.SetVaulting(false);
 
-            // 이동 애니메이션 정리
             move.StopAnimation();
-
-            // 스턴 중 다른 애니메이션을 막기 위한 Bool
             move.SetStunned(true);
-
-            // 실제 스턴 애니메이션 Trigger
             move.PlayAnimation("Stun");
         }
         else if (animator != null)
@@ -367,7 +339,6 @@ public class SurvivorActionState : NetworkBehaviour
         {
             currentAction = SurvivorAction.None;
 
-            // 스턴 종료 후 Bool 해제
             if (move != null)
                 move.SetStunned(false);
             else if (animator != null)
@@ -385,7 +356,6 @@ public class SurvivorActionState : NetworkBehaviour
         isDoingInteraction = false;
         isCamSkill = false;
 
-        // 스턴 Bool이 남아있으면 이후 애니메이션 전환이 막힐 수 있으므로 해제
         if (move != null)
             move.SetStunned(false);
         else if (animator != null)

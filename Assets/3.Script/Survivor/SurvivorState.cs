@@ -133,18 +133,17 @@ public class SurvivorState : NetworkBehaviour
 
         StopAllCoroutines();
 
-        // 피격되는 순간 진행 중인 상호작용을 먼저 끊는다.
-        // Healthy -> Injured 일반 피격도 여기서 끊어줘야
-        // 증거 조사, 업로드, 감옥 구출, 힐 같은 Hold 상호작용이 계속 진행되지 않는다.
+        // 피격되는 순간 서버 상태와 소유 클라이언트의 실제 Hold 상호작용을 같이 끊는다.
+        // 서버에서 ForceStopInteract()만 호출하면 로컬 activeInteractable이 없어
+        // Evidence, Upload, Heal, Prison 진행이 계속 남을 수 있다.
         if (interactor != null)
-            interactor.ForceStopInteract();
+            interactor.ForceStopInteractFromServer();
 
         // 서버 행동 상태 초기화
         if (actionState != null)
             actionState.ForceResetActionServer();
 
         // Healthy -> Injured
-        // 일반 피격은 이동 잠금 없이 Hit 애니메이션만 재생한다.
         if (currentCondition == SurvivorCondition.Healthy)
         {
             currentCondition = SurvivorCondition.Injured;
@@ -157,7 +156,6 @@ public class SurvivorState : NetworkBehaviour
         }
 
         // Injured -> Downed
-        // 다운 피격은 상호작용을 끊고 이동을 잠근다.
         if (currentCondition == SurvivorCondition.Injured)
         {
             currentCondition = SurvivorCondition.Downed;
@@ -248,7 +246,6 @@ public class SurvivorState : NetworkBehaviour
     }
 
     // 감옥에 갇힌 상태에서 시간이 절반 이하로 줄어들면 2단계 판정으로 바꾼다.
-    // UI 표시뿐 아니라 이후 다시 잡혔을 때 바로 사망 판정으로 이어지게 하기 위함이다.
     [Server]
     public void MarkPrisonHalfPassed()
     {
@@ -264,6 +261,9 @@ public class SurvivorState : NetworkBehaviour
     {
         currentPrisonId = 0;
         currentCondition = SurvivorCondition.Dead;
+
+        if (interactor != null)
+            interactor.ForceStopInteractFromServer();
 
         if (actionState != null)
         {
@@ -288,7 +288,7 @@ public class SurvivorState : NetworkBehaviour
         currentCondition = SurvivorCondition.Dead;
 
         if (interactor != null)
-            interactor.ForceStopInteract();
+            interactor.ForceStopInteractFromServer();
 
         if (actionState != null)
         {
@@ -300,7 +300,6 @@ public class SurvivorState : NetworkBehaviour
 
         ApplyAllStateServer();
 
-        // 감옥 시간으로 죽을 때도 DownHit 트리거를 실행한다.
         if (actionState != null)
             StartCoroutine(actionState.DownHitRoutine(downHitDuration));
     }
@@ -316,7 +315,7 @@ public class SurvivorState : NetworkBehaviour
         StopAllCoroutines();
 
         if (interactor != null)
-            interactor.ForceStopInteract();
+            interactor.ForceStopInteractFromServer();
 
         if (actionState != null)
         {
@@ -336,7 +335,6 @@ public class SurvivorState : NetworkBehaviour
         if (duration <= 0f)
             return;
 
-        // 다운 / 사망 / 감옥 상태에서는 스턴 적용하지 않는다.
         if (IsDowned || IsDead || IsImprisoned || IsEscaping)
             return;
 
