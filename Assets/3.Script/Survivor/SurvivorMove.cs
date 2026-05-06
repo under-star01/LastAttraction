@@ -44,8 +44,6 @@ public class SurvivorMove : NetworkBehaviour
     private float yVelocity;
     private float lastFootstepTime;
 
-    private bool isMoveLocked;
-
     private Transform escapeTarget;
     private Vector2 serverMoveInput;
     private bool serverWantsRun;
@@ -53,6 +51,7 @@ public class SurvivorMove : NetworkBehaviour
     private float serverYaw;
     private float serverPitch;
 
+    [SyncVar] private bool isMoveLocked;
     [SyncVar] private float syncedYaw;
     [SyncVar] private float syncedPitch;
     [SyncVar] private float syncedModelYaw;
@@ -204,8 +203,11 @@ public class SurvivorMove : NetworkBehaviour
     {
         if (isLocalPlayer)
         {
-            UpdateLook();
-            SendInput();
+            if (!isMoveLocked)
+            {
+                UpdateLook();
+                SendInput();
+            }
             ApplyCam();
             ApplyModel();
         }
@@ -844,6 +846,12 @@ public class SurvivorMove : NetworkBehaviour
     private void EscapeArrive()
     {
         escapeTarget = null;
+
+        serverMoveInput = Vector2.zero;
+        serverWantsRun = false;
+        serverWantsCrouch = false;
+
+        isMoveLocked = true;
 
         if (moveState != null)
             moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
