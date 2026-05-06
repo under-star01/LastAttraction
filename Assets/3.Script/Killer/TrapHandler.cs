@@ -22,6 +22,9 @@ public class TrapHandler : NetworkBehaviour
     private KillerInput killerInput;
     private Animator animator;
 
+    private float plantStartTime;
+    private const float plantDuration = 1.2f;
+
     // 서버에서 설치된 함정들을 관리할 리스트
     private readonly List<GameObject> spawnedTraps = new List<GameObject>();
 
@@ -89,6 +92,9 @@ public class TrapHandler : NetworkBehaviour
         if (!isLocalPlayer || killerInput == null)
             return;
 
+        if (state.CurrentCondition == KillerCondition.Planting)
+            return;
+
         // 함정 모드 토글
         if (killerInput.IsTrapModePressed)
         {
@@ -108,6 +114,17 @@ public class TrapHandler : NetworkBehaviour
         }
     }
 
+    public float PlantProgress
+    {
+        get
+        {
+            if (state.CurrentCondition != KillerCondition.Planting) return 1f;
+
+            float elapsed = Time.time - plantStartTime;
+            return Mathf.Clamp01(elapsed / plantDuration);
+        }
+    }
+
     private void ToggleTrapMode()
     {
         isBuildMode = !isBuildMode;
@@ -124,12 +141,13 @@ public class TrapHandler : NetworkBehaviour
                 SetGhostVisual(ghostInstance, 0.4f);
             }
 
-            state.CmdChangeKillerState(KillerCondition.Planting);
+            //state.CmdChangeKillerState(KillerCondition.Planting);
         }
         else
         {
             CleanupGhost();
-            state.CmdChangeKillerState(KillerCondition.Idle);
+            if (state.CurrentCondition != KillerCondition.Idle)
+                state.CmdChangeKillerState(KillerCondition.Idle);
         }
     }
 
@@ -147,6 +165,8 @@ public class TrapHandler : NetworkBehaviour
     [Command]
     private void CmdStartPlanting(Vector3 pos, Quaternion rot)
     {
+        plantStartTime = Time.time;
+
         state.ChangeState(KillerCondition.Planting);
 
         while (spawnedTraps.Count >= 5)
@@ -164,7 +184,7 @@ public class TrapHandler : NetworkBehaviour
         NetworkServer.Spawn(trap);
         spawnedTraps.Add(trap);
 
-        Invoke(nameof(BackToIdle), 1.2f);
+        Invoke(nameof(BackToIdle), plantDuration);
     }
 
     [ClientRpc]

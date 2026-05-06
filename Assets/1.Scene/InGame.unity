@@ -5779,7 +5779,7 @@ GameObject:
   - component: {fileID: 1691492302}
   - component: {fileID: 1691492301}
   m_Layer: 5
-  m_Name: Background
+  m_Name: Killer_Skill_1_BG
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6413,7 +6413,7 @@ GameObject:
   - component: {fileID: 1878223861}
   - component: {fileID: 1878223860}
   m_Layer: 5
-  m_Name: Background
+  m_Name: Killer_Skill_2_BG
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7123,7 +7123,7 @@ MonoBehaviour:
   m_FillMethod: 4
   m_FillAmount: 1
   m_FillClockwise: 1
-  m_FillOrigin: 0
+  m_FillOrigin: 2
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
 --- !u!222 &2070403310

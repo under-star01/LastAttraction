@@ -217,7 +217,7 @@ public class KillerMove : NetworkBehaviour
 
         if (state.CurrentCondition == KillerCondition.Lunging)
             speed *= lungeMultiplier;
-        else if (state.CurrentCondition == KillerCondition.Recovering)
+        else if (state.CurrentCondition == KillerCondition.Recovering || state.CurrentCondition == KillerCondition.Planting)
             speed *= penaltyMultiplier;
 
         transform.rotation = Quaternion.Euler(0f, serverYaw, 0f);

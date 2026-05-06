@@ -11439,6 +11439,7 @@ GameObject:
   - component: {fileID: 835159930052555109}
   - component: {fileID: 8367404895667104180}
   - component: {fileID: 3390365132958246041}
+  - component: {fileID: 5269577689345874119}
   - component: {fileID: 8329270682292632505}
   - component: {fileID: 1429254782650784602}
   - component: {fileID: 4930780877601674375}
@@ -11651,6 +11652,25 @@ MonoBehaviour:
   obstacleLayer:
     serializedVersion: 2
     m_Bits: 1024
+--- !u!114 &5269577689345874119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9199881581034011608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 329f67ffae462364ba38e4d0c78a30fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KillerUI
+  attackTarget: {fileID: 0}
+  normalColor: {r: 1, g: 0, b: 0, a: 1}
+  pressedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  pressedScale: 0.9
+  trapTarget: {fileID: 0}
+  cooldownColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  readyColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!114 &8329270682292632505
 MonoBehaviour:
   m_ObjectHideFlags: 0
