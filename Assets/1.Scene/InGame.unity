@@ -130,7 +130,7 @@ GameObject:
   - component: {fileID: 25304567}
   - component: {fileID: 25304568}
   m_Layer: 5
-  m_Name: Skill1
+  m_Name: Killer_Skill1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -660,7 +660,7 @@ GameObject:
   - component: {fileID: 200133389}
   - component: {fileID: 200133390}
   m_Layer: 5
-  m_Name: Skill2
+  m_Name: Killer_Skill2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
