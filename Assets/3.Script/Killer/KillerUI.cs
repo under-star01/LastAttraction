@@ -22,41 +22,43 @@ public class KillerUI : MonoBehaviour
 
     private void Start()
     {
-        // 로컬 플레이어 컴포넌트 참조 (초기화 로직은 상황에 맞춰 수정)
+        // 로컬 플레이어 컴포넌트 참조
         GameObject killer = transform.root.gameObject;
         input = killer.GetComponent<KillerInput>();
         state = killer.GetComponent<KillerState>();
         trapHandler = killer.GetComponent<TrapHandler>();
 
+        // 최초 1회 연결 시도
+        TryBindUI();
+    }
+
+    // UI 오브젝트들을 찾아서 연결하는 별도의 함수
+    private void TryBindUI()
+    {
         if (SceneBinder.Instance != null)
         {
             attackTarget = SceneBinder.Instance.GetKillerAttackTarget();
             trapTarget = SceneBinder.Instance.GetKillerTrapTarget();
         }
 
-        // 2. 만약 바인더가 실패했다면 이름으로 직접 검색 (안전장치)
-        if (attackTarget == null)
-        {
-            // Hierarchy에 있는 실제 슬라이더 오브젝트 이름을 넣으세요
-            attackTarget = GameObject.Find("Killer_Skill1");
-        }
+        if (attackTarget == null) attackTarget = GameObject.Find("Killer_Skill1");
+        if (trapTarget == null) trapTarget = GameObject.Find("Killer_Skill2");
 
-        if (trapTarget == null)
-        {
-            trapTarget = GameObject.Find("Killer_Skill2"); // 혹은 동일한 오브젝트
-        }
-
-        // 3. 찾은 오브젝트에서 이미지 컴포넌트 추출
-        if (attackTarget != null)
-            attackIcon = attackTarget.GetComponentInChildren<Image>();
-
-        if (trapTarget != null)
-            trapFillIcon = trapTarget.GetComponentInChildren<Image>();
+        if (attackTarget != null) attackIcon = attackTarget.GetComponentInChildren<Image>();
+        if (trapTarget != null) trapFillIcon = trapTarget.GetComponentInChildren<Image>();
     }
 
     private void Update()
     {
+        // 1. 필수 컴포넌트가 없으면 중단
         if (input == null || state == null) return;
+
+        // 2. 만약 UI가 아직 연결 안 됐다면 다시 시도 (인게임 진입 직후 대응)
+        if (attackIcon == null || trapFillIcon == null)
+        {
+            TryBindUI();
+            return; // 이번 프레임은 건너뜀
+        }
 
         UpdateAttackUI();
         UpdateTrapUI();
@@ -64,7 +66,7 @@ public class KillerUI : MonoBehaviour
 
     private void UpdateAttackUI()
     {
-        // 클릭 유지 중일 때의 피드백 (Lunge 입력 중)
+        // 위에서 체크했으므로 attackIcon이 null일 수 없음
         if (input.IsAttackPressed && state.CanAttack)
         {
             attackIcon.color = pressedColor;
@@ -79,18 +81,14 @@ public class KillerUI : MonoBehaviour
 
     private void UpdateTrapUI()
     {
+        // 위에서 체크했으므로 trapFillIcon이 null일 수 없음
         if (state.CurrentCondition == KillerCondition.Planting)
         {
-            // 회색으로 변경하고[cite: 18]
             trapFillIcon.color = cooldownColor;
-
-            // TrapHandler에서 계산된 0~1 사이의 진행도를 적용[cite: 19]
-            // 1.2초 동안 시계 방향으로 차오르게 됨[cite: 18]
             trapFillIcon.fillAmount = trapHandler.PlantProgress;
         }
         else
         {
-            // 설치 상태가 아니면 다시 붉은색으로, 게이지는 꽉 채움[cite: 18]
             trapFillIcon.color = readyColor;
             trapFillIcon.fillAmount = 1f;
         }
