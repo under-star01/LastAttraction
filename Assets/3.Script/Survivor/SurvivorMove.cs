@@ -46,6 +46,7 @@ public class SurvivorMove : NetworkBehaviour
 
     private bool isMoveLocked;
 
+    private Transform escapeTarget;
     private Vector2 serverMoveInput;
     private bool serverWantsRun;
     private bool serverWantsCrouch;
@@ -301,6 +302,12 @@ public class SurvivorMove : NetworkBehaviour
     {
         if (controller == null || !controller.enabled)
             return;
+
+        if (escapeTarget != null)
+        {
+            EscapeMoveTick();
+            return;
+        }
 
         bool isDowned = state != null && state.IsDowned;
         bool isDead = state != null && state.IsDead;
@@ -749,5 +756,98 @@ public class SurvivorMove : NetworkBehaviour
             AudioDimension.Sound3D,
             transform.position
         );
+    }
+
+    [Server]
+    public void BeginEscape(Transform target)
+    {
+        if (target == null)
+            return;
+
+        if (escapeTarget != null)
+            return;
+
+        escapeTarget = target;
+
+        // 기존 이동 잠금 변수 재사용
+        isMoveLocked = true;
+
+        // 입력값 제거
+        serverMoveInput = Vector2.zero;
+        serverWantsRun = false;
+        serverWantsCrouch = false;
+
+        // 탈출 상태 추가 시 사용
+        if (state != null)
+            state.SetEscape();
+
+        // 앉은 상태였다면 서 있는 크기로 복구
+        SetSize(standHeight, standCenter);
+
+        // 목표 방향 바라보기
+        Vector3 dir = escapeTarget.position - transform.position;
+        dir.y = 0f;
+
+        if (dir.sqrMagnitude > 0.001f)
+        {
+            ApplyFace(dir.normalized);
+            RpcFace(dir.normalized);
+        }
+    }
+
+    [Server]
+    private void EscapeMoveTick()
+    {
+        Vector3 toTarget = escapeTarget.position - transform.position;
+        toTarget.y = 0f;
+
+        if (toTarget.magnitude <= 0.25f)
+        {
+            EscapeArrive();
+            return;
+        }
+
+        Vector3 moveDir = toTarget.normalized;
+
+        if (controller.isGrounded)
+            yVelocity = -1f;
+        else
+            yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
+
+        Vector3 finalMove = moveDir * runSpeed;
+        finalMove.y = yVelocity;
+
+        controller.Move(finalMove * Time.fixedDeltaTime);
+
+        if (modelRoot != null)
+        {
+            Quaternion targetRot = Quaternion.LookRotation(moveDir);
+            modelRoot.rotation = Quaternion.Slerp(
+                modelRoot.rotation,
+                targetRot,
+                turnSpeed * Time.fixedDeltaTime
+            );
+
+            syncedModelYaw = modelRoot.eulerAngles.y;
+        }
+
+        if (moveState != null)
+            moveState.SetMoveState(SurvivorLocomotionState.Walk, true);
+    }
+
+    [Server]
+    private void EscapeArrive()
+    {
+        escapeTarget = null;
+
+        if (moveState != null)
+            moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
+
+        // 다음 단계에서 여기 연결
+        // 1. ChangeSceneUI.Show()
+        // 2. 결과 표시 위치로 이동
+        // 3. ResultUI 활성화
+
+        Debug.Log("[SurvivorMove] Escape arrived.");
     }
 }

@@ -41,6 +41,9 @@ public class SurvivorState : NetworkBehaviour
     [SyncVar]
     private int prisonStep;
 
+    [SyncVar]
+    private bool isEscaping;
+
     public SurvivorCondition CurrentCondition => currentCondition;
 
     public bool IsHealthy => currentCondition == SurvivorCondition.Healthy;
@@ -48,6 +51,7 @@ public class SurvivorState : NetworkBehaviour
     public bool IsDowned => currentCondition == SurvivorCondition.Downed;
     public bool IsImprisoned => currentCondition == SurvivorCondition.Imprisoned;
     public bool IsDead => currentCondition == SurvivorCondition.Dead;
+    public bool IsEscaping => isEscaping;
 
     public uint CurrentPrisonId => currentPrisonId;
 
@@ -120,7 +124,7 @@ public class SurvivorState : NetworkBehaviour
         if (actionState != null && actionState.CurrentAction == SurvivorAction.DownHit)
             return;
 
-        if (IsImprisoned || IsDead)
+        if (IsImprisoned || IsDead || IsEscaping)
             return;
 
         StopAllCoroutines();
@@ -161,7 +165,7 @@ public class SurvivorState : NetworkBehaviour
     [Server]
     public void HealToHealthy()
     {
-        if (IsImprisoned || IsDead)
+        if (IsImprisoned || IsDead || IsEscaping)
             return;
 
         currentCondition = SurvivorCondition.Healthy;
@@ -171,7 +175,7 @@ public class SurvivorState : NetworkBehaviour
     [Server]
     public void RecoverToInjured()
     {
-        if (IsImprisoned || IsDead)
+        if (IsImprisoned || IsDead || IsEscaping)
             return;
 
         currentCondition = SurvivorCondition.Injured;
@@ -195,6 +199,9 @@ public class SurvivorState : NetworkBehaviour
     [Server]
     public bool EnterPrison(uint prisonId)
     {
+        if (IsEscaping)
+            return false;
+
         if (prisonStep >= 2)
         {
             Die();
@@ -248,6 +255,30 @@ public class SurvivorState : NetworkBehaviour
         ApplyAllStateServer();
     }
 
+    [Server]
+    public void SetEscape()
+    {
+        if (IsDead || IsImprisoned)
+            return;
+
+        isEscaping = true;
+
+        StopAllCoroutines();
+
+        if (interactor != null)
+            interactor.ForceStopInteract();
+
+        if (actionState != null)
+        {
+            actionState.SetInteract(false);
+            actionState.SetHeal(false);
+            actionState.SetCam(false);
+            actionState.SetAct(SurvivorAction.None);
+        }
+
+        ApplyAllStateServer();
+    }
+
     // 트랩, QTE 실패 등에서 공통으로 사용하는 스턴 함수
     [Server]
     public void ApplyStun(float duration)
@@ -256,7 +287,7 @@ public class SurvivorState : NetworkBehaviour
             return;
 
         // 다운 / 사망 / 감옥 상태에서는 스턴 적용하지 않는다.
-        if (IsDowned || IsDead || IsImprisoned)
+        if (IsDowned || IsDead || IsImprisoned || IsEscaping)
             return;
 
         if (actionState == null)
