@@ -13,7 +13,7 @@ public class SurvivorMove : NetworkBehaviour
     [SerializeField] private float walkSpeed = 2.3f;
     [SerializeField] private float runSpeed = 4f;
     [SerializeField] private float crouchSpeed = 1.2f;
-    [SerializeField] private float crawlSpeed = 0.45f;
+    [SerializeField] private float crawlSpeed = 0.6f;
     [SerializeField] private float turnSpeed = 15f;
 
     [Header("Ä«¸Þ¶ó")]
@@ -814,7 +814,12 @@ public class SurvivorMove : NetworkBehaviour
         else
             yVelocity += Physics.gravity.y * Time.fixedDeltaTime;
 
-        Vector3 finalMove = moveDir * runSpeed;
+        float speed = runSpeed;
+
+        if (state != null && state.IsDowned)
+            speed = crawlSpeed;
+
+        Vector3 finalMove = moveDir * speed;
         finalMove.y = yVelocity;
 
         controller.Move(finalMove * Time.fixedDeltaTime);
