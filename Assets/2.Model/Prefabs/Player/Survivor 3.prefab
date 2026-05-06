@@ -2792,7 +2792,7 @@ MonoBehaviour:
   walkSpeed: 2
   runSpeed: 3.6
   crouchSpeed: 1
-  crawlSpeed: 0.4
+  crawlSpeed: 0.6
   turnSpeed: 15
   mouseSensitivity: 0.08
   minPitch: 0

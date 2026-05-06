@@ -7314,10 +7314,10 @@ MonoBehaviour:
   - {fileID: 1721792043}
   - {fileID: 190309134}
   localActionUI: {fileID: 1237366193}
-  downedIcon: {fileID: 21300000, guid: ae3abe64a4348584f96fd7bdd498c58b, type: 3}
-  imprisonedIcon: {fileID: 21300000, guid: 1b2eef2d305ab6e4ab7342bb7d172bf9, type: 3}
+  downedIcon: {fileID: 21300000, guid: a425861bdad631d47b63324f9e73d493, type: 3}
+  imprisonedIcon: {fileID: 21300000, guid: 5ed21dc463e3a5548bd7b8aaf88173fe, type: 3}
   escapedIcon: {fileID: 21300000, guid: dbbcce4bf8d7cea428e835a6476a21fe, type: 3}
-  deadIcon: {fileID: 21300000, guid: 3f952d19c528e3a4d98d366cecfde04f, type: 3}
+  deadIcon: {fileID: 21300000, guid: e0ac0bfd233c4024e88025e3562d01cd, type: 3}
   noneActionIcon: {fileID: 21300000, guid: 786980231b1a35f4bbe06a59e080b293, type: 3}
   cameraActionIcon: {fileID: 21300000, guid: 7a47d7adb8fbf4a41b7bdf50be54898b, type: 3}
   evidenceActionIcon: {fileID: 21300000, guid: 20b5e2a092726a541a303eff559dec7a, type: 3}
@@ -7325,7 +7325,6 @@ MonoBehaviour:
   healReceiveActionIcon: {fileID: 21300000, guid: 2e0314f0da2d5254587b84c86c018a06, type: 3}
   prisonActionIcon: {fileID: 21300000, guid: fd43deeaf2743b14d84ac20fde1678c1, type: 3}
   uploadActionIcon: {fileID: 21300000, guid: 6f900a5b8b2848043a6ee000d5bc8ce8, type: 3}
-  showSurvivorListToKiller: 1
   refreshInterval: 0.1
 --- !u!4 &1471202007
 Transform:

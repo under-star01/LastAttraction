@@ -136,8 +136,15 @@ public class Prison : NetworkBehaviour, IInteractable
             return false;
 
         prisonerId = id.netId;
+
+        // 실제 남은 시간은 현재 감옥 단계에 맞는 시간으로 시작한다.
+        // 1번째 감옥: prisonFullTime
+        // 2번째 감옥: prisonHalfTime
         remainTime = startTime;
-        prisonMaxTime = startTime;
+
+        // UI Slider 기준 시간은 항상 전체 감옥 시간으로 둔다.
+        // 그래야 2번째 감옥이 60초로 시작할 때 Slider가 1이 아니라 0.5에서 시작한다.
+        prisonMaxTime = target.PrisonFullTime;
 
         // 새로 갇힐 때 문 닫기
         isDoorOpen = false;

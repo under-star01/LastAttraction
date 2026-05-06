@@ -4,7 +4,8 @@ using UnityEngine;
 
 // 인게임 UI 전체를 관리한다.
 // - 모든 생존자의 상태 UI
-// - 모든 생존자의 현재 행동 UI
+// - 생존자 입장에서만 모든 생존자의 현재 행동 UI 표시
+// - 살인마 입장에서는 생존자 상태 UI만 표시하고 Action UI는 숨김
 // - 내 로컬 플레이어의 클릭 / 우클릭 입력 UI
 public class InGameUIManager : MonoBehaviour
 {
@@ -31,8 +32,7 @@ public class InGameUIManager : MonoBehaviour
     [SerializeField] private Sprite prisonActionIcon;
     [SerializeField] private Sprite uploadActionIcon;
 
-    [Header("설정")]
-    [SerializeField] private bool showSurvivorListToKiller = true;
+    [Header("갱신 설정")]
     [SerializeField] private float refreshInterval = 0.1f;
 
     private float refreshTimer;
@@ -57,7 +57,7 @@ public class InGameUIManager : MonoBehaviour
 
     private void Update()
     {
-        // 매 프레임 FindObjects를 하면 비싸기 때문에 일정 간격으로만 갱신한다.
+        // 매 프레임 FindObjects를 하면 비용이 크므로 일정 간격으로만 씬 오브젝트를 다시 찾는다.
         refreshTimer += Time.deltaTime;
 
         if (refreshTimer >= refreshInterval)
@@ -70,7 +70,7 @@ public class InGameUIManager : MonoBehaviour
         UpdateLocalActionUI();
     }
 
-    // 씬 안의 생존자와 상호작용 오브젝트들을 찾는다.
+    // 씬 안의 생존자와 상호작용 오브젝트를 찾는다.
     private void RefreshSceneObjects()
     {
         survivors.Clear();
@@ -86,7 +86,7 @@ public class InGameUIManager : MonoBehaviour
                 survivors.Add(foundSurvivors[i]);
         }
 
-        // netId 기준으로 정렬해서 클라이언트마다 UI 순서가 최대한 같게 보이게 한다.
+        // netId 기준으로 정렬해서 각 클라이언트에서 UI 순서가 최대한 같게 보이게 한다.
         survivors.Sort((a, b) => a.netId.CompareTo(b.netId));
 
         heals = FindObjectsByType<SurvivorHeal>(
@@ -122,6 +122,8 @@ public class InGameUIManager : MonoBehaviour
             return;
         }
 
+        bool canSeeAction = IsLocalSurvivor();
+
         for (int i = 0; i < survivorSlots.Length; i++)
         {
             SurvivorPlayerUI slot = survivorSlots[i];
@@ -138,38 +140,60 @@ public class InGameUIManager : MonoBehaviour
             SurvivorState survivor = survivors[i];
 
             slot.SetVisible(true);
-            slot.SetName(GetSurvivorName(survivor));
 
-            // 기본 초상화는 생존자 프리팹에 붙은 PlayerUIProfile에서 가져온다.
+            // DB 닉네임과 프리팹별 초상화는 PlayerUIProfile에서 가져온다.
+            slot.SetName(GetSurvivorName(survivor));
             slot.SetPortrait(GetPortrait(survivor));
 
-            // 상태에 따라 초상화 / 상처 오버레이 / 대체 아이콘을 분기한다.
+            // 건강 / 부상 / 다운 / 감옥 / 탈출 / 사망 상태 표시
             ApplyConditionUI(slot, survivor);
 
-            // 감옥 단계와 감옥 시간 UI를 갱신한다.
+            // 감옥 단계와 감옥 시간 UI는 생존자와 살인마 모두 볼 수 있다.
             slot.SetCatchCount(GetCatchCountForUI(survivor));
             UpdatePrisonTimer(slot, survivor);
 
-            // 현재 행동 UI를 갱신한다.
-            UpdateActionSlot(slot, survivor);
+            // 생존자만 Action UI를 볼 수 있다.
+            // 살인마는 상태 UI는 보지만, 생존자가 무엇을 하는지는 볼 수 없다.
+            if (canSeeAction)
+                UpdateActionSlot(slot, survivor);
+            else
+                slot.SetAction(null, false, 0f);
         }
     }
 
-    // 생존자 리스트 UI를 보여줄지 결정한다.
+    // 생존자 리스트 자체를 보여줄지 판단한다.
     private bool ShouldShowSurvivorList()
     {
         if (NetworkClient.localPlayer == null)
             return false;
 
-        // 생존자는 당연히 볼 수 있다.
-        if (NetworkClient.localPlayer.GetComponent<SurvivorState>() != null)
+        // 생존자는 생존자 UI를 본다.
+        if (IsLocalSurvivor())
             return true;
 
-        // 설정에 따라 살인마에게도 생존자 상태 UI를 보여준다.
-        if (showSurvivorListToKiller && NetworkClient.localPlayer.GetComponent<KillerInput>() != null)
+        // 살인마도 생존자 상태 UI는 본다.
+        if (IsLocalKiller())
             return true;
 
         return false;
+    }
+
+    // 현재 로컬 플레이어가 생존자인지 확인한다.
+    private bool IsLocalSurvivor()
+    {
+        if (NetworkClient.localPlayer == null)
+            return false;
+
+        return NetworkClient.localPlayer.GetComponent<SurvivorState>() != null;
+    }
+
+    // 현재 로컬 플레이어가 살인마인지 확인한다.
+    private bool IsLocalKiller()
+    {
+        if (NetworkClient.localPlayer == null)
+            return false;
+
+        return NetworkClient.localPlayer.GetComponent<KillerInput>() != null;
     }
 
     private void HideAllSlots()
@@ -187,6 +211,7 @@ public class InGameUIManager : MonoBehaviour
         }
     }
 
+    // DB 닉네임 가져오기
     private string GetSurvivorName(SurvivorState survivor)
     {
         if (survivor == null)
@@ -203,6 +228,7 @@ public class InGameUIManager : MonoBehaviour
         return profile.DisplayName;
     }
 
+    // 생존자 프리팹별 초상화 가져오기
     private Sprite GetPortrait(SurvivorState survivor)
     {
         if (survivor == null)
@@ -219,7 +245,7 @@ public class InGameUIManager : MonoBehaviour
         return profile.Portrait;
     }
 
-    // 상태 UI 핵심 처리
+    // 생존자 몸 상태 UI 처리
     private void ApplyConditionUI(SurvivorPlayerUI slot, SurvivorState survivor)
     {
         if (slot == null || survivor == null)
@@ -237,7 +263,7 @@ public class InGameUIManager : MonoBehaviour
                 break;
 
             case SurvivorCondition.Injured:
-                // 다친 상태는 생존자 기본 초상화 위에 상처 이미지만 덮는다.
+                // 부상 상태는 기본 초상화 위에 상처 오버레이만 덮는다.
                 slot.SetConditionUI(
                     showPortrait: true,
                     showInjury: true,
@@ -246,7 +272,7 @@ public class InGameUIManager : MonoBehaviour
                 break;
 
             case SurvivorCondition.Downed:
-                // 다운 상태는 초상화를 대체 아이콘으로 바꾼다.
+                // 다운 상태는 초상화를 다운 아이콘으로 대체한다.
                 slot.SetConditionUI(
                     showPortrait: false,
                     showInjury: false,
@@ -283,6 +309,7 @@ public class InGameUIManager : MonoBehaviour
         }
     }
 
+    // 감옥 남은 시간 Slider 갱신
     private void UpdatePrisonTimer(SurvivorPlayerUI slot, SurvivorState survivor)
     {
         if (slot == null || survivor == null)
@@ -296,7 +323,8 @@ public class InGameUIManager : MonoBehaviour
         slot.SetPrisonTimer(show, remain01);
     }
 
-    // 현재 행동 아이콘과 진행도를 갱신한다.
+    // 현재 행동 아이콘과 진행도 갱신
+    // 이 함수는 생존자 입장에서만 호출된다.
     private void UpdateActionSlot(SurvivorPlayerUI slot, SurvivorState survivor)
     {
         if (slot == null || survivor == null)
@@ -304,7 +332,7 @@ public class InGameUIManager : MonoBehaviour
 
         uint id = survivor.netId;
 
-        // 1. 카메라 스킬
+        // 1. 카메라 스킬 사용 중
         SurvivorCameraSkill cameraSkill = survivor.GetComponent<SurvivorCameraSkill>();
         if (cameraSkill != null && cameraSkill.IsUse)
         {
@@ -369,7 +397,7 @@ public class InGameUIManager : MonoBehaviour
 
         if (survivor.IsImprisoned)
         {
-            // 이미 한 번 감옥에 갔다가 다시 들어간 상태면 2단계로 표시
+            // 이미 한 번 감옥에 갔다가 다시 들어간 상태면 2단계 표시
             if (survivor.PrisonStep >= 1)
                 count = 2;
 
@@ -488,6 +516,14 @@ public class InGameUIManager : MonoBehaviour
         if (localActionUI == null)
             return;
 
+        // 살인마는 생존자용 클릭 / 우클릭 UI를 사용하지 않으므로 기본 상태로 둔다.
+        if (!IsLocalSurvivor())
+        {
+            localActionUI.SetClickUsed(false);
+            localActionUI.SetRightClickUsed(false);
+            return;
+        }
+
         if (NetworkClient.localPlayer == null)
         {
             localActionUI.SetClickUsed(false);
@@ -502,12 +538,15 @@ public class InGameUIManager : MonoBehaviour
         bool clickUsed = false;
         bool rightClickUsed = false;
 
+        // Hold 상호작용 중이면 클릭 아이콘을 흐리게 한다.
         if (interactor != null && interactor.IsInteracting)
             clickUsed = true;
 
+        // DownHit, Stunned, Vault 같은 강한 행동 상태도 클릭 사용 중처럼 표시한다.
         if (actionState != null && actionState.IsBusy)
             clickUsed = true;
 
+        // 카메라 스킬 중이면 우클릭 아이콘을 흐리게 한다.
         if (cameraSkill != null && cameraSkill.IsUse)
             rightClickUsed = true;
 
