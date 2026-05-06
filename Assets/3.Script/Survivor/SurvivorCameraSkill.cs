@@ -10,6 +10,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
     [SerializeField] private SurvivorMove move;
     [SerializeField] private SurvivorActionState act;
     [SerializeField] private SurvivorState state;
+    [SerializeField] private SurvivorMoveState moveState;
 
     [Header("스킬 화면")]
     [SerializeField] private Camera skillCamera;
@@ -25,20 +26,24 @@ public class SurvivorCameraSkill : NetworkBehaviour
     [SerializeField] private CinemachineCamera skillCinemachine;
 
     [Header("카메라 탐지")]
-    [SerializeField] private Transform detectOrigin;        // Ray 시작 기준 위치
-    [SerializeField] private LayerMask killerLayerMask;     // Killer Layer
+    [SerializeField] private Transform detectOrigin;            // Ray 시작 기준 위치
+    [SerializeField] private LayerMask killerLayerMask;         // Killer Layer
     [SerializeField] private LayerMask cameraDetectBlockMask;   // Obstacle, Killer, Survivor Layer
-    [SerializeField] private float detectDistance = 12f;    // 탐지 거리
-    [SerializeField] private float detectAngle = 60f;       // 부채꼴 시야각
-    [SerializeField] private int rayCount = 15;             // Ray 개수
-    [SerializeField] private float detectInterval = 0.1f;   // 탐지 간격
-    [SerializeField] private float detectHeight = 1.5f;     // 고정 탐지 높이
-    [SerializeField] private bool drawDebugRay = true;      // Scene View Ray 표시
+    [SerializeField] private float detectDistance = 12f;        // 탐지 거리
+    [SerializeField] private float detectAngle = 60f;           // 부채꼴 시야각
+    [SerializeField] private int rayCount = 15;                 // Ray 개수
+    [SerializeField] private float detectInterval = 0.1f;       // 탐지 간격
+    [SerializeField] private float detectHeight = 1.5f;         // 고정 탐지 높이
+    [SerializeField] private bool drawDebugRay = true;          // Scene View Ray 표시
 
     [Header("카메라 프레임 UI")]
     [SerializeField] private Color normalFrameColor = Color.white;
     [SerializeField] private Color detectedFrameColor = Color.red;
     [SerializeField] private float detectedHoldTime = 0.25f;
+
+    [Header("스킬 재사용 딜레이")]
+    [SerializeField] private float skillReuseDelay = 1f;        // 스킬 종료 후 다시 켜기까지 걸리는 시간
+
     private Image[] frameImages;
 
     [SyncVar(hook = nameof(OnSkillChanged))]
@@ -52,6 +57,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
     [Header("Rage 전용 상태")]
     [SyncVar]
     [SerializeField] private bool isRecordingKiller = false;
+
     public bool IsRecordingKiller => isRecordingKiller;
 
     // 자주 쓰는 레이어 번호 캐시
@@ -59,10 +65,14 @@ public class SurvivorCameraSkill : NetworkBehaviour
     private int hideSelfLayer;
     private int survivorLayer;
     private int downedLayer;
-    private float nextDetectTime;
 
+    private float nextDetectTime;
     private float lastKillerDetectedTime = -999f;
     private bool isFrameDetected;
+
+    // 서버 기준으로 다음 스킬 사용이 가능한 시간이다.
+    // 스킬을 끄는 순간 Time.time + skillReuseDelay로 설정된다.
+    private float nextSkillUseTime;
 
     private void Awake()
     {
@@ -78,11 +88,14 @@ public class SurvivorCameraSkill : NetworkBehaviour
         if (state == null)
             state = GetComponent<SurvivorState>();
 
-        // 시작 시 스킬 카메라는 꺼둔다
+        if (moveState == null)
+            moveState = GetComponent<SurvivorMoveState>();
+
+        // 시작 시 스킬 카메라는 꺼둔다.
         if (skillCamera != null)
             skillCamera.enabled = false;
 
-        // 시작 시 카메라 모델도 숨긴다
+        // 시작 시 카메라 모델도 숨긴다.
         if (localCameraModel != null)
             localCameraModel.SetActive(false);
 
@@ -112,7 +125,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
     {
         base.OnStartClient();
 
-        // 남의 플레이어 카메라는 절대 활성화되면 안 된다
+        // 남의 플레이어 카메라는 절대 활성화되면 안 된다.
         if (!isLocalPlayer)
         {
             if (skillCamera != null)
@@ -133,10 +146,13 @@ public class SurvivorCameraSkill : NetworkBehaviour
         if (input != null)
             want = input.IsCameraSkillPressed;
 
-        // 현재 상태상 사용 불가능하면 강제로 끈다
+        // 현재 상태상 사용 불가능하면 강제로 끈다.
+        // 앉아 있는 상태도 CanUse()에서 막는다.
         if (!CanUse())
             want = false;
 
+        // 값이 바뀔 때만 서버에 요청한다.
+        // 실제 1초 재사용 딜레이는 서버 CmdSetSkill에서 최종 판정한다.
         if (want != isUse)
             CmdSetSkill(want);
 
@@ -158,7 +174,15 @@ public class SurvivorCameraSkill : NetworkBehaviour
         if (act == null)
             return false;
 
-        return act.CanCam();
+        if (!act.CanCam())
+            return false;
+
+        // 앉아 있는 상태에서는 카메라 스킬 사용 불가.
+        // 자동으로 일어서지 않고, 입력만 무시한다.
+        if (moveState != null && moveState.IsCrouching)
+            return false;
+
+        return true;
     }
 
     [Command]
@@ -173,32 +197,55 @@ public class SurvivorCameraSkill : NetworkBehaviour
             value = false;
         }
 
+        // 서버에서도 앉기 상태를 다시 검사한다.
+        // 클라이언트에서 막아도 서버에서 한 번 더 막아야 멀티에서 안전하다.
+        if (value)
+        {
+            SurvivorMoveState serverMoveState = moveState;
+
+            if (serverMoveState == null)
+                serverMoveState = GetComponent<SurvivorMoveState>();
+
+            if (serverMoveState != null && serverMoveState.IsCrouching)
+                value = false;
+        }
+
+        // 스킬을 켜려는 경우, 종료 후 1초 딜레이가 끝났는지 검사한다.
+        if (value && Time.time < nextSkillUseTime)
+            value = false;
+
+        // 상태 변화가 없으면 처리하지 않는다.
+        if (isUse == value)
+            return;
+
+        // 스킬을 끄는 순간 다음 사용 가능 시간을 예약한다.
+        if (isUse && !value)
+            nextSkillUseTime = Time.time + skillReuseDelay;
+
         isUse = value;
         act.SetCam(value);
 
-        // 카메라 스킬이 꺼지는 순간 촬영 상태도 서버 기준으로 초기화
+        // 카메라 스킬이 꺼지는 순간 촬영 상태도 서버 기준으로 초기화한다.
         if (!value)
-        {
             isRecordingKiller = false;
-        }
     }
 
-    // 스킬 on/off가 바뀌면 애니메이션 / 카메라 모델 / 로컬 화면을 갱신한다
+    // 스킬 on/off가 바뀌면 애니메이션 / 카메라 모델 / 로컬 화면을 갱신한다.
     private void OnSkillChanged(bool oldValue, bool newValue)
     {
         if (move != null)
             move.SetCamAnim(newValue);
 
-        // 월드 카메라 모델은 스킬 중에만 보이게
+        // 월드 카메라 모델은 스킬 중에만 보이게 한다.
         if (worldCameraModel != null)
             worldCameraModel.SetActive(newValue);
 
         if (isLocalPlayer)
         {
-            // 내 월드 카메라 모델만 스킬 카메라에서 안 보이게
+            // 내 월드 카메라 모델만 스킬 카메라에서 안 보이게 한다.
             SetOwnWorldCamHidden(newValue);
 
-            // 내 몸 모델도 스킬 카메라에서 안 보이게
+            // 내 몸 모델도 스킬 카메라에서 안 보이게 한다.
             SetOwnBodyHidden(newValue);
 
             // 로컬 UI / 카메라 반영
@@ -209,7 +256,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
         }
     }
 
-    // 카메라 시야 부채꼴 범위 안에 Killer가 있는지 탐지한다
+    // 카메라 시야 부채꼴 범위 안에 Killer가 있는지 탐지한다.
     private void DetectKillerInCameraView()
     {
         if (Time.time < nextDetectTime)
@@ -287,17 +334,15 @@ public class SurvivorCameraSkill : NetworkBehaviour
         }
     }
 
-    // 마지막 탐지 이후 일정 시간 동안은 촬영 중으로 유지한다
+    // 마지막 탐지 이후 일정 시간 동안은 촬영 중으로 유지한다.
     private void UpdateFrameDetectState()
     {
         bool detected = Time.time <= lastKillerDetectedTime + detectedHoldTime;
         SetFrameDetected(detected);
 
-        // 촬영 상태가 변경될 때만 서버에 Command 보냄
+        // 촬영 상태가 변경될 때만 서버에 Command 보낸다.
         if (isLocalPlayer && isRecordingKiller != detected)
-        {
             CmdSetRecordingKiller(detected);
-        }
     }
 
     // 프레임 UI 색상 변경
@@ -307,6 +352,9 @@ public class SurvivorCameraSkill : NetworkBehaviour
             return;
 
         isFrameDetected = detected;
+
+        if (frameImages == null)
+            return;
 
         Color targetColor = detected ? detectedFrameColor : normalFrameColor;
 
@@ -337,8 +385,8 @@ public class SurvivorCameraSkill : NetworkBehaviour
             skillUI = FindFirstObjectByType<CameraSkillUI>(FindObjectsInactive.Include);
     }
 
-    // 내 월드 카메라 모델만 숨김 레이어로 바꾼다
-    // 상대 월드 카메라는 그대로 CamWorld라서 스킬 카메라에 보인다
+    // 내 월드 카메라 모델만 숨김 레이어로 바꾼다.
+    // 상대 월드 카메라는 그대로 CamWorld라서 스킬 카메라에 보인다.
     private void SetOwnWorldCamHidden(bool hide)
     {
         if (!isLocalPlayer)
@@ -355,8 +403,8 @@ public class SurvivorCameraSkill : NetworkBehaviour
         SetLayerRecursive(worldCameraModel.transform, targetLayer);
     }
 
-    // 내 몸 모델도 숨김 레이어로 바꾼다
-    // 스킬 종료 시 현재 몸 상태에 맞는 원래 레이어로 되돌린다
+    // 내 몸 모델도 숨김 레이어로 바꾼다.
+    // 스킬 종료 시 현재 몸 상태에 맞는 원래 레이어로 되돌린다.
     private void SetOwnBodyHidden(bool hide)
     {
         if (!isLocalPlayer)
@@ -377,7 +425,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
             move.SetModelLayer(survivorLayer);
     }
 
-    // 오브젝트와 자식들의 레이어를 전부 바꾼다
+    // 오브젝트와 자식들의 레이어를 전부 바꾼다.
     private void SetLayerRecursive(Transform target, int layer)
     {
         if (target == null)
@@ -452,13 +500,19 @@ public class SurvivorCameraSkill : NetworkBehaviour
     {
         if (value)
         {
-            normalCinemachine.Priority = 0;
-            skillCinemachine.Priority = 0;
+            if (normalCinemachine != null)
+                normalCinemachine.Priority = 0;
+
+            if (skillCinemachine != null)
+                skillCinemachine.Priority = 0;
         }
         else
         {
-            normalCinemachine.Priority = 30;
-            skillCinemachine.Priority = 0;
+            if (normalCinemachine != null)
+                normalCinemachine.Priority = 30;
+
+            if (skillCinemachine != null)
+                skillCinemachine.Priority = 0;
         }
     }
 

@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 2943497374519219544}
   - component: {fileID: 2725543321559420447}
   m_Layer: 7
-  m_Name: EvidencePoint
+  m_Name: EvidencePoint_StaffLogbook
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -71,7 +71,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: fadec4e82f032a24ea81eae7b79a0c88, type: 2}
+  - {fileID: 2100000, guid: 10f8fe3e20c7afa49b140f2892f5bf9f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -178,10 +178,13 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  evidenceType: 2
+  displayName: 
+  icon: {fileID: 0}
   interactTime: 10
-  progressUI: {fileID: 0}
   minQteCount: 2
   maxQteCount: 4
+  qteFailStunTime: 3
 --- !u!114 &2725543321559420447
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -195,7 +198,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
   sceneId: 0
-  _assetId: 3274993835
+  _assetId: 2550657789
   serverOnly: 0
   visibility: 0
   hasSpawned: 0
