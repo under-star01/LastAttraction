@@ -226,18 +226,33 @@ public class SurvivorActionState : NetworkBehaviour
             yield break;
 
         currentAction = SurvivorAction.Hit;
+        isCamSkill = false;
+        isDoingInteraction = false;
+
+        if (interactor != null)
+            interactor.ForceStopInteract();
 
         if (move != null)
         {
+            // 피격 시작 전 다른 행동 애니메이션을 정리한다.
             move.SetCamAnim(false);
+            move.SetSearching(false);
+            move.SetVaulting(false);
+            move.SetStunned(false);
+
+            // 실제 일반 피격 애니메이션 실행
             move.PlayAnimation("Hit");
         }
         else if (animator != null)
         {
+            animator.SetBool("IsCameraSkill", false);
+            animator.SetBool("IsSearching", false);
+            animator.SetBool("IsVaulting", false);
+            animator.SetBool("IsStunned", false);
             animator.SetTrigger("Hit");
         }
 
-        // ApplyState를 호출해도 Hit은 Busy / Lock / Use 차단에 포함되지 않는다.
+        // Hit은 이동 잠금 상태가 아니므로 ApplyState를 호출해도 이동은 막히지 않는다.
         ApplyState();
 
         yield return new WaitForSeconds(time);

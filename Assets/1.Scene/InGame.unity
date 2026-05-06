@@ -3094,17 +3094,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7544900961666974804, guid: 63c20eccf90c6844aadab5e4b9b03a0a, type: 3}
   m_PrefabInstance: {fileID: 414457165}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &415179945 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1697317154103246073, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
-  m_PrefabInstance: {fileID: 2038236777}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0808e826e43f6054a9ad35652e963d3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Prison
 --- !u!1 &421889590
 GameObject:
   m_ObjectHideFlags: 0
@@ -3709,17 +3698,6 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &666110431 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7814029437964644096, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
-  m_PrefabInstance: {fileID: 2038236777}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0808e826e43f6054a9ad35652e963d3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Prison
 --- !u!1 &683504554
 GameObject:
   m_ObjectHideFlags: 0
@@ -5170,17 +5148,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1020670949}
   m_CullTransparentMesh: 1
---- !u!114 &1027899578 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2573084896895087863, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
-  m_PrefabInstance: {fileID: 2038236777}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0808e826e43f6054a9ad35652e963d3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Prison
 --- !u!1 &1037899847
 GameObject:
   m_ObjectHideFlags: 0
@@ -5459,17 +5426,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1049985720}
   m_CullTransparentMesh: 1
---- !u!114 &1056466700 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4423325700800337433, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
-  m_PrefabInstance: {fileID: 2038236777}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0808e826e43f6054a9ad35652e963d3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Prison
 --- !u!1 &1057554354
 GameObject:
   m_ObjectHideFlags: 0
@@ -10476,7 +10432,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1697317154103246073, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: failPenalty
-      value: 10
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 2134628523663668999, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: m_LocalPosition.x
@@ -10488,7 +10444,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2573084896895087863, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: failPenalty
-      value: 10
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 3010326222025217323, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: m_LocalPosition.x
@@ -10500,7 +10456,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4423325700800337433, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: failPenalty
-      value: 10
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 4847531322394976163, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: m_LocalPosition.x
@@ -10580,7 +10536,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7814029437964644096, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: failPenalty
-      value: 10
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 8098969682873973907, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: m_LocalPosition.x
@@ -11347,10 +11303,10 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   prisons:
-  - {fileID: 1056466700}
-  - {fileID: 1027899578}
-  - {fileID: 666110431}
-  - {fileID: 415179945}
+  - {fileID: 4423325702836867184}
+  - {fileID: 2573084897042739870}
+  - {fileID: 7814029439455390057}
+  - {fileID: 1697317152081394320}
 --- !u!4 &2130187010
 Transform:
   m_ObjectHideFlags: 0
@@ -11744,6 +11700,17 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &1697317152081394320 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1697317154103246073, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+  m_PrefabInstance: {fileID: 2038236777}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0808e826e43f6054a9ad35652e963d3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Prison
 --- !u!224 &1703853720131232932
 RectTransform:
   m_ObjectHideFlags: 0
@@ -11922,6 +11889,17 @@ RectTransform:
   m_AnchoredPosition: {x: 296, y: -364}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2573084897042739870 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2573084896895087863, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+  m_PrefabInstance: {fileID: 2038236777}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0808e826e43f6054a9ad35652e963d3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Prison
 --- !u!222 &2608530054283844914
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -12261,6 +12239,17 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &4423325702836867184 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4423325700800337433, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+  m_PrefabInstance: {fileID: 2038236777}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0808e826e43f6054a9ad35652e963d3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Prison
 --- !u!114 &4827490938625329964
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13098,6 +13087,17 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7814029439455390057 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7814029437964644096, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+  m_PrefabInstance: {fileID: 2038236777}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0808e826e43f6054a9ad35652e963d3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Prison
 --- !u!222 &8178360112316876697
 CanvasRenderer:
   m_ObjectHideFlags: 0

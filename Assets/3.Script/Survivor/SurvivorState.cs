@@ -133,6 +133,13 @@ public class SurvivorState : NetworkBehaviour
 
         StopAllCoroutines();
 
+        // 피격되는 순간 진행 중인 상호작용을 먼저 끊는다.
+        // Healthy -> Injured 일반 피격도 여기서 끊어줘야
+        // 증거 조사, 업로드, 감옥 구출, 힐 같은 Hold 상호작용이 계속 진행되지 않는다.
+        if (interactor != null)
+            interactor.ForceStopInteract();
+
+        // 서버 행동 상태 초기화
         if (actionState != null)
             actionState.ForceResetActionServer();
 
@@ -150,12 +157,9 @@ public class SurvivorState : NetworkBehaviour
         }
 
         // Injured -> Downed
-        // 다운 피격은 기존처럼 상호작용을 끊고 이동을 잠근다.
+        // 다운 피격은 상호작용을 끊고 이동을 잠근다.
         if (currentCondition == SurvivorCondition.Injured)
         {
-            if (interactor != null)
-                interactor.ForceStopInteract();
-
             currentCondition = SurvivorCondition.Downed;
             ApplyAllStateServer();
 
@@ -206,11 +210,14 @@ public class SurvivorState : NetworkBehaviour
         if (IsEscaping)
             return false;
 
+        // 이미 2단계까지 진행된 생존자가 다시 잡히면 감옥에 넣지 않고 사망 처리한다.
         if (prisonStep >= 2)
         {
             Die();
             return false;
         }
+
+        prisonStep++;
 
         currentPrisonId = prisonId;
         currentCondition = SurvivorCondition.Imprisoned;
@@ -233,13 +240,23 @@ public class SurvivorState : NetworkBehaviour
     {
         currentPrisonId = 0;
 
-        if (remainTime > prisonHalfTime)
-            prisonStep = 1;
-        else
+        if (remainTime <= prisonHalfTime && prisonStep < 2)
             prisonStep = 2;
 
         currentCondition = SurvivorCondition.Injured;
         ApplyAllStateServer();
+    }
+
+    // 감옥에 갇힌 상태에서 시간이 절반 이하로 줄어들면 2단계 판정으로 바꾼다.
+    // UI 표시뿐 아니라 이후 다시 잡혔을 때 바로 사망 판정으로 이어지게 하기 위함이다.
+    [Server]
+    public void MarkPrisonHalfPassed()
+    {
+        if (!IsImprisoned)
+            return;
+
+        if (prisonStep < 2)
+            prisonStep = 2;
     }
 
     [Server]
@@ -257,6 +274,35 @@ public class SurvivorState : NetworkBehaviour
         }
 
         ApplyAllStateServer();
+    }
+
+    // 감옥 시간이 다 되어 죽을 때 사용한다.
+    // 일반 Die와 다르게 DownHit 애니메이션 트리거를 함께 실행한다.
+    [Server]
+    public void DieByPrisonTime()
+    {
+        if (IsDead)
+            return;
+
+        currentPrisonId = 0;
+        currentCondition = SurvivorCondition.Dead;
+
+        if (interactor != null)
+            interactor.ForceStopInteract();
+
+        if (actionState != null)
+        {
+            actionState.SetInteract(false);
+            actionState.SetHeal(false);
+            actionState.SetCam(false);
+            actionState.SetAct(SurvivorAction.None);
+        }
+
+        ApplyAllStateServer();
+
+        // 감옥 시간으로 죽을 때도 DownHit 트리거를 실행한다.
+        if (actionState != null)
+            StartCoroutine(actionState.DownHitRoutine(downHitDuration));
     }
 
     [Server]

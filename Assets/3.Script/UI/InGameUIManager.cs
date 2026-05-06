@@ -400,18 +400,16 @@ public class InGameUIManager : MonoBehaviour
 
         Prison prison = GetCurrentPrison(survivor);
 
-        if (survivor.IsImprisoned)
+        if (survivor.IsImprisoned && prison != null)
         {
-            // 이미 한 번 감옥에 갔다가 다시 들어간 상태면 2단계 표시
-            if (survivor.PrisonStep >= 1)
+            // 첫 번째 감옥에 들어간 순간에는 1칸 표시.
+            // 첫 번째 감옥에서 시간이 절반 이하가 되면 2칸 표시.
+            if (survivor.PrisonStep == 1 && prison.RemainTime <= survivor.PrisonHalfTime)
                 count = 2;
 
-            // 첫 감옥이어도 시간이 절반 이하로 남으면 2단계 판정처럼 표시
-            if (survivor.PrisonStep == 0 && prison != null)
-            {
-                if (prison.RemainTime <= survivor.PrisonHalfTime)
-                    count = 2;
-            }
+            // 두 번째 감옥에 들어간 상태면 2칸 표시.
+            if (survivor.PrisonStep >= 2)
+                count = 2;
         }
 
         return Mathf.Clamp(count, 0, 2);
