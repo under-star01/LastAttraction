@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
+using UnityEngine.UI;
 
 // 인게임 UI 전체를 관리한다.
 // - 모든 생존자의 상태 UI
@@ -15,10 +16,16 @@ public class InGameUIManager : MonoBehaviour
     [SerializeField] private GameObject survivorSlotsObject;
     [SerializeField] private SurvivorPlayerUI[] survivorSlots; // Survivor1~4 슬롯
 
+    [Header("진행 / 상호작용 UI")]
+    [SerializeField] private ProgressUI progressUI;
+    [SerializeField] private QTEUI qteUI;
+
     [Header("생존자 전용 UI")]
     [SerializeField] private LocalActionUI localActionUI;
     [SerializeField] private GameObject objectiveProgressUIObject;
     [SerializeField] private GameObject skillUI_Survivor;
+    [SerializeField] private CameraSkillUI cameraSkillUI;
+    [SerializeField] private Image[] frameUI;
 
     [Header("살인마 전용 UI")]
     [SerializeField] private GameObject skillUI_Killer;
@@ -85,6 +92,26 @@ public class InGameUIManager : MonoBehaviour
 
         UpdateSurvivorListUI();
         UpdateLocalActionUI();
+    }
+
+    public ProgressUI GetProgressUI()
+    {
+        return progressUI;
+    }
+
+    public QTEUI GetQTEUI()
+    {
+        return qteUI;
+    }
+
+    public CameraSkillUI GetCameraSkillUI()
+    {
+        return cameraSkillUI;
+    }
+
+    public Image[] GetFrameUI()
+    {
+        return frameUI;
     }
 
     // 씬 안의 생존자와 상호작용 오브젝트를 찾는다.
@@ -256,6 +283,24 @@ public class InGameUIManager : MonoBehaviour
 
         if (skillUI_Killer != null)
             skillUI_Killer.SetActive(false);
+
+        if (progressUI != null)
+            progressUI.gameObject.SetActive(false);
+
+        if (qteUI != null)
+            qteUI.gameObject.SetActive(false);
+
+        if (cameraSkillUI != null)
+            cameraSkillUI.gameObject.SetActive(false);
+
+        if (frameUI != null)
+        {
+            for (int i = 0; i < frameUI.Length; i++)
+            {
+                if (frameUI[i] != null)
+                    frameUI[i].gameObject.SetActive(false);
+            }
+        }
 
         if (resultUI != null)
             resultUI.SetActive(true);

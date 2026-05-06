@@ -191,7 +191,7 @@ public class CustomNetworkManager : NetworkManager
         isJoiningFinalRoom = false;
         selectedPort = 0;
 
-        UIManager.Instance?.ShowLoading(false);
+        LobbyUIManager.Instance?.ShowLoading(false);
 
         if (connectRoutine != null)
         {
@@ -246,7 +246,7 @@ public class CustomNetworkManager : NetworkManager
         joinApproved = false;
         selectedPort = 0;
 
-        UIManager.Instance?.ShowLoading(true);
+        LobbyUIManager.Instance?.ShowLoading(true);
         probedRooms.Clear();
 
         ProbeNextPort();
@@ -272,7 +272,7 @@ public class CustomNetworkManager : NetworkManager
         if (selectedPort == 0)
         {
             Debug.LogWarning($"[CustomNetworkManager] {localJoinRole} 입장 가능한 방이 없습니다.");
-            UIManager.Instance?.ShowLoading(false);
+            LobbyUIManager.Instance?.ShowLoading(false);
             ResetClientSearchState();
             return;
         }
@@ -516,7 +516,7 @@ public class CustomNetworkManager : NetworkManager
 
         if (!joinApproved)
         {
-            UIManager.Instance?.ShowLoading(false);
+            LobbyUIManager.Instance?.ShowLoading(false);
             ResetClientSearchState();
         }
     }
@@ -531,7 +531,7 @@ public class CustomNetworkManager : NetworkManager
         }
         else
         {
-            UIManager.Instance?.ShowLoading(false);
+            LobbyUIManager.Instance?.ShowLoading(false);
             ResetClientSearchState();
         }
     }
@@ -543,16 +543,16 @@ public class CustomNetworkManager : NetworkManager
         isJoiningFinalRoom = false;
         localJoinRole = (JoinRole)msg.role;
 
-        UIManager.Instance?.ShowLoading(false);
+        LobbyUIManager.Instance?.ShowLoading(false);
 
         if (localJoinRole == JoinRole.Killer)
         {
-            UIManager.Instance?.ShowKillerLobbyUI();
-            UIManager.Instance?.SetStartButtonInteractable(false);
+            LobbyUIManager.Instance?.ShowKillerLobbyUI();
+            LobbyUIManager.Instance?.SetStartButtonInteractable(false);
         }
         else if (localJoinRole == JoinRole.Survivor)
         {
-            UIManager.Instance?.ShowSurvivorLobbyUI();
+            LobbyUIManager.Instance?.ShowSurvivorLobbyUI();
         }
 
         Debug.Log($"[CustomNetworkManager] 입장 완료 - Role: {localJoinRole}, Port: {msg.port}");
@@ -568,10 +568,10 @@ public class CustomNetworkManager : NetworkManager
 
     private void OnLobbyStateMessage(LobbyStateMessage msg)
     {
-        UIManager.Instance?.SetLobbyReadyCount(msg.readySurvivorCount, msg.survivorCount);
+        LobbyUIManager.Instance?.SetLobbyReadyCount(msg.readySurvivorCount, msg.survivorCount);
 
         if (localJoinRole == JoinRole.Killer)
-            UIManager.Instance?.SetStartButtonInteractable(msg.canStart);
+            LobbyUIManager.Instance?.SetStartButtonInteractable(msg.canStart);
     }
 
     private void OnChangeSceneUIMessage(ChangeSceneUIMessage msg)
@@ -745,7 +745,7 @@ public class CustomNetworkManager : NetworkManager
         Transform spawnPoint = null;
         int survivorIndex = -1;
 
-        if (SceneBinder.Instance == null)
+        if (SpawnPointBinder.Instance == null)
         {
             reason = "현재 씬에서 SceneBinder를 찾지 못했습니다.";
             return false;
@@ -755,7 +755,7 @@ public class CustomNetworkManager : NetworkManager
         {
             case JoinRole.Killer:
                 prefabToSpawn = killerPrefab;
-                spawnPoint = SceneBinder.Instance.GetKillerSpawnPoint();
+                spawnPoint = SpawnPointBinder.Instance.GetKillerSpawnPoint();
                 break;
 
             case JoinRole.Survivor:
@@ -768,7 +768,7 @@ public class CustomNetworkManager : NetworkManager
                 }
 
                 prefabToSpawn = GetSurvivorPrefab(survivorIndex);
-                spawnPoint = SceneBinder.Instance.GetSurvivorSpawnPoint(survivorIndex);
+                spawnPoint = SpawnPointBinder.Instance.GetSurvivorSpawnPoint(survivorIndex);
                 break;
         }
 
@@ -873,13 +873,13 @@ public class CustomNetworkManager : NetworkManager
         float timeout = 3f;
         float elapsed = 0f;
 
-        while (SceneBinder.Instance == null && elapsed < timeout)
+        while (SpawnPointBinder.Instance == null && elapsed < timeout)
         {
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        if (SceneBinder.Instance == null)
+        if (SpawnPointBinder.Instance == null)
         {
             Debug.LogWarning("[CustomNetworkManager] InGame 씬에서 SceneBinder를 찾지 못했습니다.");
             BroadcastChangeSceneUI(false);
@@ -1052,21 +1052,21 @@ public class CustomNetworkManager : NetworkManager
         if (conn == null)
             return null;
 
-        if (SceneBinder.Instance == null)
+        if (SpawnPointBinder.Instance == null)
             return null;
 
         if (!joinedRoles.TryGetValue(conn.connectionId, out JoinRole role))
             return null;
 
         if (role == JoinRole.Killer)
-            return SceneBinder.Instance.GetKillerSpawnPoint();
+            return SpawnPointBinder.Instance.GetKillerSpawnPoint();
 
         if (role == JoinRole.Survivor)
         {
             if (!survivorPrefabIndexByConnection.TryGetValue(conn.connectionId, out int survivorIndex))
                 return null;
 
-            return SceneBinder.Instance.GetSurvivorSpawnPoint(survivorIndex);
+            return SpawnPointBinder.Instance.GetSurvivorSpawnPoint(survivorIndex);
         }
 
         return null;

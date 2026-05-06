@@ -176,10 +176,10 @@ public class SurvivorInteractor : NetworkBehaviour
     private void BindUI()
     {
         // LobbySceneBinder가 있으면 씬에 배치된 UI를 우선 연결한다.
-        if (SceneBinder.Instance != null)
+        if (InGameUIManager.Instance != null)
         {
-            progressUI = SceneBinder.Instance.GetProgressUI();
-            qteUI = SceneBinder.Instance.GetQTEUI();
+            progressUI = InGameUIManager.Instance.GetProgressUI();
+            qteUI = InGameUIManager.Instance.GetQTEUI();
         }
 
         // ProgressUI가 없으면 씬 전체에서 찾는다.
