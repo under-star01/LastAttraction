@@ -2523,10 +2523,10 @@ Transform:
   - {fileID: 5636093145676724604}
   - {fileID: 8545378667265971486}
   - {fileID: 1925515635137391966}
+  - {fileID: 1083756386335390208}
   - {fileID: 4092123309261148319}
   - {fileID: 8301801969148829075}
   - {fileID: 8349082024682031414}
-  - {fileID: 3359388419701599639}
   - {fileID: 1646637909605538894}
   - {fileID: 3481004227027464205}
   - {fileID: 97361299023427371}
@@ -4782,6 +4782,38 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 3.942487, y: -5.347905, z: 0.423418}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &4834522748395801494
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1083756386335390208}
+  m_Layer: 0
+  m_Name: carousel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1083756386335390208
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4834522748395801494}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3359388419701599639}
+  m_Father: {fileID: 6446675072919921176}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4853726854727672011
 GameObject:
   m_ObjectHideFlags: 0
@@ -28104,7 +28136,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 6446675072919921176}
+    m_TransformParent: {fileID: 1083756386335390208}
     m_Modifications:
     - target: {fileID: 1030977991, guid: abc00000000005527061543689699939, type: 3}
       propertyPath: m_Name
