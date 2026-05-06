@@ -49,9 +49,9 @@ public class SurvivorMove : NetworkBehaviour
     private bool serverWantsRun;
     private bool serverWantsCrouch;
     private float serverYaw;
+    private bool isMoveLocked;
     private float serverPitch;
 
-    [SyncVar] private bool isMoveLocked;
     [SyncVar] private float syncedYaw;
     [SyncVar] private float syncedPitch;
     [SyncVar] private float syncedModelYaw;
@@ -203,11 +203,8 @@ public class SurvivorMove : NetworkBehaviour
     {
         if (isLocalPlayer)
         {
-            if (!isMoveLocked)
-            {
-                UpdateLook();
-                SendInput();
-            }
+            UpdateLook();
+            SendInput();
             ApplyCam();
             ApplyModel();
         }
@@ -229,7 +226,7 @@ public class SurvivorMove : NetworkBehaviour
     // 로컬 카메라 회전 입력 처리
     private void UpdateLook()
     {
-        if (input == null)
+        if (input == null || !input.enabled)
             return;
 
         Vector2 look = input.Look;
@@ -273,7 +270,7 @@ public class SurvivorMove : NetworkBehaviour
     // 현재 입력을 서버로 전달
     private void SendInput()
     {
-        if (input == null)
+        if (input == null || !input.enabled)
             return;
 
         CmdSetMoveInput(
@@ -770,6 +767,8 @@ public class SurvivorMove : NetworkBehaviour
             return;
 
         escapeTarget = target;
+        RpcApplyEscapeView();
+        TargetDisableSurvivorInput(connectionToClient);
 
         // 기존 이동 잠금 변수 재사용
         isMoveLocked = true;
@@ -795,6 +794,25 @@ public class SurvivorMove : NetworkBehaviour
             ApplyFace(dir.normalized);
             RpcFace(dir.normalized);
         }
+    }
+
+    [ClientRpc]
+    private void RpcApplyEscapeView()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (camSkill != null)
+            camSkill.ApplyEscapeView();
+    }
+
+    [TargetRpc]
+    private void TargetDisableSurvivorInput(NetworkConnectionToClient target)
+    {
+        if (input != null)
+            input.enabled = false;
+
+        Debug.Log("[SurvivorMove] 탈출 플레이어 SurvivorInput 비활성화");
     }
 
     [Server]

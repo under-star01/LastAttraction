@@ -462,6 +462,28 @@ public class SurvivorCameraSkill : NetworkBehaviour
         }
     }
 
+    public void ApplyEscapeView()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (normalCinemachine != null)
+            normalCinemachine.Priority = 0;
+
+        if (skillCinemachine != null)
+            skillCinemachine.Priority = 0;
+
+        if (skillCamera != null)
+            skillCamera.enabled = false;
+
+        if (skillUI != null)
+            skillUI.Hide();
+
+        if (localCameraModel != null)
+            localCameraModel.SetActive(false);
+
+        SetFrameDetected(false, true);
+    }
 
     [Command]
     private void CmdSetRecordingKiller(bool value)
