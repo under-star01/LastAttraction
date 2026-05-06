@@ -832,7 +832,7 @@ public class SurvivorMove : NetworkBehaviour
         }
 
         if (moveState != null)
-            moveState.SetMoveState(SurvivorLocomotionState.Walk, true);
+            moveState.SetMoveState(SurvivorLocomotionState.Run, true);
     }
 
     [Server]
