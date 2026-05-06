@@ -31,6 +31,31 @@ public class SurvivorHeal : NetworkBehaviour, IInteractable
     // 이 로컬 플레이어가 범위 안에 있는지
     private bool isLocalInside;
 
+    public bool IsHealing => isHealing;
+    public uint HealerNetId => healer;
+
+    public uint TargetNetId
+    {
+        get
+        {
+            if (targetState == null)
+                return 0;
+
+            return targetState.netId;
+        }
+    }
+
+    public float Progress01
+    {
+        get
+        {
+            if (healTime <= 0f)
+                return 1f;
+
+            return Mathf.Clamp01(progress / healTime);
+        }
+    }
+
     private void Awake()
     {
         if (targetState == null)

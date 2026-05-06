@@ -38,6 +38,8 @@ public class UploadComputer : NetworkBehaviour, IInteractable
     // 이 컴퓨터를 현재 사용 중인 생존자 netId 목록이다.
     private readonly HashSet<uint> users = new HashSet<uint>();
 
+    private readonly SyncList<uint> syncedUsers = new SyncList<uint>();
+
     // 로컬 플레이어의 상호작용 컴포넌트다.
     private SurvivorInteractor localInteractor;
 
@@ -52,6 +54,11 @@ public class UploadComputer : NetworkBehaviour, IInteractable
 
     // 내 로컬 플레이어가 업로드 중인지 여부다.
     private bool isUploading;
+
+    public bool IsUserUploading(uint survivorNetId)
+    {
+        return syncedUsers.Contains(survivorNetId);
+    }
 
     public bool IsOpen => isOpen;
     public float UploadProgress01 => uploadProgress01;
@@ -130,6 +137,7 @@ public class UploadComputer : NetworkBehaviour, IInteractable
     {
         isOpen = false;
         users.Clear();
+        syncedUsers.Clear();
 
         StopUploadLoopSound();
 
@@ -212,6 +220,9 @@ public class UploadComputer : NetworkBehaviour, IInteractable
 
         users.Add(sender.identity.netId);
 
+        if (!syncedUsers.Contains(sender.identity.netId))
+            syncedUsers.Add(sender.identity.netId);
+
         // 첫 사용자가 업로드를 시작했을 때만 루프 사운드를 시작한다.
         if (wasEmpty && users.Count > 0)
             StartUploadLoopSound();
@@ -231,6 +242,7 @@ public class UploadComputer : NetworkBehaviour, IInteractable
             return;
 
         users.Remove(sender.identity.netId);
+        syncedUsers.Remove(sender.identity.netId);
 
         // 마지막 사용자가 손을 떼면 업로드 루프 사운드를 끈다.
         if (users.Count <= 0)

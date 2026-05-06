@@ -14,9 +14,16 @@ public enum JoinRole
 }
 
 // 클라 -> 서버 : 서버 입장 최종 요청 메세지
+// DB 로그인 후 GameSession에 저장된 유저 정보를 같이 보낸다.
 public struct JoinRequestMessage : NetworkMessage
 {
     public int role;
+
+    public int accountId;
+    public string loginId;
+    public string nickname;
+    public int exp;
+    public int level;
 }
 
 // 서버 -> 클라 : 서버 입장 거절 메세지 
@@ -454,9 +461,17 @@ public class CustomNetworkManager : NetworkManager
 
         if (isJoiningFinalRoom)
         {
+            GameSession session = GameSession.Instance;
+
             NetworkClient.Send(new JoinRequestMessage
             {
-                role = (int)localJoinRole
+                role = (int)localJoinRole,
+
+                accountId = session != null ? session.AccountId : 0,
+                loginId = session != null ? session.LoginId : string.Empty,
+                nickname = session != null ? session.Nickname : string.Empty,
+                exp = session != null ? session.Exp : 0,
+                level = session != null ? session.Level : 0
             });
         }
         else
@@ -589,7 +604,7 @@ public class CustomNetworkManager : NetworkManager
             return;
         }
 
-        if (!TryCreatePlayer(conn, requestedRole, out string createFailReason))
+        if (!TryCreatePlayer(conn, msg, requestedRole, out string createFailReason))
         {
             conn.Send(new JoinDeniedMessage { reason = createFailReason });
             StartCoroutine(DisconnectNextFrame(conn));
@@ -712,7 +727,7 @@ public class CustomNetworkManager : NetworkManager
         return true;
     }
 
-    private bool TryCreatePlayer(NetworkConnectionToClient conn, JoinRole role, out string reason)
+    private bool TryCreatePlayer(NetworkConnectionToClient conn, JoinRequestMessage msg, JoinRole role, out string reason)
     {
         reason = string.Empty;
 
@@ -761,6 +776,28 @@ public class CustomNetworkManager : NetworkManager
 
         GameObject playerObj = Instantiate(prefabToSpawn, spawnPoint.position, spawnPoint.rotation);
         NetworkServer.AddPlayerForConnection(conn, playerObj);
+
+        // DB 로그인 정보를 플레이어 UI 프로필에 적용한다.
+        // 이 값은 SyncVar라서 모든 클라이언트의 인게임 UI에서 읽을 수 있다.
+        PlayerUIProfile profile = playerObj.GetComponent<PlayerUIProfile>();
+
+        if (profile == null)
+            profile = playerObj.GetComponentInChildren<PlayerUIProfile>();
+
+        if (profile != null)
+        {
+            profile.SetUserData(
+                msg.accountId,
+                msg.loginId,
+                msg.nickname,
+                msg.exp,
+                msg.level
+            );
+        }
+        else
+        {
+            Debug.LogWarning($"[CustomNetworkManager] {playerObj.name}에 PlayerUIProfile이 없습니다.");
+        }
 
         if (role == JoinRole.Survivor)
             survivorPrefabIndexByConnection[conn.connectionId] = survivorIndex;

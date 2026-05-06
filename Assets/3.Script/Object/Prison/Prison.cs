@@ -31,6 +31,9 @@ public class Prison : NetworkBehaviour, IInteractable
     [SyncVar]
     private float remainTime;
 
+    [SyncVar]
+    private float prisonMaxTime;
+
     // 현재 누가 감옥 상호작용을 진행 중인지
     [SyncVar]
     private uint currentUserId;
@@ -52,6 +55,33 @@ public class Prison : NetworkBehaviour, IInteractable
     private bool isLocalInside;
 
     public bool IsOccupied => prisonerId != 0;
+
+    public uint PrisonerId => prisonerId;
+    public uint CurrentUserId => currentUserId;
+    public bool IsInteractingForUI => isInteracting;
+    public float RemainTime => remainTime;
+
+    public float RemainTime01
+    {
+        get
+        {
+            if (prisonMaxTime <= 0f)
+                return 0f;
+
+            return Mathf.Clamp01(remainTime / prisonMaxTime);
+        }
+    }
+
+    public float Progress01
+    {
+        get
+        {
+            if (interactTime <= 0f)
+                return 1f;
+
+            return Mathf.Clamp01(progress / interactTime);
+        }
+    }
 
     private void Awake()
     {
@@ -107,6 +137,7 @@ public class Prison : NetworkBehaviour, IInteractable
 
         prisonerId = id.netId;
         remainTime = startTime;
+        prisonMaxTime = startTime;
 
         // 새로 갇힐 때 문 닫기
         isDoorOpen = false;
@@ -433,6 +464,7 @@ public class Prison : NetworkBehaviour, IInteractable
             prisonerState.LeavePrison(remainTime);
 
         prisonerId = 0;
+        prisonMaxTime = 0f;
     }
 
     // 문 열기
@@ -451,6 +483,7 @@ public class Prison : NetworkBehaviour, IInteractable
         ApplyDoor(true);
 
         prisonerId = 0;
+        prisonMaxTime = 0f;
         StopInteract();
     }
 

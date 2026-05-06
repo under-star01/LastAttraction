@@ -9,6 +9,7 @@ public enum SurvivorCondition
     Injured,
     Downed,
     Imprisoned,
+    Escaped,
     Dead
 }
 
@@ -50,6 +51,11 @@ public class SurvivorState : NetworkBehaviour
     public bool IsDead => currentCondition == SurvivorCondition.Dead;
 
     public uint CurrentPrisonId => currentPrisonId;
+
+    public bool IsEscaped => currentCondition == SurvivorCondition.Escaped;
+    public int PrisonStep => prisonStep;
+    public float PrisonFullTime => prisonFullTime;
+    public float PrisonHalfTime => prisonHalfTime;
 
     private void Awake()
     {
@@ -236,6 +242,23 @@ public class SurvivorState : NetworkBehaviour
     {
         currentPrisonId = 0;
         currentCondition = SurvivorCondition.Dead;
+
+        if (actionState != null)
+        {
+            actionState.SetInteract(false);
+            actionState.SetHeal(false);
+            actionState.SetCam(false);
+            actionState.SetAct(SurvivorAction.None);
+        }
+
+        ApplyAllStateServer();
+    }
+
+    [Server]
+    public void Escape()
+    {
+        currentPrisonId = 0;
+        currentCondition = SurvivorCondition.Escaped;
 
         if (actionState != null)
         {

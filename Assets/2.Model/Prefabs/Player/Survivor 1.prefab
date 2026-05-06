@@ -2287,6 +2287,7 @@ GameObject:
   - component: {fileID: 7660049669671203594}
   - component: {fileID: 2350847541290646852}
   - component: {fileID: 2069850198979918394}
+  - component: {fileID: 3868678666708811015}
   m_Layer: 6
   m_Name: Survivor 1
   m_TagString: Survivor
@@ -2605,6 +2606,22 @@ MonoBehaviour:
   syncInterval: 0
   clientAuthority: 0
   animator: {fileID: 7436738972924962348}
+--- !u!114 &3868678666708811015
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46a4b202efa503c468b0ca7c1b817d63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerUIProfile
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  portrait: {fileID: 21300000, guid: d60cc6c9ff7917440a65d07550b988e7, type: 3}
 --- !u!1 &4085576176758794836
 GameObject:
   m_ObjectHideFlags: 0

@@ -61,6 +61,20 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
     // 내 로컬 플레이어가 이 증거 범위 안에 있는지 여부다.
     private bool isLocalInside;
 
+    public bool IsInteractingForUI => isInteracting;
+    public uint CurrentInteractorNetId => currentInteractorNetId;
+
+    public float Progress01
+    {
+        get
+        {
+            if (interactTime <= 0f)
+                return 1f;
+
+            return Mathf.Clamp01(progress / interactTime);
+        }
+    }
+
     // EvidenceZone에서 이 포인트의 소속 구역을 지정할 때 호출한다.
     public void SetZone(EvidenceZone evidenceZone)
     {
