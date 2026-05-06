@@ -251,6 +251,20 @@ public class InGameUIManager : MonoBehaviour
         if (slot == null || survivor == null)
             return;
 
+        // 현재 SurvivorState는 탈출 상태를 enum이 아니라 bool isEscaping으로 관리한다.
+        // 그래서 enum 상태보다 먼저 검사해야 한다.
+        if (survivor.IsEscaping)
+        {
+            // 탈출 상태는 초상화를 탈출 아이콘으로 대체한다.
+            slot.SetConditionUI(
+                showPortrait: false,
+                showInjury: false,
+                replaceSprite: escapedIcon
+            );
+
+            return;
+        }
+
         switch (survivor.CurrentCondition)
         {
             case SurvivorCondition.Healthy:
@@ -286,15 +300,6 @@ public class InGameUIManager : MonoBehaviour
                     showPortrait: false,
                     showInjury: false,
                     replaceSprite: imprisonedIcon
-                );
-                break;
-
-            case SurvivorCondition.Escaped:
-                // 탈출 상태는 초상화를 탈출 아이콘으로 대체한다.
-                slot.SetConditionUI(
-                    showPortrait: false,
-                    showInjury: false,
-                    replaceSprite: escapedIcon
                 );
                 break;
 

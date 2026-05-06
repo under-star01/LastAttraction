@@ -55,6 +55,10 @@ public class SurvivorState : NetworkBehaviour
 
     public uint CurrentPrisonId => currentPrisonId;
 
+    public int PrisonStep => prisonStep;
+    public float PrisonFullTime => prisonFullTime;
+    public float PrisonHalfTime => prisonHalfTime;
+
     private void Awake()
     {
         move = GetComponent<SurvivorMove>();
