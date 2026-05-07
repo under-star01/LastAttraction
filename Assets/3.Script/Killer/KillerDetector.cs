@@ -66,6 +66,16 @@ public class KillerDetector : NetworkBehaviour
         base.OnStartLocalPlayer();
         // 맵에 있는 모든 상자를 미리 찾아둠 (5개)
         GameObject[] boxes = GameObject.FindGameObjectsWithTag(boxTag);
+
+        // [로그 추가] 박스를 몇 개 찾았는지 확인
+        Debug.Log($"[KillerDetector] 찾은 {boxTag} 태그 오브젝트 개수: {boxes.Length}");
+
+        foreach (var b in boxes)
+        {
+            Debug.Log($"[KillerDetector] 찾은 상자 이름: {b.name}");
+        }
+
+        evidenceBoxes.Clear();
         evidenceBoxes.AddRange(boxes);
     }
 
@@ -148,10 +158,14 @@ public class KillerDetector : NetworkBehaviour
 
     private void SetLayerRecursive(GameObject obj, int layer)
     {
+        if (obj == null) return;
+
         obj.layer = layer;
-        foreach (Transform child in obj.transform)
+
+        // 자식들을 순회하며 재귀 호출
+        for (int i = 0; i < obj.transform.childCount; i++)
         {
-            SetLayerRecursive(child.gameObject, layer);
+            SetLayerRecursive(obj.transform.GetChild(i).gameObject, layer);
         }
     }
 
