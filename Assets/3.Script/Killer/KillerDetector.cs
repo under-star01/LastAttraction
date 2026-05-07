@@ -32,6 +32,11 @@ public class KillerDetector : NetworkBehaviour
         killerState = GetComponent<KillerState>();
         _boxDefaultLayerInt = LayerMask.NameToLayer(boxDefaultLayer);
         _boxSilhouetteLayerInt = LayerMask.NameToLayer(boxSilhouetteLayer);
+
+        if (_boxDefaultLayerInt == -1 || _boxSilhouetteLayerInt == -1)
+        {
+            Debug.LogError($"[KillerDetector] 레이어 설정 오류! Default: {_boxDefaultLayerInt}, Outline: {_boxSilhouetteLayerInt}");
+        }
     }
 
     private void Update()
