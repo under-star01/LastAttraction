@@ -112,6 +112,8 @@ public class CustomNetworkManager : NetworkManager
     private bool isLeavingManually;
     private bool isJoiningFinalRoom;
     private bool joinApproved;
+    private bool isGameInProgress;
+    private bool isReturningLobby;
     private ushort selectedPort;
 
     private Coroutine connectRoutine;
@@ -131,9 +133,10 @@ public class CustomNetworkManager : NetworkManager
     }
 
     public bool IsRoomFull => numPlayers >= maxRoomPlayers;
+    public bool IsRoomClosed => isGameInProgress || isReturningLobby;
 
-    public bool CanJoinAsKiller => !HasKiller && !IsRoomFull;
-    public bool CanJoinAsSurvivor => HasKiller && !IsRoomFull;
+    public bool CanJoinAsKiller => !IsRoomClosed && !HasKiller && !IsRoomFull;
+    public bool CanJoinAsSurvivor => !IsRoomClosed && HasKiller && !IsRoomFull;
 
     public bool IsSearchingServer => isSearchingServer;
     public bool IsConnectedToServer => NetworkClient.isConnected;
@@ -191,7 +194,7 @@ public class CustomNetworkManager : NetworkManager
         isJoiningFinalRoom = false;
         selectedPort = 0;
 
-        UIManager.Instance?.ShowLoading(false);
+        LobbyUIManager.Instance?.ShowLoading(false);
 
         if (connectRoutine != null)
         {
@@ -206,6 +209,16 @@ public class CustomNetworkManager : NetworkManager
         }
 
         ResetClientSearchState();
+    }
+
+    public bool TryGetSurvivorIndex(NetworkConnectionToClient conn, out int survivorIndex)
+    {
+        survivorIndex = -1;
+
+        if (conn == null)
+            return false;
+
+        return survivorPrefabIndexByConnection.TryGetValue(conn.connectionId, out survivorIndex);
     }
 
     private void BeginRoleSearch(JoinRole role)
@@ -236,7 +249,7 @@ public class CustomNetworkManager : NetworkManager
         joinApproved = false;
         selectedPort = 0;
 
-        UIManager.Instance?.ShowLoading(true);
+        LobbyUIManager.Instance?.ShowLoading(true);
         probedRooms.Clear();
 
         ProbeNextPort();
@@ -262,7 +275,7 @@ public class CustomNetworkManager : NetworkManager
         if (selectedPort == 0)
         {
             Debug.LogWarning($"[CustomNetworkManager] {localJoinRole} 입장 가능한 방이 없습니다.");
-            UIManager.Instance?.ShowLoading(false);
+            LobbyUIManager.Instance?.ShowLoading(false);
             ResetClientSearchState();
             return;
         }
@@ -408,12 +421,15 @@ public class CustomNetworkManager : NetworkManager
         survivorPrefabIndexByConnection.Clear();
         survivorReadyByConnection.Clear();
 
+        isGameInProgress = false;
+        isReturningLobby = false;
+
         base.OnStopServer();
     }
 
     public override void OnServerConnect(NetworkConnectionToClient conn)
     {
-        if (IsRoomFull)
+        if (IsRoomFull || IsRoomClosed)
         {
             conn.Disconnect();
             return;
@@ -506,7 +522,7 @@ public class CustomNetworkManager : NetworkManager
 
         if (!joinApproved)
         {
-            UIManager.Instance?.ShowLoading(false);
+            LobbyUIManager.Instance?.ShowLoading(false);
             ResetClientSearchState();
         }
     }
@@ -521,7 +537,7 @@ public class CustomNetworkManager : NetworkManager
         }
         else
         {
-            UIManager.Instance?.ShowLoading(false);
+            LobbyUIManager.Instance?.ShowLoading(false);
             ResetClientSearchState();
         }
     }
@@ -533,16 +549,16 @@ public class CustomNetworkManager : NetworkManager
         isJoiningFinalRoom = false;
         localJoinRole = (JoinRole)msg.role;
 
-        UIManager.Instance?.ShowLoading(false);
+        LobbyUIManager.Instance?.ShowLoading(false);
 
         if (localJoinRole == JoinRole.Killer)
         {
-            UIManager.Instance?.ShowKillerLobbyUI();
-            UIManager.Instance?.SetStartButtonInteractable(false);
+            LobbyUIManager.Instance?.ShowKillerLobbyUI();
+            LobbyUIManager.Instance?.SetStartButtonInteractable(false);
         }
         else if (localJoinRole == JoinRole.Survivor)
         {
-            UIManager.Instance?.ShowSurvivorLobbyUI();
+            LobbyUIManager.Instance?.ShowSurvivorLobbyUI();
         }
 
         Debug.Log($"[CustomNetworkManager] 입장 완료 - Role: {localJoinRole}, Port: {msg.port}");
@@ -558,10 +574,10 @@ public class CustomNetworkManager : NetworkManager
 
     private void OnLobbyStateMessage(LobbyStateMessage msg)
     {
-        UIManager.Instance?.SetLobbyReadyCount(msg.readySurvivorCount, msg.survivorCount);
+        LobbyUIManager.Instance?.SetLobbyReadyCount(msg.readySurvivorCount, msg.survivorCount);
 
         if (localJoinRole == JoinRole.Killer)
-            UIManager.Instance?.SetStartButtonInteractable(msg.canStart);
+            LobbyUIManager.Instance?.SetStartButtonInteractable(msg.canStart);
     }
 
     private void OnChangeSceneUIMessage(ChangeSceneUIMessage msg)
@@ -580,7 +596,7 @@ public class CustomNetworkManager : NetworkManager
             port = kcpTransport.Port,
             survivorCount = GetCurrentSurvivorCount(),
             hasKiller = HasKiller,
-            isFull = IsRoomFull
+            isFull = IsRoomFull || IsRoomClosed
         });
 
         StartCoroutine(DisconnectNextFrame(conn));
@@ -706,6 +722,12 @@ public class CustomNetworkManager : NetworkManager
             return false;
         }
 
+        if (IsRoomClosed)
+        {
+            reason = "이미 게임이 진행 중인 방입니다.";
+            return false;
+        }
+
         if (IsRoomFull)
         {
             reason = "방이 가득 찼습니다.";
@@ -735,7 +757,7 @@ public class CustomNetworkManager : NetworkManager
         Transform spawnPoint = null;
         int survivorIndex = -1;
 
-        if (SceneBinder.Instance == null)
+        if (SpawnPointBinder.Instance == null)
         {
             reason = "현재 씬에서 SceneBinder를 찾지 못했습니다.";
             return false;
@@ -745,7 +767,7 @@ public class CustomNetworkManager : NetworkManager
         {
             case JoinRole.Killer:
                 prefabToSpawn = killerPrefab;
-                spawnPoint = SceneBinder.Instance.GetKillerSpawnPoint();
+                spawnPoint = SpawnPointBinder.Instance.GetKillerSpawnPoint();
                 break;
 
             case JoinRole.Survivor:
@@ -758,7 +780,7 @@ public class CustomNetworkManager : NetworkManager
                 }
 
                 prefabToSpawn = GetSurvivorPrefab(survivorIndex);
-                spawnPoint = SceneBinder.Instance.GetSurvivorSpawnPoint(survivorIndex);
+                spawnPoint = SpawnPointBinder.Instance.GetSurvivorSpawnPoint(survivorIndex);
                 break;
         }
 
@@ -849,6 +871,15 @@ public class CustomNetworkManager : NetworkManager
     {
         base.OnServerSceneChanged(sceneName);
 
+        if (sceneName == "Lobby")
+        {
+            isGameInProgress = false;
+            isReturningLobby = false;
+
+            Debug.Log("[CustomNetworkManager] Lobby 씬 복귀 완료 / 포트 재오픈");
+            return;
+        }
+
         if (sceneName == inGameSceneName)
         {
             StartCoroutine(SetupInGameScene());
@@ -863,13 +894,13 @@ public class CustomNetworkManager : NetworkManager
         float timeout = 3f;
         float elapsed = 0f;
 
-        while (SceneBinder.Instance == null && elapsed < timeout)
+        while (SpawnPointBinder.Instance == null && elapsed < timeout)
         {
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        if (SceneBinder.Instance == null)
+        if (SpawnPointBinder.Instance == null)
         {
             Debug.LogWarning("[CustomNetworkManager] InGame 씬에서 SceneBinder를 찾지 못했습니다.");
             BroadcastChangeSceneUI(false);
@@ -911,6 +942,14 @@ public class CustomNetworkManager : NetworkManager
             if (killerMove != null)
             {
                 killerMove.ServerTeleportTo(spawnPoint.position, spawnPoint.rotation);
+                continue;
+            }
+
+            SurvivorMove survivorMove = conn.identity.GetComponent<SurvivorMove>();
+
+            if (survivorMove != null)
+            {
+                survivorMove.ServerTeleportTo(spawnPoint.position, spawnPoint.rotation);
                 continue;
             }
 
@@ -1014,6 +1053,11 @@ public class CustomNetworkManager : NetworkManager
         if (!NetworkServer.active || string.IsNullOrWhiteSpace(inGameSceneName))
             return;
 
+        if (isGameInProgress)
+            return;
+
+        isGameInProgress = true;
+
         StartCoroutine(MoveToGameSceneRoutine());
     }
 
@@ -1034,21 +1078,21 @@ public class CustomNetworkManager : NetworkManager
         if (conn == null)
             return null;
 
-        if (SceneBinder.Instance == null)
+        if (SpawnPointBinder.Instance == null)
             return null;
 
         if (!joinedRoles.TryGetValue(conn.connectionId, out JoinRole role))
             return null;
 
         if (role == JoinRole.Killer)
-            return SceneBinder.Instance.GetKillerSpawnPoint();
+            return SpawnPointBinder.Instance.GetKillerSpawnPoint();
 
         if (role == JoinRole.Survivor)
         {
             if (!survivorPrefabIndexByConnection.TryGetValue(conn.connectionId, out int survivorIndex))
                 return null;
 
-            return SceneBinder.Instance.GetSurvivorSpawnPoint(survivorIndex);
+            return SpawnPointBinder.Instance.GetSurvivorSpawnPoint(survivorIndex);
         }
 
         return null;
@@ -1073,6 +1117,29 @@ public class CustomNetworkManager : NetworkManager
         }
     }
 
+    [Server]
+    public void ServerReturnToLobby()
+    {
+        if (isReturningLobby)
+            return;
+
+        isReturningLobby = true;
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null || conn.identity == null)
+                continue;
+
+            NetworkServer.Destroy(conn.identity.gameObject);
+        }
+
+        joinedRoles.Clear();
+        survivorPrefabIndexByConnection.Clear();
+        survivorReadyByConnection.Clear();
+
+        ServerChangeScene("Lobby");
+        Debug.Log("[CustomNetworkManager] Lobby 씬으로 복귀");
+    }
 
     #endregion
 }

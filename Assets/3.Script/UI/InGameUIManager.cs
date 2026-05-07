@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
+using UnityEngine.UI;
 
 // 인게임 UI 전체를 관리한다.
 // - 모든 생존자의 상태 UI
@@ -11,11 +12,27 @@ public class InGameUIManager : MonoBehaviour
 {
     public static InGameUIManager Instance { get; private set; }
 
-    [Header("생존자 UI 슬롯")]
+    [Header("공통 상태 UI")]
+    [SerializeField] private GameObject survivorSlotsObject;
     [SerializeField] private SurvivorPlayerUI[] survivorSlots; // Survivor1~4 슬롯
 
-    [Header("내 행동 UI")]
+    [Header("진행 / 상호작용 UI")]
+    [SerializeField] private ProgressUI progressUI;
+    [SerializeField] private QTEUI qteUI;
+
+    [Header("생존자 전용 UI")]
     [SerializeField] private LocalActionUI localActionUI;
+    [SerializeField] private GameObject objectiveProgressUIObject;
+    [SerializeField] private GameObject skillUI_Survivor;
+    [SerializeField] private CameraSkillUI cameraSkillUI;
+    [SerializeField] private Image[] frameUI;
+
+    [Header("살인마 전용 UI")]
+    [SerializeField] private GameObject skillUI_Killer;
+    [SerializeField] private KillerSkillUI killerSkillUI;
+
+    [Header("결과 UI")]
+    [SerializeField] private GameObject resultUI;
 
     [Header("상태 대체 아이콘")]
     [SerializeField] private Sprite downedIcon;
@@ -53,6 +70,14 @@ public class InGameUIManager : MonoBehaviour
     {
         RefreshSceneObjects();
         HideAllSlots();
+
+        if (resultUI != null)
+            resultUI.SetActive(false);
+
+        if (CustomNetworkManager.Instance != null)
+            SetRoleUI(CustomNetworkManager.Instance.CurrentLocalJoinRole);
+        else
+            SetRoleUI(JoinRole.None);
     }
 
     private void Update()
@@ -68,6 +93,31 @@ public class InGameUIManager : MonoBehaviour
 
         UpdateSurvivorListUI();
         UpdateLocalActionUI();
+    }
+
+    public ProgressUI GetProgressUI()
+    {
+        return progressUI;
+    }
+
+    public QTEUI GetQTEUI()
+    {
+        return qteUI;
+    }
+
+    public CameraSkillUI GetCameraSkillUI()
+    {
+        return cameraSkillUI;
+    }
+
+    public Image[] GetFrameUI()
+    {
+        return frameUI;
+    }
+
+    public KillerSkillUI GetKillerSkillUI()
+    {
+        return killerSkillUI;
     }
 
     // 씬 안의 생존자와 상호작용 오브젝트를 찾는다.
@@ -196,6 +246,21 @@ public class InGameUIManager : MonoBehaviour
         return NetworkClient.localPlayer.GetComponent<KillerInput>() != null;
     }
 
+    public void SetRoleUI(JoinRole role)
+    {
+        bool isSurvivor = role == JoinRole.Survivor;
+        bool isKiller = role == JoinRole.Killer;
+
+        if (skillUI_Survivor != null)
+            skillUI_Survivor.SetActive(isSurvivor);
+
+        if (skillUI_Killer != null)
+            skillUI_Killer.SetActive(isKiller);
+
+        if (objectiveProgressUIObject != null)
+            objectiveProgressUIObject.SetActive(isSurvivor);
+    }
+
     private void HideAllSlots()
     {
         if (survivorSlots == null)
@@ -209,6 +274,63 @@ public class InGameUIManager : MonoBehaviour
             survivorSlots[i].Clear();
             survivorSlots[i].SetVisible(false);
         }
+    }
+
+    public void ShowResultUI()
+    {
+        if (objectiveProgressUIObject != null)
+            objectiveProgressUIObject.SetActive(false);
+
+        if (survivorSlotsObject != null)
+            survivorSlotsObject.SetActive(false);
+
+        if (skillUI_Survivor != null)
+            skillUI_Survivor.SetActive(false);
+
+        if (skillUI_Killer != null)
+            skillUI_Killer.SetActive(false);
+
+        if (progressUI != null)
+            progressUI.gameObject.SetActive(false);
+
+        if (qteUI != null)
+            qteUI.gameObject.SetActive(false);
+
+        if (cameraSkillUI != null)
+            cameraSkillUI.gameObject.SetActive(false);
+
+        if (frameUI != null)
+        {
+            for (int i = 0; i < frameUI.Length; i++)
+            {
+                if (frameUI[i] != null)
+                    frameUI[i].gameObject.SetActive(false);
+            }
+        }
+
+        if (resultUI != null)
+            resultUI.SetActive(true);
+
+        Debug.Log("[InGameUIManager] 기존 UI 비활성화 / ResultUI 활성화");
+    }
+
+    public void OnClickReturnLobby()
+    {
+        if (NetworkClient.localPlayer == null)
+        {
+            Debug.LogWarning("[InGameUIManager] localPlayer가 없어 Lobby 복귀 요청을 보낼 수 없습니다.");
+            return;
+        }
+
+        ReturnLobbyRequester requester = NetworkClient.localPlayer.GetComponent<ReturnLobbyRequester>();
+
+        if (requester == null)
+        {
+            Debug.LogWarning("[InGameUIManager] localPlayer에 ReturnLobbyRequester가 없습니다.");
+            return;
+        }
+
+        requester.RequestReturnLobby();
     }
 
     // DB 닉네임 가져오기

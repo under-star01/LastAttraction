@@ -1,4 +1,5 @@
 using Mirror;
+using System.Collections;
 using UnityEngine;
 
 public class SurvivorMove : NetworkBehaviour
@@ -56,7 +57,7 @@ public class SurvivorMove : NetworkBehaviour
     [SyncVar] private float syncedPitch;
     [SyncVar] private float syncedModelYaw;
 
-    // 외부 스크립트가 이동을 잠글 때 사용한다.
+    // 외부 스크립트가 이동을 잠글 때 사용
     public void SetMoveLock(bool value)
     {
         isMoveLocked = value;
@@ -71,8 +72,8 @@ public class SurvivorMove : NetworkBehaviour
         isMoveLocked = value;
     }
 
-    // 외부에서 특정 방향을 바라보게 할 때 사용한다.
-    // 예: 상호작용 시작 전에 오브젝트 쪽으로 정렬
+    // 외부에서 특정 방향을 바라보게 할 때 사용
+    // 예: 상호작용 시작 전에 오브젝트 쪽 정렬
     public void FaceDirection(Vector3 dir)
     {
         dir.y = 0f;
@@ -138,7 +139,7 @@ public class SurvivorMove : NetworkBehaviour
         int camWorldLayer = LayerMask.NameToLayer("CamWorld");
         int hideSelfLayer = LayerMask.NameToLayer("HideSelf");
 
-        // 카메라 모델 관련 레이어는 유지한다.
+        // 카메라 모델 관련 레이어는 유지
         if (target.gameObject.layer == camLocalLayer ||
             target.gameObject.layer == camWorldLayer ||
             target.gameObject.layer == hideSelfLayer)
@@ -295,18 +296,6 @@ public class SurvivorMove : NetworkBehaviour
         syncedPitch = pitch;
     }
 
-    // 현재 카메라 스킬 사용 중인지 확인한다.
-    private bool IsUsingCameraSkill()
-    {
-        if (camSkill != null && camSkill.IsUse)
-            return true;
-
-        if (act != null && act.IsCamSkill)
-            return true;
-
-        return false;
-    }
-
     // 서버에서 실제 이동 처리
     [Server]
     private void MoveTick()
@@ -324,7 +313,7 @@ public class SurvivorMove : NetworkBehaviour
         bool isDead = state != null && state.IsDead;
         bool isBusy = act != null && act.IsBusy;
 
-        // 움직일 수 없으면 중력만 적용한다.
+        // 움직일 수 없으면 중력만 적용
         if (isMoveLocked || isBusy || isDead)
         {
             GravityOnly();
@@ -335,23 +324,15 @@ public class SurvivorMove : NetworkBehaviour
             return;
         }
 
-        // 다운 상태는 기어가는 이동만 가능하다.
+        // 다운 상태는 crawl 이동
         if (isDowned)
         {
             Crawl(serverMoveInput, serverYaw);
             return;
         }
 
-        bool useCamSkill = IsUsingCameraSkill();
-
         // Hold 상호작용 중에는 새로 앉기 시작 금지
         bool canCrouch = interactor == null || !interactor.IsInteracting;
-
-        // 카메라 스킬 사용 중에는 앉기 입력을 무시한다.
-        // 앉은 상태에서 스킬 시작 자체는 SurvivorCameraSkill에서 막는다.
-        if (useCamSkill)
-            canCrouch = false;
-
         bool isCrouching = canCrouch && serverWantsCrouch;
 
         if (isCrouching)
@@ -377,9 +358,16 @@ public class SurvivorMove : NetworkBehaviour
 
         bool isMoving = move.sqrMagnitude > 0.001f;
 
-        bool useCamSkill = IsUsingCameraSkill();
+        // 카메라 스킬 중인지 먼저 판정
+        bool useCamSkill = false;
 
-        // 카메라 스킬 중에는 달리기 금지
+        if (camSkill != null && camSkill.IsUse)
+            useCamSkill = true;
+
+        if (act != null && act.IsCamSkill)
+            useCamSkill = true;
+
+        // 스킬 중에는 달리기 금지
         bool isRunning = isMoving && !isCrouching && wantsRun && !useCamSkill;
 
         float speed = walkSpeed;
@@ -399,7 +387,7 @@ public class SurvivorMove : NetworkBehaviour
 
         controller.Move(finalMove * Time.fixedDeltaTime);
 
-        // 카메라 스킬 중이면 몸을 카메라 정면 방향으로 유지한다.
+        // 카메라 스킬 중이면 몸을 카메라 정면 방향으로 유지
         if (useCamSkill)
         {
             Vector3 camDir = yawRot * Vector3.forward;
@@ -473,7 +461,7 @@ public class SurvivorMove : NetworkBehaviour
             moveState.SetMoveState(SurvivorLocomotionState.Crawl, isMoving);
     }
 
-    // 일반 상태에서는 이동 방향을 바라보게 한다.
+    // 일반 상태에서는 이동 방향을 바라보게 함
     [Server]
     private void RotateMove(Vector3 move, bool isMoving)
     {
@@ -490,7 +478,7 @@ public class SurvivorMove : NetworkBehaviour
         syncedModelYaw = modelRoot.eulerAngles.y;
     }
 
-    // 카메라 스킬 중에는 카메라가 보는 앞 방향을 바라보게 한다.
+    // 카메라 스킬 중에는 카메라가 보는 앞 방향을 바라보게 함
     [Server]
     private void RotateCam(Vector3 dir)
     {
@@ -512,7 +500,7 @@ public class SurvivorMove : NetworkBehaviour
         syncedModelYaw = modelRoot.eulerAngles.y;
     }
 
-    // 이동 불가 상태에서 떨어지지 않도록 중력만 처리한다.
+    // 이동 불가 상태에서 떨어지지 않도록 중력만 처리
     [Server]
     private void GravityOnly()
     {
@@ -534,6 +522,54 @@ public class SurvivorMove : NetworkBehaviour
     {
         controller.height = height;
         controller.center = center;
+    }
+
+    [Server]
+    private void MoveToResultPoint()
+    {
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("[SurvivorMove] GameManager.Instance가 없습니다.");
+            return;
+        }
+
+        Transform resultPoint = GameManager.Instance.GetSurvivorResultPoint(this);
+
+        if (resultPoint == null)
+        {
+            Debug.LogWarning("[SurvivorMove] Survivor 결과 위치를 찾지 못했습니다.");
+            return;
+        }
+
+        ServerTeleportTo(resultPoint.position, resultPoint.rotation);
+
+        Debug.Log("[SurvivorMove] 결과 위치로 이동 완료.");
+    }
+
+    [Server]
+    public void ServerTeleportTo(Vector3 position, Quaternion rotation)
+    {
+        if (controller != null)
+            controller.enabled = false;
+
+        transform.SetPositionAndRotation(position, rotation);
+
+        if (controller != null)
+            controller.enabled = true;
+
+        if (modelRoot != null)
+        {
+            modelRoot.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            syncedModelYaw = modelRoot.eulerAngles.y;
+        }
+
+        if (cameraYawRoot != null)
+        {
+            syncedYaw = rotation.eulerAngles.y;
+            serverYaw = syncedYaw;
+        }
+
+        yVelocity = 0f;
     }
 
     // 트리거 애니메이션 실행
@@ -683,6 +719,7 @@ public class SurvivorMove : NetworkBehaviour
     }
 
     // 스턴 bool 애니메이션
+    // 스턴 중에는 다른 애니메이션이 섞이지 않도록 Animator Bool 값을 켜둔다.
     public void SetStunned(bool value)
     {
         if (isServer)
@@ -718,7 +755,7 @@ public class SurvivorMove : NetworkBehaviour
             animator.SetBool("IsStunned", value);
     }
 
-    // 이동 애니메이션을 즉시 Idle 쪽으로 돌릴 때 사용
+    // 이동 애니메이션을 즉시 idle 쪽으로 돌릴 때 사용
     public void StopAnimation()
     {
         if (isServer)
@@ -790,7 +827,7 @@ public class SurvivorMove : NetworkBehaviour
         serverWantsRun = false;
         serverWantsCrouch = false;
 
-        // 탈출 상태 적용
+        // 탈출 상태 추가 시 사용
         if (state != null)
             state.SetEscape();
 
@@ -886,6 +923,36 @@ public class SurvivorMove : NetworkBehaviour
         if (moveState != null)
             moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
 
+        StartCoroutine(EscapeResultRoutine());
+
         Debug.Log("[SurvivorMove] Escape arrived.");
+    }
+
+    [Server]
+    private IEnumerator EscapeResultRoutine()
+    {
+        TargetSetBlackout(true);
+        yield return new WaitForSeconds(1f);
+
+        MoveToResultPoint();
+
+        if (camSkill != null)
+            camSkill.ApplyResultView();
+
+        if (InGameUIManager.Instance != null)
+            InGameUIManager.Instance.ShowResultUI();
+
+        yield return new WaitForSeconds(2f);
+
+        TargetSetBlackout(false);
+    }
+
+    [TargetRpc]
+    private void TargetSetBlackout(bool value)
+    {
+        if (ChangeSceneUI.Instance != null)
+            ChangeSceneUI.Instance.Show(value);
+
+        Debug.Log($"[SurvivorMove] 개인 블랙아웃 상태 변경: {value}");
     }
 }

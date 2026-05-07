@@ -20,6 +20,7 @@ public class KillerCombat : NetworkBehaviour
 
     private KillerInput input;
     private KillerState state;
+    private KillerSkillUI killerSkillUI;
     private Animator animator;
     private TrapHandler trapHandler;
 
@@ -75,6 +76,15 @@ public class KillerCombat : NetworkBehaviour
         }
     }
 
+    private void BindUI()
+    {
+        if (killerSkillUI != null)
+            return;
+
+        if (InGameUIManager.Instance != null)
+            killerSkillUI = InGameUIManager.Instance.GetKillerSkillUI();
+    }
+
     private void HandleRecovery()
     {
         currentPenaltyTime -= Time.deltaTime;
@@ -105,6 +115,11 @@ public class KillerCombat : NetworkBehaviour
                 currentLungeTime = 0f;
                 hitSurvivorNetId = 0;
                 isEndingAttack = false;
+
+                BindUI();
+
+                if (killerSkillUI != null)
+                    killerSkillUI.SetAttackUsing();
 
                 CmdStartLunge();
             }
@@ -216,7 +231,17 @@ public class KillerCombat : NetworkBehaviour
     [ClientRpc]
     private void RpcSyncAttackResult(float speed, float penalty)
     {
-        if (animator != null) animator.SetFloat("AttackSpeed", Mathf.Clamp(speed, 0.8f, 3.0f));
-        if (isLocalPlayer) currentPenaltyTime = penalty;
+        if (animator != null)
+            animator.SetFloat("AttackSpeed", Mathf.Clamp(speed, 0.8f, 3.0f));
+
+        if (isLocalPlayer)
+        {
+            currentPenaltyTime = penalty;
+
+            BindUI();
+
+            if (killerSkillUI != null)
+                killerSkillUI.StartAttackCooldown(penalty);
+        }
     }
 }

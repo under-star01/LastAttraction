@@ -12,10 +12,16 @@ public class TrapHandler : NetworkBehaviour
     public LayerMask groundMask;
     public LayerMask obstacleMask;
 
-    private GameObject ghostInstance;
-    private bool isBuildMode = false;
+    [Header("Cooldown")]
+    [SerializeField] private float trapInstallCooldown = 5f;
 
     public bool IsBuildMode => isBuildMode;
+
+    private KillerSkillUI killerSkillUI;
+    private Coroutine trapCooldownRoutine;
+    private GameObject ghostInstance;
+    private bool isTrapCooldown;
+    private bool isBuildMode = false;
 
     private Camera cam;
     private KillerState state;
@@ -40,6 +46,14 @@ public class TrapHandler : NetworkBehaviour
     private void OnDisable()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        if (trapCooldownRoutine != null)
+        {
+            StopCoroutine(trapCooldownRoutine);
+            trapCooldownRoutine = null;
+        }
+
+        isTrapCooldown = false;
     }
 
     public override void OnStartLocalPlayer()
@@ -84,6 +98,15 @@ public class TrapHandler : NetworkBehaviour
         Debug.Log($"[TrapHandler] Main Camera 연결 완료: {cam.name}");
     }
 
+    private void BindUI()
+    {
+        if (killerSkillUI != null)
+            return;
+
+        if (InGameUIManager.Instance != null)
+            killerSkillUI = InGameUIManager.Instance.GetKillerSkillUI();
+    }
+
     private void Update()
     {
         if (!isLocalPlayer || killerInput == null)
@@ -92,7 +115,8 @@ public class TrapHandler : NetworkBehaviour
         // 함정 모드 토글
         if (killerInput.IsTrapModePressed)
         {
-            ToggleTrapMode();
+            if (!isTrapCooldown)
+                ToggleTrapMode();
         }
 
         if (!isBuildMode)
@@ -135,13 +159,48 @@ public class TrapHandler : NetworkBehaviour
 
     private void ConfirmInstallation()
     {
+        if (isTrapCooldown)
+            return;
+
+        if (ghostInstance == null)
+            return;
+
         if (!CanPlace(out Vector3 installPos))
             return;
 
+        BindUI();
+
+        if (killerSkillUI != null)
+            killerSkillUI.SetTrapUsing();
+
         CmdStartPlanting(installPos, ghostInstance.transform.rotation);
 
-        // 로컬 모드 즉시 종료
         ExitBuildMode();
+
+        StartTrapCooldown();
+    }
+
+    private void StartTrapCooldown()
+    {
+        if (trapCooldownRoutine != null)
+            StopCoroutine(trapCooldownRoutine);
+
+        trapCooldownRoutine = StartCoroutine(TrapCooldownRoutine());
+    }
+
+    private IEnumerator TrapCooldownRoutine()
+    {
+        isTrapCooldown = true;
+
+        BindUI();
+
+        if (killerSkillUI != null)
+            killerSkillUI.StartTrapCooldown(trapInstallCooldown);
+
+        yield return new WaitForSeconds(trapInstallCooldown);
+
+        isTrapCooldown = false;
+        trapCooldownRoutine = null;
     }
 
     [Command]
