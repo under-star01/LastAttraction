@@ -314,6 +314,25 @@ public class InGameUIManager : MonoBehaviour
         Debug.Log("[InGameUIManager] 기존 UI 비활성화 / ResultUI 활성화");
     }
 
+    public void OnClickReturnLobby()
+    {
+        if (NetworkClient.localPlayer == null)
+        {
+            Debug.LogWarning("[InGameUIManager] localPlayer가 없어 Lobby 복귀 요청을 보낼 수 없습니다.");
+            return;
+        }
+
+        ReturnLobbyRequester requester = NetworkClient.localPlayer.GetComponent<ReturnLobbyRequester>();
+
+        if (requester == null)
+        {
+            Debug.LogWarning("[InGameUIManager] localPlayer에 ReturnLobbyRequester가 없습니다.");
+            return;
+        }
+
+        requester.RequestReturnLobby();
+    }
+
     // DB 닉네임 가져오기
     private string GetSurvivorName(SurvivorState survivor)
     {

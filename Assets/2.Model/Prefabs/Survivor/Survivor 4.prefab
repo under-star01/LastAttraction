@@ -3380,6 +3380,7 @@ GameObject:
   - component: {fileID: 5747250994685647726}
   - component: {fileID: 2069850198979918394}
   - component: {fileID: 7524002875152657783}
+  - component: {fileID: 8812007308618309124}
   m_Layer: 6
   m_Name: Survivor 4
   m_TagString: Survivor
@@ -3715,6 +3716,21 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   portrait: {fileID: 21300000, guid: c248d762443fd154b91c61b828b0b26b, type: 3}
+--- !u!114 &8812007308618309124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5929914bf1453a4aa93c2ed6c2746cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ReturnLobbyRequester
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!1 &4074163626032848579
 GameObject:
   m_ObjectHideFlags: 0

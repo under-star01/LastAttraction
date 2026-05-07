@@ -112,6 +112,8 @@ public class CustomNetworkManager : NetworkManager
     private bool isLeavingManually;
     private bool isJoiningFinalRoom;
     private bool joinApproved;
+    private bool isGameInProgress;
+    private bool isReturningLobby;
     private ushort selectedPort;
 
     private Coroutine connectRoutine;
@@ -131,9 +133,10 @@ public class CustomNetworkManager : NetworkManager
     }
 
     public bool IsRoomFull => numPlayers >= maxRoomPlayers;
+    public bool IsRoomClosed => isGameInProgress || isReturningLobby;
 
-    public bool CanJoinAsKiller => !HasKiller && !IsRoomFull;
-    public bool CanJoinAsSurvivor => HasKiller && !IsRoomFull;
+    public bool CanJoinAsKiller => !IsRoomClosed && !HasKiller && !IsRoomFull;
+    public bool CanJoinAsSurvivor => !IsRoomClosed && HasKiller && !IsRoomFull;
 
     public bool IsSearchingServer => isSearchingServer;
     public bool IsConnectedToServer => NetworkClient.isConnected;
@@ -418,12 +421,15 @@ public class CustomNetworkManager : NetworkManager
         survivorPrefabIndexByConnection.Clear();
         survivorReadyByConnection.Clear();
 
+        isGameInProgress = false;
+        isReturningLobby = false;
+
         base.OnStopServer();
     }
 
     public override void OnServerConnect(NetworkConnectionToClient conn)
     {
-        if (IsRoomFull)
+        if (IsRoomFull || IsRoomClosed)
         {
             conn.Disconnect();
             return;
@@ -590,7 +596,7 @@ public class CustomNetworkManager : NetworkManager
             port = kcpTransport.Port,
             survivorCount = GetCurrentSurvivorCount(),
             hasKiller = HasKiller,
-            isFull = IsRoomFull
+            isFull = IsRoomFull || IsRoomClosed
         });
 
         StartCoroutine(DisconnectNextFrame(conn));
@@ -713,6 +719,12 @@ public class CustomNetworkManager : NetworkManager
         if (role != JoinRole.Killer && role != JoinRole.Survivor)
         {
             reason = "유효하지 않은 역할 요청입니다.";
+            return false;
+        }
+
+        if (IsRoomClosed)
+        {
+            reason = "이미 게임이 진행 중인 방입니다.";
             return false;
         }
 
@@ -858,6 +870,15 @@ public class CustomNetworkManager : NetworkManager
     public override void OnServerSceneChanged(string sceneName)
     {
         base.OnServerSceneChanged(sceneName);
+
+        if (sceneName == "Lobby")
+        {
+            isGameInProgress = false;
+            isReturningLobby = false;
+
+            Debug.Log("[CustomNetworkManager] Lobby 씬 복귀 완료 / 포트 재오픈");
+            return;
+        }
 
         if (sceneName == inGameSceneName)
         {
@@ -1032,6 +1053,11 @@ public class CustomNetworkManager : NetworkManager
         if (!NetworkServer.active || string.IsNullOrWhiteSpace(inGameSceneName))
             return;
 
+        if (isGameInProgress)
+            return;
+
+        isGameInProgress = true;
+
         StartCoroutine(MoveToGameSceneRoutine());
     }
 
@@ -1091,6 +1117,29 @@ public class CustomNetworkManager : NetworkManager
         }
     }
 
+    [Server]
+    public void ServerReturnToLobby()
+    {
+        if (isReturningLobby)
+            return;
+
+        isReturningLobby = true;
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null || conn.identity == null)
+                continue;
+
+            NetworkServer.Destroy(conn.identity.gameObject);
+        }
+
+        joinedRoles.Clear();
+        survivorPrefabIndexByConnection.Clear();
+        survivorReadyByConnection.Clear();
+
+        ServerChangeScene("Lobby");
+        Debug.Log("[CustomNetworkManager] Lobby 씬으로 복귀");
+    }
 
     #endregion
 }
