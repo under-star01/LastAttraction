@@ -18,6 +18,24 @@ public class LobbyUIManager : MonoBehaviour
     [Header("Lobby Text")]
     [SerializeField] private TMP_Text readyCountText;
 
+    [Header("Ready State UI")]
+    [SerializeField] private RectTransform ready1Object;
+    [SerializeField] private RectTransform ready2Object;
+    [SerializeField] private RectTransform ready3Object;
+    [SerializeField] private RectTransform ready4Object;
+
+    [Header("Ready UI Position - Killer View")]
+    [SerializeField] private Vector2 killerReady1Pos;
+    [SerializeField] private Vector2 killerReady2Pos;
+    [SerializeField] private Vector2 killerReady3Pos;
+    [SerializeField] private Vector2 killerReady4Pos;
+
+    [Header("Ready UI Position - Survivor View")]
+    [SerializeField] private Vector2 survivorReady1Pos;
+    [SerializeField] private Vector2 survivorReady2Pos;
+    [SerializeField] private Vector2 survivorReady3Pos;
+    [SerializeField] private Vector2 survivorReady4Pos;
+
     [Header("Loading UI")]
     [SerializeField] private GameObject loadingPanel;
 
@@ -96,6 +114,30 @@ public class LobbyUIManager : MonoBehaviour
         CustomNetworkManager.Instance.RequestStartGame();
     }
 
+    private void ApplyReadyUIPositionForKiller()
+    {
+        SetReadyUIPosition(ready1Object, killerReady1Pos);
+        SetReadyUIPosition(ready2Object, killerReady2Pos);
+        SetReadyUIPosition(ready3Object, killerReady3Pos);
+        SetReadyUIPosition(ready4Object, killerReady4Pos);
+    }
+
+    private void ApplyReadyUIPositionForSurvivor()
+    {
+        SetReadyUIPosition(ready1Object, survivorReady1Pos);
+        SetReadyUIPosition(ready2Object, survivorReady2Pos);
+        SetReadyUIPosition(ready3Object, survivorReady3Pos);
+        SetReadyUIPosition(ready4Object, survivorReady4Pos);
+    }
+
+    private void SetReadyUIPosition(RectTransform readyObject, Vector2 anchoredPosition)
+    {
+        if (readyObject == null)
+            return;
+
+        readyObject.anchoredPosition = anchoredPosition;
+    }
+
     public void ShowLoading(bool isActive)
     {
         if (loadingPanel != null)
@@ -118,6 +160,7 @@ public class LobbyUIManager : MonoBehaviour
         isReady = false;
         UpdateReadyButtonView();
         SetLobbyReadyCount(0, 0);
+        SetReadySlotUI(false, false, false, false);
     }
 
     public void ShowKillerLobbyUI()
@@ -135,6 +178,8 @@ public class LobbyUIManager : MonoBehaviour
 
         isReady = false;
         UpdateReadyButtonView();
+
+        ApplyReadyUIPositionForKiller();
     }
 
     public void ShowSurvivorLobbyUI()
@@ -150,6 +195,8 @@ public class LobbyUIManager : MonoBehaviour
 
         isReady = false;
         UpdateReadyButtonView();
+
+        ApplyReadyUIPositionForSurvivor();
     }
 
     public void SetStartButtonInteractable(bool value)
@@ -162,6 +209,20 @@ public class LobbyUIManager : MonoBehaviour
     {
         if (readyCountText != null)
             readyCountText.text = $"{readyCount}/{survivorCount}";
+    }
+
+    public void SetReadySlotUI(bool ready1, bool ready2, bool ready3, bool ready4)
+    {
+        SetReadyObjectActive(ready1Object, ready1);
+        SetReadyObjectActive(ready2Object, ready2);
+        SetReadyObjectActive(ready3Object, ready3);
+        SetReadyObjectActive(ready4Object, ready4);
+    }
+
+    private void SetReadyObjectActive(RectTransform readyObject, bool value)
+    {
+        if (readyObject != null)
+            readyObject.gameObject.SetActive(value);
     }
 
     private void SetButtonActive(Button button, bool isActive)

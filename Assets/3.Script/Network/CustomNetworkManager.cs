@@ -67,6 +67,11 @@ public struct LobbyStateMessage : NetworkMessage
     public int survivorCount;
     public int readySurvivorCount;
     public bool canStart;
+
+    public bool ready1;
+    public bool ready2;
+    public bool ready3;
+    public bool ready4;
 }
 
 // 서버 -> 클라 : 씬 전환 UI 표시 상태
@@ -604,6 +609,13 @@ public class CustomNetworkManager : NetworkManager
     {
         LobbyUIManager.Instance?.SetLobbyReadyCount(msg.readySurvivorCount, msg.survivorCount);
 
+        LobbyUIManager.Instance?.SetReadySlotUI(
+            msg.ready1,
+            msg.ready2,
+            msg.ready3,
+            msg.ready4
+        );
+
         if (localJoinRole == JoinRole.Killer)
             LobbyUIManager.Instance?.SetStartButtonInteractable(msg.canStart);
     }
@@ -717,22 +729,48 @@ public class CustomNetworkManager : NetworkManager
         int survivorCount = 0;
         int readyCount = 0;
 
+        bool ready1 = false;
+        bool ready2 = false;
+        bool ready3 = false;
+        bool ready4 = false;
+
         foreach (var pair in joinedRoles)
         {
+            int connectionId = pair.Key;
+
             if (pair.Value != JoinRole.Survivor)
                 continue;
 
             survivorCount++;
 
-            if (survivorReadyByConnection.TryGetValue(pair.Key, out bool isReady) && isReady)
+            bool isReady = survivorReadyByConnection.TryGetValue(connectionId, out bool ready) && ready;
+
+            if (isReady)
                 readyCount++;
+
+            if (!survivorPrefabIndexByConnection.TryGetValue(connectionId, out int survivorIndex))
+                continue;
+
+            if (survivorIndex == 0)
+                ready1 = isReady;
+            else if (survivorIndex == 1)
+                ready2 = isReady;
+            else if (survivorIndex == 2)
+                ready3 = isReady;
+            else if (survivorIndex == 3)
+                ready4 = isReady;
         }
 
         return new LobbyStateMessage
         {
             survivorCount = survivorCount,
             readySurvivorCount = readyCount,
-            canStart = HasKiller && survivorCount > 0 && survivorCount == readyCount
+            canStart = HasKiller && survivorCount > 0 && survivorCount == readyCount,
+
+            ready1 = ready1,
+            ready2 = ready2,
+            ready3 = ready3,
+            ready4 = ready4
         };
     }
 
