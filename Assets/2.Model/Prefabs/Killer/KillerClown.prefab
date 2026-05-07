@@ -11653,6 +11653,9 @@ MonoBehaviour:
   obstacleLayer:
     serializedVersion: 2
     m_Bits: 1024
+  boxDefaultLayer: Interactable
+  boxSilhouetteLayer: BoxOutline
+  boxTag: Evidence
 --- !u!114 &8329270682292632505
 MonoBehaviour:
   m_ObjectHideFlags: 0
