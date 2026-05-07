@@ -1032,50 +1032,6 @@ public class CustomNetworkManager : NetworkManager
         }
     }
 
-    #endregion
-
-    #region Utils
-
-    private IEnumerator DisconnectNextFrame(NetworkConnectionToClient conn)
-    {
-        yield return null;
-
-        if (conn != null)
-            conn.Disconnect();
-    }
-
-    private ushort GetPortFromArgs()
-    {
-        string[] args = Environment.GetCommandLineArgs();
-
-        for (int i = 0; i < args.Length - 1; i++)
-        {
-            if (args[i] != "-port")
-                continue;
-
-            if (ushort.TryParse(args[i + 1], out ushort parsedPort))
-                return parsedPort;
-        }
-
-        if (serverPorts == null || serverPorts.Count == 0)
-            return 7777;
-
-        return serverPorts[0];
-    }
-
-    private int GetCurrentSurvivorCount()
-    {
-        int count = 0;
-
-        foreach (var role in joinedRoles.Values)
-        {
-            if (role == JoinRole.Survivor)
-                count++;
-        }
-
-        return count;
-    }
-
     public void MoveToGameScene()
     {
         if (!NetworkServer.active || string.IsNullOrWhiteSpace(inGameSceneName))
@@ -1200,6 +1156,50 @@ public class CustomNetworkManager : NetworkManager
         // 4. 블랙아웃 해제
         if (ChangeSceneUI.Instance != null)
             ChangeSceneUI.Instance.Show(false);
+    }
+
+    #endregion
+
+    #region Utils
+
+    private IEnumerator DisconnectNextFrame(NetworkConnectionToClient conn)
+    {
+        yield return null;
+
+        if (conn != null)
+            conn.Disconnect();
+    }
+
+    private ushort GetPortFromArgs()
+    {
+        string[] args = Environment.GetCommandLineArgs();
+
+        for (int i = 0; i < args.Length - 1; i++)
+        {
+            if (args[i] != "-port")
+                continue;
+
+            if (ushort.TryParse(args[i + 1], out ushort parsedPort))
+                return parsedPort;
+        }
+
+        if (serverPorts == null || serverPorts.Count == 0)
+            return 7777;
+
+        return serverPorts[0];
+    }
+
+    private int GetCurrentSurvivorCount()
+    {
+        int count = 0;
+
+        foreach (var role in joinedRoles.Values)
+        {
+            if (role == JoinRole.Survivor)
+                count++;
+        }
+
+        return count;
     }
 
     #endregion

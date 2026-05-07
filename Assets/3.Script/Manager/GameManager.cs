@@ -634,4 +634,11 @@ public class GameManager : NetworkBehaviour
 
         return survivorResultPoints[survivorIndex];
     }
+
+    // 살인마 결과창 위치를 반환한다.
+    [Server]
+    public Transform GetKillerResultPoint()
+    {
+        return killerResultPoint;
+    }
 }

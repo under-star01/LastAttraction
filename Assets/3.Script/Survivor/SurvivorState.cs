@@ -259,6 +259,9 @@ public class SurvivorState : NetworkBehaviour
     [Server]
     public void Die()
     {
+        if (IsDead)
+            return;
+
         currentPrisonId = 0;
         currentCondition = SurvivorCondition.Dead;
 
@@ -274,6 +277,14 @@ public class SurvivorState : NetworkBehaviour
         }
 
         ApplyAllStateServer();
+
+        if (move != null)
+            move.BeginDeadResult();
+
+        KillerMove killerMove = FindFirstObjectByType<KillerMove>();
+
+        if (killerMove != null)
+            killerMove.CheckAllSurvivorsDeadAndShowResult();
     }
 
     // 감옥 시간이 다 되어 죽을 때 사용한다.
@@ -302,6 +313,14 @@ public class SurvivorState : NetworkBehaviour
 
         if (actionState != null)
             StartCoroutine(actionState.DownHitRoutine(downHitDuration));
+
+        if (move != null)
+            move.BeginDeadResult();
+
+        KillerMove killerMove = FindFirstObjectByType<KillerMove>();
+
+        if (killerMove != null)
+            killerMove.CheckAllSurvivorsDeadAndShowResult();
     }
 
     [Server]

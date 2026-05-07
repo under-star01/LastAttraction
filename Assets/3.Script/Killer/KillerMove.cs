@@ -12,6 +12,7 @@ public class KillerMove : NetworkBehaviour
     [Header("Virtual Cameras")]
     [SerializeField] private CinemachineCamera lobbyCam;
     [SerializeField] private CinemachineCamera normalCam;
+    [SerializeField] private CinemachineCamera resultCam;
     [SerializeField] private int activeCameraPriority = 30;
     [SerializeField] private int inactiveCameraPriority = 0;
 
@@ -33,6 +34,7 @@ public class KillerMove : NetworkBehaviour
 
     private KillerCondition lastAppliedCondition;
     private bool hasAppliedCondition;
+    private bool isResultPlaying;
 
     [SyncVar] private float syncedYaw, syncedPitch, syncedMoveSpeed;
 
@@ -69,6 +71,7 @@ public class KillerMove : NetworkBehaviour
         // 프리팹 생성 직후에는 모든 Virtual Camera 우선순위를 낮춰둔다.
         SetCameraPriority(lobbyCam, false);
         SetCameraPriority(normalCam, false);
+        SetCameraPriority(resultCam, false);
     }
 
     private void Update()
@@ -133,6 +136,9 @@ public class KillerMove : NetworkBehaviour
 
     private void ApplyViewByState()
     {
+        if (isResultPlaying)
+            return;
+
         if (!isLocalPlayer || CinemachineRoot == null)
             return;
 
@@ -141,6 +147,7 @@ public class KillerMove : NetworkBehaviour
 
         SetCameraPriority(lobbyCam, isLobby);
         SetCameraPriority(normalCam, !isLobby);
+        SetCameraPriority(resultCam, false);
 
         Cursor.lockState = isLobby ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = isLobby;
@@ -171,6 +178,126 @@ public class KillerMove : NetworkBehaviour
 
         if (connectionToClient != null)
             TargetRefreshViewByState(connectionToClient);
+    }
+
+    [Server]
+    public void BeginKillerResult()
+    {
+        if (isResultPlaying)
+            return;
+
+        isResultPlaying = true;
+
+        serverMoveInput = Vector2.zero;
+        syncedMoveSpeed = 0f;
+
+        if (state != null)
+            state.ChangeState(KillerCondition.Idle);
+
+        if (connectionToClient != null)
+            TargetDisableKillerInput(connectionToClient);
+
+        StartCoroutine(KillerResultRoutine());
+
+        Debug.Log("[KillerMove] Killer Result 시작");
+    }
+
+    [Server]
+    private IEnumerator KillerResultRoutine()
+    {
+        if (connectionToClient == null)
+            yield break;
+
+        TargetSetBlackout(connectionToClient, true);
+        yield return new WaitForSeconds(1f);
+
+        MoveToKillerResultPoint();
+
+        TargetShowKillerResultViewAndUI(connectionToClient);
+        yield return new WaitForSeconds(2f);
+
+        TargetSetBlackout(connectionToClient, false);
+    }
+
+    [Server]
+    private void MoveToKillerResultPoint()
+    {
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("[KillerMove] GameManager.Instance가 없습니다.");
+            return;
+        }
+
+        Transform resultPoint = GameManager.Instance.GetKillerResultPoint();
+
+        if (resultPoint == null)
+        {
+            Debug.LogWarning("[KillerMove] Killer 결과 위치를 찾지 못했습니다.");
+            return;
+        }
+
+        ServerTeleportTo(resultPoint.position, resultPoint.rotation);
+
+        Debug.Log("[KillerMove] Killer 결과 위치로 이동 완료");
+    }
+
+    [Server]
+    public void CheckAllSurvivorsDeadAndShowResult()
+    {
+        if (isResultPlaying)
+            return;
+
+        SurvivorState[] survivors = FindObjectsByType<SurvivorState>(FindObjectsSortMode.None);
+
+        if (survivors == null || survivors.Length == 0)
+            return;
+
+        for (int i = 0; i < survivors.Length; i++)
+        {
+            if (survivors[i] == null)
+                continue;
+
+            if (!survivors[i].IsDead)
+                return;
+        }
+
+        BeginKillerResult();
+    }
+
+    [TargetRpc]
+    private void TargetDisableKillerInput(NetworkConnectionToClient target)
+    {
+        if (input != null)
+            input.enabled = false;
+
+        Debug.Log("[KillerMove] KillerInput 비활성화");
+    }
+
+    [TargetRpc]
+    private void TargetSetBlackout(NetworkConnectionToClient target, bool value)
+    {
+        if (ChangeSceneUI.Instance != null)
+            ChangeSceneUI.Instance.Show(value);
+
+        Debug.Log($"[KillerMove] 개인 블랙아웃 상태 변경: {value}");
+    }
+
+    [TargetRpc]
+    private void TargetShowKillerResultViewAndUI(NetworkConnectionToClient target)
+    {
+        isResultPlaying = true;
+
+        if (CinemachineRoot != null)
+            CinemachineRoot.gameObject.SetActive(true);
+
+        SetCameraPriority(lobbyCam, false);
+        SetCameraPriority(normalCam, false);
+        SetCameraPriority(resultCam, true);
+
+        if (InGameUIManager.Instance != null)
+            InGameUIManager.Instance.ShowResultUI();
+
+        Debug.Log("[KillerMove] ResultCam 전환 및 ResultUI 활성화");
     }
 
     [TargetRpc]

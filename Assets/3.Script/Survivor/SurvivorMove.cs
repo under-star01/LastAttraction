@@ -49,8 +49,9 @@ public class SurvivorMove : NetworkBehaviour
     private Vector2 serverMoveInput;
     private bool serverWantsRun;
     private bool serverWantsCrouch;
+    private bool isMoveLocked; 
+    private bool isResultPlaying;
     private float serverYaw;
-    private bool isMoveLocked;
     private float serverPitch;
 
     [SyncVar] private float syncedYaw;
@@ -845,6 +846,32 @@ public class SurvivorMove : NetworkBehaviour
         }
     }
 
+    [Server]
+    public void BeginDeadResult()
+    {
+        if (isResultPlaying)
+            return;
+
+        isResultPlaying = true;
+
+        escapeTarget = null;
+
+        isMoveLocked = true;
+
+        serverMoveInput = Vector2.zero;
+        serverWantsRun = false;
+        serverWantsCrouch = false;
+
+        if (moveState != null)
+            moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
+
+        TargetDisableSurvivorInput(connectionToClient);
+
+        StartCoroutine(ResultRoutine());
+
+        Debug.Log("[SurvivorMove] Dead Result Ω√¿€");
+    }
+
     [ClientRpc]
     private void RpcApplyEscapeView()
     {
@@ -912,6 +939,10 @@ public class SurvivorMove : NetworkBehaviour
     [Server]
     private void EscapeArrive()
     {
+        if (isResultPlaying)
+            return;
+
+        isResultPlaying = true;
         escapeTarget = null;
 
         serverMoveInput = Vector2.zero;
@@ -923,13 +954,13 @@ public class SurvivorMove : NetworkBehaviour
         if (moveState != null)
             moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
 
-        StartCoroutine(EscapeResultRoutine());
+        StartCoroutine(ResultRoutine());
 
         Debug.Log("[SurvivorMove] Escape arrived.");
     }
 
     [Server]
-    private IEnumerator EscapeResultRoutine()
+    private IEnumerator ResultRoutine()
     {
         TargetSetBlackout(true);
         yield return new WaitForSeconds(1f);
