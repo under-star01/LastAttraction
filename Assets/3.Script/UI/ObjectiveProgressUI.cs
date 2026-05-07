@@ -13,13 +13,23 @@ public class ObjectiveProgressUI : MonoBehaviour
     [SerializeField] private UploadComputer targetComputer;
 
     [Header("문구")]
-    [SerializeField] private string cameraGoalText = "살인마를 촬영하고 증거를 수집";
-    [SerializeField] private string waitingEvidenceText = "증거 수집 대기";
-    [SerializeField] private string uploadGoalText = "컴퓨터에 증거를 업로드";
-    [SerializeField] private string gateTimerText = "탈출문 개방까지 남은시간";
+    [SerializeField] private string objectiveTextValue = "목표 진행도";
+    [SerializeField] private string uploadGoalText = "컴퓨터에 증거 업로드";
+    [SerializeField] private string gateTimerText = "탈출문 개방까지";
 
     private void Awake()
     {
+        // Root에는 자기 자신이 아니라 실제 UI 패널 오브젝트를 넣어야 한다.
+        if (root == gameObject)
+        {
+            Debug.LogWarning(
+                "[ObjectiveProgressUI] Root에 자기 자신을 넣으면 오브젝트가 꺼져서 Update가 실행되지 않습니다. Root는 자식 UI 패널로 연결하세요.",
+                this
+            );
+
+            root = null;
+        }
+
         // Slider는 0~1 값으로만 사용한다.
         if (objectiveSlider != null)
         {
@@ -29,13 +39,13 @@ public class ObjectiveProgressUI : MonoBehaviour
             objectiveSlider.interactable = false;
         }
 
-        // 시작할 때는 UI 내용만 초기화한다.
+        // 시작할 때는 UI를 숨긴다.
         Hide();
     }
 
     private void Update()
     {
-        // 생존자로 플레이 중일 때만 목표 UI를 보여준다.
+        // 생존자로 플레이 중일 때만 목표 UI를 표시한다.
         if (!IsLocalSurvivor())
         {
             Hide();
@@ -50,6 +60,9 @@ public class ObjectiveProgressUI : MonoBehaviour
             return;
         }
 
+        // 업로드 컴퓨터가 비어 있으면 씬에서 자동으로 하나 찾는다.
+        FindTargetComputer();
+
         // 문이 열렸으면 목표 UI를 숨긴다.
         if (IsGateOpened(gm))
         {
@@ -57,7 +70,7 @@ public class ObjectiveProgressUI : MonoBehaviour
             return;
         }
 
-        // 업로드 완료 후 문 개방 대기 중이면 문 타이머를 보여준다.
+        // 업로드 완료 후 문 개방 대기 중이면 문 타이머 게이지를 보여준다.
         if (targetComputer != null && targetComputer.GateTimerVisible)
         {
             ShowGateTimer();
@@ -71,25 +84,29 @@ public class ObjectiveProgressUI : MonoBehaviour
             return;
         }
 
-        // 업로드가 아직 열리지 않았다면 카메라 목표 게이지를 보여준다.
-        ShowCameraGoal(gm);
+        // 기본 상태에서는 통합 목표 게이지를 보여준다.
+        ShowObjectiveGoal(gm);
     }
 
-    // 현재 로컬 플레이어가 생존자인지 확인한다.
+    // 현재 클라이언트의 로컬 플레이어가 생존자인지 확인한다.
     private bool IsLocalSurvivor()
     {
-        // 역할 선택 정보가 있으면 그 값을 우선 사용한다.
-        if (CustomNetworkManager.Instance != null)
-            return CustomNetworkManager.Instance.CurrentLocalJoinRole == JoinRole.Survivor;
+        if (NetworkClient.localPlayer == null)
+            return false;
 
-        // 예외적으로 NetworkManager가 없으면 로컬 플레이어 태그로 확인한다.
-        if (NetworkClient.localPlayer != null)
-            return NetworkClient.localPlayer.CompareTag("Survivor");
-
-        return false;
+        return NetworkClient.localPlayer.GetComponent<SurvivorState>() != null;
     }
 
-    // 문이 열렸는지 GameManager 또는 UploadComputer 상태로 판단한다.
+    // 목표 UI가 읽을 업로드 컴퓨터를 자동으로 찾는다.
+    private void FindTargetComputer()
+    {
+        if (targetComputer != null)
+            return;
+
+        targetComputer = FindFirstObjectByType<UploadComputer>();
+    }
+
+    // 탈출문이 열렸는지 확인한다.
     private bool IsGateOpened(GameManager gm)
     {
         if (gm != null && gm.GateOpened)
@@ -101,24 +118,22 @@ public class ObjectiveProgressUI : MonoBehaviour
         return false;
     }
 
-    // 살인마 촬영 목표 게이지를 보여준다.
-    private void ShowCameraGoal(GameManager gm)
+    // 통합 목표 게이지를 표시한다.
+    private void ShowObjectiveGoal(GameManager gm)
     {
         Show();
 
         if (objectiveSlider != null)
-            objectiveSlider.value = gm.KillerDetectProgress01;
+            objectiveSlider.value = gm.ObjectiveProgress01;
 
         if (objectiveText != null)
         {
-            if (gm.IsKillerDetectComplete)
-                objectiveText.text = waitingEvidenceText;
-            else
-                objectiveText.text = cameraGoalText;
+            int percent = Mathf.RoundToInt(gm.ObjectiveProgress01 * 100f);
+            objectiveText.text = objectiveTextValue + " " + percent + "%";
         }
     }
 
-    // 컴퓨터 업로드 진행도 게이지를 보여준다.
+    // 컴퓨터 업로드 진행도 게이지를 표시한다.
     private void ShowUploadGoal()
     {
         Show();
@@ -127,10 +142,13 @@ public class ObjectiveProgressUI : MonoBehaviour
             objectiveSlider.value = targetComputer.UploadProgress01;
 
         if (objectiveText != null)
-            objectiveText.text = uploadGoalText;
+        {
+            int percent = Mathf.RoundToInt(targetComputer.UploadProgress01 * 100f);
+            objectiveText.text = uploadGoalText + " " + percent + "%";
+        }
     }
 
-    // 탈출문 개방 대기 시간 게이지를 보여준다.
+    // 탈출문 개방까지 남은 시간 게이지를 표시한다.
     private void ShowGateTimer()
     {
         Show();
@@ -142,14 +160,14 @@ public class ObjectiveProgressUI : MonoBehaviour
             objectiveText.text = gateTimerText + " " + Mathf.CeilToInt(targetComputer.GateRemainTime) + "초";
     }
 
-    // UI를 표시한다.
+    // 목표 UI 패널을 표시한다.
     private void Show()
     {
         if (root != null && !root.activeSelf)
             root.SetActive(true);
     }
 
-    // UI를 숨긴다.
+    // 목표 UI 패널을 숨긴다.
     private void Hide()
     {
         if (objectiveSlider != null)

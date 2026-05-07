@@ -13,28 +13,31 @@ public class GameManager : NetworkBehaviour
     [Header("증거 목표")]
     [SerializeField] private int needEvidenceCount = 0;
 
-    [Header("살인마 탐지 목표")]
-    [SerializeField] private bool requireKillerDetectionForUpload = true;
+    [Header("통합 목표 게이지")]
+    [SerializeField] private float objectiveMaxValue = 1f;
 
-    // 살인마를 총 몇 초 탐지해야 업로드 컴퓨터가 열리는지 설정한다.
+    // 진짜 증거 하나를 찾을 때 목표 게이지에 더해지는 값이다. 0.15 = 15%
+    [SerializeField] private float evidenceObjectiveAdd = 0.15f;
+
+    // 살인마 촬영만으로 목표 게이지 100%를 채우는 데 필요한 기준 시간이다.
     [SerializeField] private float needKillerDetectTime = 120f;
 
-    // 서버에서 실제로 계산하는 누적 탐지 시간이다.
-    [SerializeField] private float killerDetectProgress;
+    // 서버에서 실제로 관리하는 통합 목표 게이지다.
+    [SerializeField] private float objectiveProgress;
 
-    // 현재 살인마를 탐지 중인 생존자 수다.
+    // 현재 살인마를 촬영 중인 생존자 수다.
     [SerializeField] private int currentKillerDetectUserCount;
 
-    // 현재 적용 중인 탐지 배율이다.
+    // 현재 적용 중인 촬영 배율이다.
     [SerializeField] private float currentKillerDetectMultiplier;
 
-    // 클라이언트 UI 표시용 탐지 진행도다.
-    [SyncVar] private float syncedKillerDetectProgress;
+    // 클라이언트 UI 표시용 통합 목표 게이지다.
+    [SyncVar] private float syncedObjectiveProgress;
 
-    // 클라이언트 UI 표시용 탐지 인원 수다.
+    // 클라이언트 UI 표시용 촬영 인원 수다.
     [SyncVar] private int syncedKillerDetectUserCount;
 
-    // 클라이언트 UI 표시용 탐지 배율이다.
+    // 클라이언트 UI 표시용 촬영 배율이다.
     [SyncVar] private float syncedKillerDetectMultiplier;
 
     [Header("업로드")]
@@ -84,6 +87,7 @@ public class GameManager : NetworkBehaviour
     public float GateRemainTime => gateRemainTime;
     public float GateOpenDelay => gateOpenDelay;
     public float NeedKillerDetectTime => needKillerDetectTime;
+    public float EvidenceObjectiveAdd => evidenceObjectiveAdd;
     public Transform KillerResultPoint => killerResultPoint;
 
     public bool IsEvidenceComplete
@@ -99,16 +103,35 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    public float KillerDetectProgress
+    public float ObjectiveProgress
     {
         get
         {
-            // 서버에서는 실제 계산값을 사용한다.
+            // 서버에서는 실제 목표 게이지를 사용한다.
             if (NetworkServer.active)
-                return killerDetectProgress;
+                return objectiveProgress;
 
-            // 클라이언트에서는 SyncVar로 받은 값을 사용한다.
-            return syncedKillerDetectProgress;
+            // 클라이언트에서는 SyncVar로 받은 목표 게이지를 사용한다.
+            return syncedObjectiveProgress;
+        }
+    }
+
+    public float ObjectiveProgress01
+    {
+        get
+        {
+            if (objectiveMaxValue <= 0f)
+                return 1f;
+
+            return Mathf.Clamp01(ObjectiveProgress / objectiveMaxValue);
+        }
+    }
+
+    public bool IsObjectiveComplete
+    {
+        get
+        {
+            return ObjectiveProgress01 >= 1f;
         }
     }
 
@@ -116,11 +139,11 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
-            // 서버에서는 실제 탐지 인원 수를 사용한다.
+            // 서버에서는 실제 촬영 인원 수를 사용한다.
             if (NetworkServer.active)
                 return currentKillerDetectUserCount;
 
-            // 클라이언트에서는 SyncVar로 받은 값을 사용한다.
+            // 클라이언트에서는 SyncVar로 받은 촬영 인원 수를 사용한다.
             return syncedKillerDetectUserCount;
         }
     }
@@ -129,44 +152,12 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
-            // 서버에서는 실제 탐지 배율을 사용한다.
+            // 서버에서는 실제 촬영 배율을 사용한다.
             if (NetworkServer.active)
                 return currentKillerDetectMultiplier;
 
-            // 클라이언트에서는 SyncVar로 받은 값을 사용한다.
+            // 클라이언트에서는 SyncVar로 받은 촬영 배율을 사용한다.
             return syncedKillerDetectMultiplier;
-        }
-    }
-
-    public bool IsKillerDetectComplete
-    {
-        get
-        {
-            // 탐지 목표를 사용하지 않으면 항상 완료로 본다.
-            if (!requireKillerDetectionForUpload)
-                return true;
-
-            // 목표 시간이 0 이하이면 항상 완료로 본다.
-            if (needKillerDetectTime <= 0f)
-                return true;
-
-            return KillerDetectProgress >= needKillerDetectTime;
-        }
-    }
-
-    public float KillerDetectProgress01
-    {
-        get
-        {
-            // 탐지 목표를 사용하지 않으면 UI는 100%로 표시한다.
-            if (!requireKillerDetectionForUpload)
-                return 1f;
-
-            // 목표 시간이 0 이하이면 UI는 100%로 표시한다.
-            if (needKillerDetectTime <= 0f)
-                return 1f;
-
-            return Mathf.Clamp01(KillerDetectProgress / needKillerDetectTime);
         }
     }
 
@@ -191,6 +182,33 @@ public class GameManager : NetworkBehaviour
                 return 0f;
 
             return Mathf.Clamp01(gateRemainTime / gateOpenDelay);
+        }
+    }
+
+    // 기존 UI / 기존 코드 호환용 프로퍼티다.
+    public float KillerDetectProgress
+    {
+        get
+        {
+            return ObjectiveProgress;
+        }
+    }
+
+    // 기존 CameraProgressUI나 다른 코드가 이 값을 읽어도 통합 목표 게이지를 반환한다.
+    public float KillerDetectProgress01
+    {
+        get
+        {
+            return ObjectiveProgress01;
+        }
+    }
+
+    // 이제 촬영 단독 완료가 아니라 통합 목표 완료 여부를 반환한다.
+    public bool IsKillerDetectComplete
+    {
+        get
+        {
+            return IsObjectiveComplete;
         }
     }
 
@@ -220,7 +238,7 @@ public class GameManager : NetworkBehaviour
         if (!NetworkServer.active)
             return;
 
-        UpdateKillerDetectGoal();
+        UpdateObjectiveByCamera();
         TickGateOpenTimer();
     }
 
@@ -290,37 +308,59 @@ public class GameManager : NetworkBehaviour
         foundZones.Add(zone);
         foundEvidenceCount = foundZones.Count;
 
-        Debug.Log($"[GameManager] 진짜 증거 발견: {foundEvidenceCount}/{GetNeedCount()}");
+        // 증거 하나를 찾으면 통합 목표 게이지를 15% 증가시킨다.
+        AddObjective(evidenceObjectiveAdd);
+
+        Debug.Log(
+            $"[GameManager] 진짜 증거 발견: {foundEvidenceCount}/{GetNeedCount()} / " +
+            $"목표 게이지: {ObjectiveProgress01 * 100f:F0}%"
+        );
 
         CheckUpload();
     }
 
-    // 서버에서 살인마 탐지 목표를 갱신한다.
-    private void UpdateKillerDetectGoal()
+    // 서버에서 통합 목표 게이지를 증가시킨다.
+    [Server]
+    private void AddObjective(float amount)
     {
-        // 탐지 목표를 사용하지 않으면 계산하지 않는다.
-        if (!requireKillerDetectionForUpload)
-        {
-            SyncKillerDetectState();
+        if (canUpload || isWaitingGateOpen || gateOpened)
             return;
-        }
 
-        // 업로드 가능 / 문 대기 / 문 열림 상태에서는 탐지 진행을 멈춘다.
+        if (amount <= 0f)
+            return;
+
+        objectiveProgress += amount;
+        objectiveProgress = Mathf.Clamp(objectiveProgress, 0f, objectiveMaxValue);
+
+        SyncObjectiveState();
+    }
+
+    // 서버에서 살인마 촬영으로 통합 목표 게이지를 갱신한다.
+    private void UpdateObjectiveByCamera()
+    {
+        // 업로드 가능 / 문 대기 / 문 열림 상태에서는 목표 진행을 멈춘다.
         if (canUpload || isWaitingGateOpen || gateOpened)
         {
-            SyncKillerDetectState();
+            SyncObjectiveState();
             return;
         }
 
-        // 이미 목표를 달성했으면 업로드 조건만 다시 확인한다.
-        if (killerDetectProgress >= needKillerDetectTime)
+        // 목표 게이지가 이미 다 찼으면 업로드 조건을 확인한다.
+        if (IsObjectiveComplete)
         {
-            killerDetectProgress = needKillerDetectTime;
+            objectiveProgress = objectiveMaxValue;
             currentKillerDetectUserCount = 0;
             currentKillerDetectMultiplier = 0f;
 
-            SyncKillerDetectState();
+            SyncObjectiveState();
             CheckUpload();
+            return;
+        }
+
+        // 기준 시간이 0 이하이면 카메라 촬영으로는 증가하지 않게 막는다.
+        if (needKillerDetectTime <= 0f)
+        {
+            SyncObjectiveState();
             return;
         }
 
@@ -329,28 +369,26 @@ public class GameManager : NetworkBehaviour
         currentKillerDetectUserCount = detectingCount;
         currentKillerDetectMultiplier = GetKillerDetectMultiplier(detectingCount);
 
-        // 아무도 살인마를 탐지 중이 아니면 진행도 증가 없음.
+        // 아무도 살인마를 촬영 중이 아니면 진행도 증가 없음.
         if (currentKillerDetectMultiplier <= 0f)
         {
-            SyncKillerDetectState();
+            SyncObjectiveState();
             return;
         }
 
-        // 탐지 중인 생존자 수에 따른 배율로 공용 게이지를 증가시킨다.
-        killerDetectProgress += Time.deltaTime * currentKillerDetectMultiplier;
-        killerDetectProgress = Mathf.Clamp(killerDetectProgress, 0f, needKillerDetectTime);
+        // 기존 촬영 방식처럼 시간과 배율에 따라 통합 목표 게이지를 증가시킨다.
+        float addValue = Time.deltaTime * currentKillerDetectMultiplier / needKillerDetectTime;
+        AddObjective(addValue);
 
-        SyncKillerDetectState();
-
-        // 탐지 목표를 막 달성했다면 업로드 가능 조건을 다시 검사한다.
-        if (killerDetectProgress >= needKillerDetectTime)
+        // 목표를 막 달성했다면 업로드 가능 조건을 다시 검사한다.
+        if (IsObjectiveComplete)
         {
-            Debug.Log("[GameManager] 살인마 탐지 목표 완료.");
+            Debug.Log("[GameManager] 통합 목표 게이지 완료.");
             CheckUpload();
         }
     }
 
-    // 현재 카메라로 살인마를 탐지 중인 생존자 수를 계산한다.
+    // 현재 카메라로 살인마를 촬영 중인 생존자 수를 계산한다.
     private int GetRecordingKillerSurvivorCount()
     {
         int count = 0;
@@ -380,7 +418,7 @@ public class GameManager : NetworkBehaviour
         return count;
     }
 
-    // 탐지 중인 생존자 수에 따른 진행 속도 배율을 반환한다.
+    // 촬영 중인 생존자 수에 따른 진행 속도 배율을 반환한다.
     private float GetKillerDetectMultiplier(int userCount)
     {
         switch (userCount)
@@ -403,14 +441,14 @@ public class GameManager : NetworkBehaviour
     }
 
     // 서버 계산값을 클라이언트 UI 표시용 SyncVar에 복사한다.
-    private void SyncKillerDetectState()
+    private void SyncObjectiveState()
     {
-        syncedKillerDetectProgress = killerDetectProgress;
+        syncedObjectiveProgress = objectiveProgress;
         syncedKillerDetectUserCount = currentKillerDetectUserCount;
         syncedKillerDetectMultiplier = currentKillerDetectMultiplier;
     }
 
-    // 모든 진짜 증거 + 살인마 탐지 목표를 만족했는지 검사하고 컴퓨터를 활성화한다.
+    // 통합 목표 게이지가 완료됐는지 검사하고 컴퓨터를 활성화한다.
     private void CheckUpload()
     {
         if (!NetworkServer.active)
@@ -419,29 +457,13 @@ public class GameManager : NetworkBehaviour
         if (canUpload || isWaitingGateOpen || gateOpened)
             return;
 
-        int needCount = GetNeedCount();
-
-        if (needCount <= 0)
+        // 이제 업로드 조건은 통합 목표 게이지 100% 하나다.
+        if (!IsObjectiveComplete)
             return;
-
-        // 조건 1. 진짜 증거를 모두 찾아야 한다.
-        if (foundEvidenceCount < needCount)
-            return;
-
-        // 조건 2. 살인마 탐지 목표를 완료해야 한다.
-        if (!IsKillerDetectComplete)
-        {
-            Debug.Log(
-                $"[GameManager] 증거는 완료됐지만 살인마 탐지 목표 미완료: " +
-                $"{KillerDetectProgress:F1}/{needKillerDetectTime:F1}"
-            );
-
-            return;
-        }
 
         canUpload = true;
 
-        Debug.Log("[GameManager] 증거 + 살인마 탐지 목표 완료. 업로드 컴퓨터 활성화.");
+        Debug.Log("[GameManager] 통합 목표 완료. 업로드 컴퓨터 활성화.");
 
         for (int i = 0; i < uploadComputers.Length; i++)
         {
@@ -584,6 +606,7 @@ public class GameManager : NetworkBehaviour
         return zones.Count;
     }
 
+    // 생존자 결과창 위치를 생존자 인덱스에 맞게 반환한다.
     [Server]
     public Transform GetSurvivorResultPoint(SurvivorMove targetSurvivor)
     {
