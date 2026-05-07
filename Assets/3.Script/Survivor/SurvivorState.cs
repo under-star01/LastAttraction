@@ -12,7 +12,8 @@ public enum SurvivorCondition
     Dead
 }
 
-// 생존자 성별에 따라 신음소리를 다르게 재생하기 위한 값
+// 생존자 성별
+// 다칠 때 소리, 다운 피격음, 신음소리를 남자 / 여자 캐릭터별로 다르게 재생하기 위해 사용한다.
 public enum SurvivorGender
 {
     Male,
@@ -33,13 +34,13 @@ public class SurvivorState : NetworkBehaviour
     [SerializeField] private SurvivorGender gender = SurvivorGender.Male;
 
     [Header("오디오")]
-    [SerializeField] private AudioKey hitSoundKey = AudioKey.SurvivorHit;                  // 다칠 때 맞는 소리
-    [SerializeField] private AudioKey downHitSoundKey = AudioKey.SurvivorDownHit;          // 다운될 때 맞는 소리
-    [SerializeField] private AudioKey maleGroanSoundKey = AudioKey.SurvivorMaleGroan;      // 남자 신음소리
-    [SerializeField] private AudioKey femaleGroanSoundKey = AudioKey.SurvivorFemaleGroan;  // 여자 신음소리
-    [SerializeField] private float groanInterval = 2f;                                     // 신음소리 반복 간격
-
-    private float groanTimer;
+    [SerializeField] private AudioKey maleHitSoundKey = AudioKey.SurvivorMaleHit;                 // 남자 다칠 때 / 죽을 때 소리
+    [SerializeField] private AudioKey femaleHitSoundKey = AudioKey.SurvivorFemaleHit;             // 여자 다칠 때 / 죽을 때 소리
+    [SerializeField] private AudioKey maleDownHitSoundKey = AudioKey.SurvivorMaleDownHit;         // 남자 다운 피격 소리
+    [SerializeField] private AudioKey femaleDownHitSoundKey = AudioKey.SurvivorFemaleDownHit;     // 여자 다운 피격 소리
+    [SerializeField] private AudioKey maleGroanSoundKey = AudioKey.SurvivorMaleGroan;             // 남자 신음소리
+    [SerializeField] private AudioKey femaleGroanSoundKey = AudioKey.SurvivorFemaleGroan;         // 여자 신음소리
+    [SerializeField] private float groanInterval = 2f;                                            // 신음 반복 간격
 
     [Header("감옥 시간")]
     [SerializeField] private float prisonFullTime = 120f;
@@ -50,6 +51,8 @@ public class SurvivorState : NetworkBehaviour
 
     private int normalLayer;
     private int downedLayer;
+
+    private float groanTimer;
 
     [SyncVar(hook = nameof(OnConditionChanged))]
     private SurvivorCondition currentCondition = SurvivorCondition.Healthy;
@@ -107,7 +110,7 @@ public class SurvivorState : NetworkBehaviour
     private void Update()
     {
         // 신음소리는 서버에서만 계산한다.
-        // 그래야 모든 클라이언트에서 중복으로 재생되지 않는다.
+        // 서버에서만 오디오 요청을 보내야 클라이언트마다 중복 재생되지 않는다.
         if (isServer)
             UpdateGroanSound();
 
@@ -136,6 +139,11 @@ public class SurvivorState : NetworkBehaviour
         if (!IsDowned)
         {
             currentCondition = SurvivorCondition.Downed;
+
+            // 디버그로 바로 다운 상태가 될 때는 맞아서 다운된 상황이 아니므로
+            // 다운 피격 소리는 재생하지 않고 신음 타이머만 맞춘다.
+            groanTimer = groanInterval;
+
             ApplyAllStateServer();
         }
 
@@ -158,8 +166,6 @@ public class SurvivorState : NetworkBehaviour
         StopAllCoroutines();
 
         // 피격되는 순간 서버 상태와 소유 클라이언트의 실제 Hold 상호작용을 같이 끊는다.
-        // 서버에서 ForceStopInteract()만 호출하면 로컬 activeInteractable이 없어
-        // Evidence, Upload, Heal, Prison 진행이 계속 남을 수 있다.
         if (interactor != null)
             interactor.ForceStopInteractFromServer();
 
@@ -173,11 +179,11 @@ public class SurvivorState : NetworkBehaviour
             currentCondition = SurvivorCondition.Injured;
             ApplyAllStateServer();
 
-            // 다칠 때 맞는 소리.
-            // 3D로 재생하고 AudioManager의 Max Distance를 짧게 설정해서 가까운 사람만 듣게 한다.
-            PlayWorld3DSound(hitSoundKey);
+            // 맞아서 다칠 때는 성별에 맞는 일반 피격 소리를 재생한다.
+            // AudioManager의 Max Distance를 짧게 잡으면 가까운 사람만 듣는다.
+            PlayWorld3DSound(GetHitSoundKey());
 
-            // 피격 소리와 신음소리가 바로 겹치지 않게 2초 뒤부터 신음 시작
+            // 피격음과 신음소리가 바로 겹치지 않게 2초 뒤부터 신음 시작
             groanTimer = groanInterval;
 
             if (actionState != null)
@@ -192,9 +198,9 @@ public class SurvivorState : NetworkBehaviour
             currentCondition = SurvivorCondition.Downed;
             ApplyAllStateServer();
 
-            // 다운될 때 맞는 소리.
-            // 이것도 3D지만 AudioManager의 Max Distance를 크게 설정해서 멀리서도 들리게 한다.
-            PlayWorld3DSound(downHitSoundKey);
+            // 꼭 맞아서 Downed 상태가 되는 순간에만 성별 다운 피격 소리를 재생한다.
+            // AudioManager의 Max Distance를 크게 잡아서 맵 전체에 들리는 3D 사운드처럼 만든다.
+            PlayWorld3DSound(GetDownHitSoundKey());
 
             // 다운 피격음과 신음소리가 바로 겹치지 않게 2초 뒤부터 신음 시작
             groanTimer = groanInterval;
@@ -228,7 +234,7 @@ public class SurvivorState : NetworkBehaviour
 
         currentCondition = SurvivorCondition.Injured;
 
-        // 회복 직후 바로 신음이 겹치지 않게 2초 뒤부터 시작
+        // 다운에서 부상으로 회복된 뒤에도 Injured 상태이므로 2초 뒤부터 신음 시작
         groanTimer = groanInterval;
 
         ApplyAllStateServer();
@@ -312,8 +318,15 @@ public class SurvivorState : NetworkBehaviour
     [Server]
     public void Die()
     {
+        if (IsDead)
+            return;
+
         currentPrisonId = 0;
         currentCondition = SurvivorCondition.Dead;
+
+        // 죽는 소리는 맞아서 다칠 때 소리와 통일한다.
+        // 따라서 성별에 맞는 일반 피격 소리를 재생한다.
+        PlayWorld3DSound(GetHitSoundKey());
 
         // 사망하면 신음소리를 멈춘다.
         groanTimer = 0f;
@@ -342,6 +355,10 @@ public class SurvivorState : NetworkBehaviour
 
         currentPrisonId = 0;
         currentCondition = SurvivorCondition.Dead;
+
+        // 감옥 시간 초과 사망도 죽는 소리는 일반 피격 소리와 통일한다.
+        // 맞아서 Downed가 되는 상황이 아니므로 성별 다운 피격 소리는 재생하지 않는다.
+        PlayWorld3DSound(GetHitSoundKey());
 
         // 사망하면 신음소리를 멈춘다.
         groanTimer = 0f;
@@ -426,6 +443,30 @@ public class SurvivorState : NetworkBehaviour
             AudioDimension.Sound3D,
             transform.position
         );
+    }
+
+    // 현재 생존자 성별에 맞는 일반 피격 소리 AudioKey를 반환한다.
+    private AudioKey GetHitSoundKey()
+    {
+        if (gender == SurvivorGender.Male)
+            return maleHitSoundKey;
+
+        if (gender == SurvivorGender.Female)
+            return femaleHitSoundKey;
+
+        return AudioKey.None;
+    }
+
+    // 현재 생존자 성별에 맞는 다운 피격 소리 AudioKey를 반환한다.
+    private AudioKey GetDownHitSoundKey()
+    {
+        if (gender == SurvivorGender.Male)
+            return maleDownHitSoundKey;
+
+        if (gender == SurvivorGender.Female)
+            return femaleDownHitSoundKey;
+
+        return AudioKey.None;
     }
 
     // 현재 생존자 성별에 맞는 신음소리 AudioKey를 반환한다.
