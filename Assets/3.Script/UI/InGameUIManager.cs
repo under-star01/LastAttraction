@@ -311,26 +311,18 @@ public class InGameUIManager : MonoBehaviour
         if (resultUI != null)
             resultUI.SetActive(true);
 
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         Debug.Log("[InGameUIManager] 기존 UI 비활성화 / ResultUI 활성화");
     }
 
     public void OnClickReturnLobby()
     {
-        if (NetworkClient.localPlayer == null)
-        {
-            Debug.LogWarning("[InGameUIManager] localPlayer가 없어 Lobby 복귀 요청을 보낼 수 없습니다.");
+        if (CustomNetworkManager.Instance == null)
             return;
-        }
 
-        ReturnLobbyRequester requester = NetworkClient.localPlayer.GetComponent<ReturnLobbyRequester>();
-
-        if (requester == null)
-        {
-            Debug.LogWarning("[InGameUIManager] localPlayer에 ReturnLobbyRequester가 없습니다.");
-            return;
-        }
-
-        requester.RequestReturnLobby();
+        CustomNetworkManager.Instance.LeaveCurrentGameToLobby();
     }
 
     // DB 닉네임 가져오기

@@ -11442,7 +11442,6 @@ GameObject:
   - component: {fileID: 8329270682292632505}
   - component: {fileID: 1429254782650784602}
   - component: {fileID: 4930780877601674375}
-  - component: {fileID: 2033114240453703328}
   m_Layer: 8
   m_Name: KillerClown
   m_TagString: Killer
@@ -11721,18 +11720,3 @@ MonoBehaviour:
   syncInterval: 0
   clientAuthority: 0
   animator: {fileID: 7977360239449139302}
---- !u!114 &2033114240453703328
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9199881581034011608}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a5929914bf1453a4aa93c2ed6c2746cf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ReturnLobbyRequester
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0

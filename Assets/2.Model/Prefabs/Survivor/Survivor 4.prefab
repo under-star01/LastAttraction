@@ -3380,7 +3380,6 @@ GameObject:
   - component: {fileID: 5747250994685647726}
   - component: {fileID: 2069850198979918394}
   - component: {fileID: 7524002875152657783}
-  - component: {fileID: 8812007308618309124}
   m_Layer: 6
   m_Name: Survivor 4
   m_TagString: Survivor
@@ -3571,6 +3570,7 @@ MonoBehaviour:
   move: {fileID: 8330642673507539603}
   act: {fileID: 5606561105763548437}
   state: {fileID: 0}
+  moveState: {fileID: 0}
   skillCamera: {fileID: 899376854374036102}
   skillUI: {fileID: 0}
   localCameraModel: {fileID: 3098999991361754740}
@@ -3595,6 +3595,7 @@ MonoBehaviour:
   normalFrameColor: {r: 1, g: 1, b: 1, a: 1}
   detectedFrameColor: {r: 1, g: 0, b: 0, a: 1}
   detectedHoldTime: 0.25
+  skillReuseDelay: 1
   isRecordingKiller: 0
 --- !u!95 &7436738972924962348
 Animator:
@@ -3716,21 +3717,6 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   portrait: {fileID: 21300000, guid: c248d762443fd154b91c61b828b0b26b, type: 3}
---- !u!114 &8812007308618309124
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4072989509792940907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a5929914bf1453a4aa93c2ed6c2746cf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ReturnLobbyRequester
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
 --- !u!1 &4074163626032848579
 GameObject:
   m_ObjectHideFlags: 0
@@ -4716,7 +4702,7 @@ Transform:
   m_GameObject: {fileID: 5670456167938367137}
   serializedVersion: 2
   m_LocalRotation: {x: -0.0075961305, y: 0.99240386, z: -0.08682413, w: -0.08682413}
-  m_LocalPosition: {x: 1.6, y: 1.5, z: 2.8}
+  m_LocalPosition: {x: 1.65, y: 1.5, z: 2.8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
