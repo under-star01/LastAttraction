@@ -111,7 +111,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa957e0dacb5eb34aa7df5ae7a794a38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EvidenceZone
-  evidencePrefab: {fileID: 2943497374519219544, guid: 5fa02998e17b8624e990278f2b2b7660, type: 3}
+  evidenceType: 5
+  customDisplayName: 
+  icon: {fileID: 0}
+  evidencePrefab: {fileID: 2943497374519219544, guid: 04e1a47478a58c441afb72653ba7a8bf, type: 3}
   evidenceSpawnPoints:
   - {fileID: 5858717411729659695}
   - {fileID: 3125897704500228746}
