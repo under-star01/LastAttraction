@@ -17,6 +17,9 @@ public class Window : NetworkBehaviour, IInteractable
     [SerializeField] private float killerVaultSpeed = 2.5f;    // 살인마가 넘는 속도
     [SerializeField] private float occupationRadius = 1.0f;    // 반대편 점유 검사 반경
 
+    [Header("오디오")]
+    [SerializeField] private AudioKey vaultSoundKey = AudioKey.ObjectVault; // 창틀 넘는 소리
+
     // 현재 창틀이 사용 중인지 서버에서 동기화한다.
     [SyncVar] private bool isBusy;
 
@@ -222,6 +225,9 @@ public class Window : NetworkBehaviour, IInteractable
         // 실제 넘기 상태를 켠다.
         isVaulting = true;
 
+        // 창틀 넘기 소리를 모든 클라이언트에게 3D 사운드로 재생한다.
+        PlayOneShotSound(vaultSoundKey, transform.position);
+
         // 행동 상태를 Vault로 바꿔 다른 행동을 막는다.
         if (act != null)
         {
@@ -327,6 +333,9 @@ public class Window : NetworkBehaviour, IInteractable
 
         // 실제 넘기 상태를 켠다.
         isVaulting = true;
+
+        // 창틀 넘기 소리를 모든 클라이언트에게 3D 사운드로 재생한다.
+        PlayOneShotSound(vaultSoundKey, transform.position);
 
         // 창틀을 바라보는 방향을 구한다.
         Vector3 lookDir = GetLook(sidePoint);
@@ -612,6 +621,20 @@ public class Window : NetworkBehaviour, IInteractable
         // 저장된 로컬 플레이어가 나간 플레이어와 같으면 참조를 정리한다.
         if (localInteractor == interactor)
             localInteractor = null;
+    }
+
+    // 서버에서 일회성 3D 사운드를 모든 클라이언트에게 재생한다.
+    [Server]
+    private void PlayOneShotSound(AudioKey key, Vector3 position)
+    {
+        if (key == AudioKey.None)
+            return;
+
+        NetworkAudioManager.PlayAudioForEveryone(
+            key,
+            AudioDimension.Sound3D,
+            position
+        );
     }
 
     private void OnDrawGizmosSelected()

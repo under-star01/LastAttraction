@@ -71,6 +71,21 @@ MonoBehaviour:
     volume: 1
     minDistance: 1
     maxDistance: 16
+  - key: 6
+    clip: {fileID: 8300000, guid: 659cec76caace0a428c7e7e9f6f3af73, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 16
+  - key: 7
+    clip: {fileID: 8300000, guid: 7f3fc83b9277ce6449539eaf918d1ac3, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 16
+  - key: 8
+    clip: {fileID: 8300000, guid: 5ebd4ebbf09eca84bbdc67c7919c02a5, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 16
   audioSource2D: {fileID: 8766702895734314766}
 --- !u!82 &8766702895734314766
 AudioSource:
