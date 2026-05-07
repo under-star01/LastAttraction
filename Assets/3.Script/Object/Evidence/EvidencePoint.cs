@@ -2,39 +2,32 @@ using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
-// 증거 종류다.
-// 결과창, 목표 UI, 로그 표시 등에 사용할 수 있다.
-public enum EvidenceType
-{
-    None,
-    MissingPoster,       // 실종자 전단
-    StaffLogbook,        // 직원 근무일지
-    BrokenCamera,        // 부서진 CCTV
-    BloodStainedTicket,  // 피 묻은 입장권
-    VoiceRecorder        // 낡은 녹음기
-}
-
 public class EvidencePoint : NetworkBehaviour, IInteractable
 {
     // 증거는 누르고 있는 동안 진행되는 Hold 타입 상호작용이다.
     public InteractType InteractType => InteractType.Hold;
 
-    [Header("증거 정보")]
-    [SerializeField] private EvidenceType evidenceType = EvidenceType.None; // 이 프리팹의 증거 종류
-    [SerializeField] private string displayName;                            // 결과창 / UI에 표시할 이름
-    [SerializeField] private Sprite icon;                                   // 결과창 / UI에 표시할 아이콘
-
     [Header("조사 설정")]
-    [SerializeField] private float interactTime = 10f;                      // 증거 조사 완료까지 걸리는 시간
+    [SerializeField] private float interactTime = 10f;
 
     [Header("QTE 설정")]
-    [SerializeField] private int minQteCount = 2;                           // 조사 중 최소 QTE 횟수
-    [SerializeField] private int maxQteCount = 4;                           // 조사 중 최대 QTE 횟수
-    [SerializeField] private float qteFailStunTime = 3f;                    // QTE 실패 시 스턴 시간
+    [SerializeField] private int minQteCount = 2;
+    [SerializeField] private int maxQteCount = 4;
+    [SerializeField] private float qteFailStunTime = 3f;
 
-    // 이 증거가 속한 EvidenceZone이다.
+    // 이 증거 상자가 속한 EvidenceZone이다.
     // 서버에서 완료 보고할 때 사용한다.
     private EvidenceZone zone;
+
+    // EvidenceZone에서 받은 증거 종류다.
+    // 공용 상자 프리팹을 쓰기 때문에 타입은 Zone에서 주입받는다.
+    [SyncVar]
+    private EvidenceType evidenceType = EvidenceType.None;
+
+    // EvidenceZone에서 받은 표시 이름이다.
+    // 클라이언트 UI나 결과창에서 사용할 수 있게 SyncVar로 둔다.
+    [SyncVar]
+    private string displayName;
 
     // 조사 완료 여부를 서버에서 동기화한다.
     [SyncVar(hook = nameof(OnCompletedChanged))]
@@ -87,8 +80,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         }
     }
 
-    public Sprite Icon => icon;
-
     public bool IsInteractingForUI => isInteracting;
     public uint CurrentInteractorNetId => currentInteractorNetId;
 
@@ -103,16 +94,17 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         }
     }
 
-    // EvidenceZone이 서버에서 증거를 생성한 직후 호출한다.
-    // 증거 타입, 이름, 아이콘은 이 EvidencePoint 프리팹에 이미 들어있다.
+    // EvidenceZone이 서버에서 증거 상자를 생성한 직후 호출한다.
+    // 이 구조에서는 생성된 EvidencePoint가 무조건 진짜 증거다.
     [Server]
-    public void ServerInit(EvidenceZone ownerZone)
+    public void ServerInit(EvidenceZone ownerZone, EvidenceType type, string nameText)
     {
         zone = ownerZone;
+        evidenceType = type;
+        displayName = nameText;
     }
 
     // 예전 코드 호환용이다.
-    // 기존 EvidenceZone 구조에서 호출하던 SetZone을 유지한다.
     public void SetZone(EvidenceZone evidenceZone)
     {
         zone = evidenceZone;
