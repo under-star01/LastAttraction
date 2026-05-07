@@ -1,6 +1,7 @@
 using UnityEngine;
 using Mirror;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 public class KillerDetector : NetworkBehaviour
 {
@@ -18,6 +19,7 @@ public class KillerDetector : NetworkBehaviour
     private int _boxDefaultLayerInt;
     private int _boxSilhouetteLayerInt;
     private List<GameObject> evidenceBoxes = new();
+    private bool _isBoxFound = false; // 박스를 찾았는지 확인하는 플래그
 
     //private bool isActive = false;
     private float timer = 0f;
@@ -39,6 +41,30 @@ public class KillerDetector : NetworkBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    // [추가] 씬 로드 이벤트 해제
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    // [추가] 씬이 바뀔 때마다 실행되는 함수
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // 인게임 씬에 진입했을 때 (씬 이름이 "InGame"이라고 가정)
+        if (scene.name == "InGame")
+        {
+            _isBoxFound = false; // 플래그 리셋
+            evidenceBoxes.Clear();
+            // 여기서 바로 찾지 않는 이유는 박스가 씬 로드 직후 1프레임 뒤에 생성될 수도 있기 때문입니다.
+            // 실제 검색은 Update의 TryFindBoxes에서 안전하게 진행됩니다.
+        }
+    }
+
     private void Update()
     {
         if (!isLocalPlayer || killerState == null) return;
@@ -47,17 +73,27 @@ public class KillerDetector : NetworkBehaviour
         if (timer < updateInterval) return;
         timer = 0f;
 
-        // 1. 상자 아웃라인 처리 (분노와 상관없이 상시 실행)
+        // 인게임 씬인데 아직 박스를 못 찾았다면 검색 시도
+        if (!_isBoxFound && SceneManager.GetActiveScene().name == "InGame")
+        {
+            TryFindBoxes();
+            return;
+        }
+
         HandleBoxOutlines();
 
-        // 2. 생존자 감지 처리 (분노 상태일 때만 실행)
-        if (killerState.IsRaging)
+        if (killerState.IsRaging) DetectSurvivors();
+        else if (activeEffects.Count > 0) ClearAllEffects();
+    }
+
+    private void TryFindBoxes()
+    {
+        GameObject[] boxes = GameObject.FindGameObjectsWithTag(boxTag);
+        if (boxes.Length > 0)
         {
-            DetectSurvivors();
-        }
-        else if (activeEffects.Count > 0)
-        {
-            ClearAllEffects();
+            evidenceBoxes.AddRange(boxes);
+            _isBoxFound = true;
+            Debug.Log($"[KillerDetector] {boxes.Length}개의 증거물 검색 완료 (InGame 씬)");
         }
     }
 
@@ -81,6 +117,8 @@ public class KillerDetector : NetworkBehaviour
 
     private void HandleBoxOutlines()
     {
+        if (!_isBoxFound) return;
+
         foreach (var box in evidenceBoxes)
         {
             if (box == null) continue;
