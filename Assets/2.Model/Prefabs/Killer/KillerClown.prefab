@@ -1359,7 +1359,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3725430963567773573}
   - component: {fileID: 8121535058403711786}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: LobbyCam
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3314,7 +3314,7 @@ GameObject:
   - component: {fileID: 7373386096958422831}
   - component: {fileID: 5329497903047732280}
   - component: {fileID: 7227212330243655475}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: 'NormalCam '
   m_TagString: Untagged
   m_Icon: {fileID: 0}

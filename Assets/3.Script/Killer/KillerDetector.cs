@@ -94,6 +94,7 @@ public class KillerDetector : NetworkBehaviour
             evidenceBoxes.AddRange(boxes);
             _isBoxFound = true;
             Debug.Log($"[KillerDetector] {boxes.Length}개의 증거물 검색 완료 (InGame 씬)");
+            Camera.main.cullingMask |= (1 << LayerMask.NameToLayer("BoxOutline"));
         }
     }
 
