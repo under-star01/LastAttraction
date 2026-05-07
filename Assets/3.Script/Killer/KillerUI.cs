@@ -41,8 +41,8 @@ public class KillerUI : MonoBehaviour
             trapTarget = SceneBinder.Instance.GetKillerTrapTarget();
         }
 
-        if (attackTarget == null) attackTarget = GameObject.Find("Killer_Skill1");
-        if (trapTarget == null) trapTarget = GameObject.Find("Killer_Skill2");
+        if (attackTarget == null) attackTarget = GameObject.Find("Killer_Skill_1_Fill");
+        if (trapTarget == null) trapTarget = GameObject.Find("Killer_Skill_2_Fill");
 
         if (attackTarget != null) attackIcon = attackTarget.GetComponentInChildren<Image>();
         if (trapTarget != null) trapFillIcon = trapTarget.GetComponentInChildren<Image>();

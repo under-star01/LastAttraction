@@ -135,19 +135,28 @@ public class TrapHandler : NetworkBehaviour
             {
                 ghostInstance = Instantiate(trapPrefab);
 
+                SetLayerRecursive(ghostInstance, 2);
+
                 if (ghostInstance.TryGetComponent(out TrapNode node))
                     node.enabled = false;
 
                 SetGhostVisual(ghostInstance, 0.4f);
             }
-
-            //state.CmdChangeKillerState(KillerCondition.Planting);
         }
         else
         {
             CleanupGhost();
             if (state.CurrentCondition != KillerCondition.Idle)
                 state.CmdChangeKillerState(KillerCondition.Idle);
+        }
+    }
+
+    private void SetLayerRecursive(GameObject obj, int newLayer)
+    {
+        obj.layer = newLayer;
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursive(child.gameObject, newLayer);
         }
     }
 
