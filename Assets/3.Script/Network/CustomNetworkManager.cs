@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Mirror;
 using kcp2k;
+using UnityEngine.SceneManagement;
 
 // 어떤 역할로 입장할지
 public enum JoinRole
@@ -446,8 +447,35 @@ public class CustomNetworkManager : NetworkManager
 
         base.OnServerDisconnect(conn);
 
-        if (NetworkServer.active)
+        if (!NetworkServer.active)
+            return;
+
+        if (isGameInProgress && joinedRoles.Count == 0)
+        {
+            StartCoroutine(ReturnServerToLobbyWhenEmpty());
+            return;
+        }
+
+        if (!isGameInProgress)
             BroadcastLobbyState();
+    }
+
+    private IEnumerator ReturnServerToLobbyWhenEmpty()
+    {
+        if (isReturningLobby)
+            yield break;
+
+        isReturningLobby = true;
+
+        yield return null;
+
+        joinedRoles.Clear();
+        survivorPrefabIndexByConnection.Clear();
+        survivorReadyByConnection.Clear();
+
+        ServerChangeScene("Lobby");
+
+        Debug.Log("[CustomNetworkManager] 모든 플레이어가 나가서 서버를 Lobby로 초기화");
     }
 
     #endregion
@@ -1117,28 +1145,61 @@ public class CustomNetworkManager : NetworkManager
         }
     }
 
-    [Server]
-    public void ServerReturnToLobby()
+    public void LeaveCurrentGameToLobby()
     {
-        if (isReturningLobby)
+        if (isLeavingManually)
             return;
 
-        isReturningLobby = true;
-
-        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        if (!NetworkClient.active && !NetworkClient.isConnected)
         {
-            if (conn == null || conn.identity == null)
-                continue;
-
-            NetworkServer.Destroy(conn.identity.gameObject);
+            ResetClientSearchState();
+            SceneManager.LoadScene("Lobby");
+            return;
         }
 
-        joinedRoles.Clear();
-        survivorPrefabIndexByConnection.Clear();
-        survivorReadyByConnection.Clear();
+        isLeavingManually = true;
+        isSearchingServer = false;
+        joinApproved = false;
+        isJoiningFinalRoom = false;
+        selectedPort = 0;
 
-        ServerChangeScene("Lobby");
-        Debug.Log("[CustomNetworkManager] Lobby 씬으로 복귀");
+        LobbyUIManager.Instance?.ShowLoading(false);
+
+        if (connectRoutine != null)
+        {
+            StopCoroutine(connectRoutine);
+            connectRoutine = null;
+        }
+
+        StartCoroutine(LeaveCurrentGameRoutine());
+    }
+
+    private IEnumerator LeaveCurrentGameRoutine()
+    {
+        // 1. 로컬 클라이언트 화면만 블랙아웃
+        if (ChangeSceneUI.Instance != null)
+            ChangeSceneUI.Instance.Show(true);
+
+        // Fade In 시간 대기
+        yield return new WaitForSecondsRealtime(1f);
+
+        // 2. 서버 연결 종료
+        StopClient();
+
+        while (NetworkClient.active || NetworkClient.isConnected)
+            yield return null;
+
+        ResetClientSearchState();
+
+        // 3. Lobby 씬 로드
+        SceneManager.LoadScene("Lobby");
+
+        // Lobby 씬이 로드될 시간 1프레임 대기
+        yield return null;
+
+        // 4. 블랙아웃 해제
+        if (ChangeSceneUI.Instance != null)
+            ChangeSceneUI.Instance.Show(false);
     }
 
     #endregion
