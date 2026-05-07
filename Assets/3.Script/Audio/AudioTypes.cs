@@ -17,15 +17,26 @@ public enum AudioDimension
 }
 
 // 오디오 종류 이름
-// 코드에서는 이 enum 값으로 소리를 찾는다
+// 코드에서는 이 enum 값으로 소리를 찾는다.
 public enum AudioKey
 {
     None,
 
-    //생존자
+    // 생존자 기본 상호작용
     SurvivorFootstep,       // 발소리
     SurvivorHealLoop,       // 힐
     SurvivorEvidenceLoop,   // 증거
     SurvivorUploadLoop,     // 업로드
-    SurvivorPrisonLoop      // 감옥
+    SurvivorPrisonLoop,     // 감옥 상호작용 루프
+
+    // 생존자 피격 / 신음
+    SurvivorHit,            // 맞아서 다칠 때 소리
+    SurvivorDownHit,        // 맞아서 다운될 때 소리
+    SurvivorMaleGroan,      // 남자 생존자 신음소리
+    SurvivorFemaleGroan,    // 여자 생존자 신음소리
+
+    // 오브젝트
+    ObjectVault,            // 판자 / 창틀 넘는 소리
+    PalletDrop,             // 판자 내리는 소리
+    PalletBreak             // 판자 부수는 소리
 }

@@ -12,6 +12,13 @@ public enum SurvivorCondition
     Dead
 }
 
+// 생존자 성별에 따라 신음소리를 다르게 재생하기 위한 값
+public enum SurvivorGender
+{
+    Male,
+    Female
+}
+
 public class SurvivorState : NetworkBehaviour
 {
     [Header("참조")]
@@ -21,6 +28,18 @@ public class SurvivorState : NetworkBehaviour
     [Header("피격 연출")]
     [SerializeField] private float hitDuration = 0.8f;      // Healthy -> Injured 일반 피격 애니메이션 시간
     [SerializeField] private float downHitDuration = 3f;    // Injured -> Downed 다운 피격 시간
+
+    [Header("캐릭터 정보")]
+    [SerializeField] private SurvivorGender gender = SurvivorGender.Male;
+
+    [Header("오디오")]
+    [SerializeField] private AudioKey hitSoundKey = AudioKey.SurvivorHit;                  // 다칠 때 맞는 소리
+    [SerializeField] private AudioKey downHitSoundKey = AudioKey.SurvivorDownHit;          // 다운될 때 맞는 소리
+    [SerializeField] private AudioKey maleGroanSoundKey = AudioKey.SurvivorMaleGroan;      // 남자 신음소리
+    [SerializeField] private AudioKey femaleGroanSoundKey = AudioKey.SurvivorFemaleGroan;  // 여자 신음소리
+    [SerializeField] private float groanInterval = 2f;                                     // 신음소리 반복 간격
+
+    private float groanTimer;
 
     [Header("감옥 시간")]
     [SerializeField] private float prisonFullTime = 120f;
@@ -87,6 +106,11 @@ public class SurvivorState : NetworkBehaviour
 
     private void Update()
     {
+        // 신음소리는 서버에서만 계산한다.
+        // 그래야 모든 클라이언트에서 중복으로 재생되지 않는다.
+        if (isServer)
+            UpdateGroanSound();
+
         if (!isLocalPlayer)
             return;
 
@@ -149,6 +173,13 @@ public class SurvivorState : NetworkBehaviour
             currentCondition = SurvivorCondition.Injured;
             ApplyAllStateServer();
 
+            // 다칠 때 맞는 소리.
+            // 3D로 재생하고 AudioManager의 Max Distance를 짧게 설정해서 가까운 사람만 듣게 한다.
+            PlayWorld3DSound(hitSoundKey);
+
+            // 피격 소리와 신음소리가 바로 겹치지 않게 2초 뒤부터 신음 시작
+            groanTimer = groanInterval;
+
             if (actionState != null)
                 StartCoroutine(actionState.HitRoutine(hitDuration));
 
@@ -160,6 +191,13 @@ public class SurvivorState : NetworkBehaviour
         {
             currentCondition = SurvivorCondition.Downed;
             ApplyAllStateServer();
+
+            // 다운될 때 맞는 소리.
+            // 이것도 3D지만 AudioManager의 Max Distance를 크게 설정해서 멀리서도 들리게 한다.
+            PlayWorld3DSound(downHitSoundKey);
+
+            // 다운 피격음과 신음소리가 바로 겹치지 않게 2초 뒤부터 신음 시작
+            groanTimer = groanInterval;
 
             if (actionState != null)
                 StartCoroutine(actionState.DownHitRoutine(downHitDuration));
@@ -175,6 +213,10 @@ public class SurvivorState : NetworkBehaviour
             return;
 
         currentCondition = SurvivorCondition.Healthy;
+
+        // 건강 상태가 되면 신음소리를 멈춘다.
+        groanTimer = 0f;
+
         ApplyAllStateServer();
     }
 
@@ -185,6 +227,10 @@ public class SurvivorState : NetworkBehaviour
             return;
 
         currentCondition = SurvivorCondition.Injured;
+
+        // 회복 직후 바로 신음이 겹치지 않게 2초 뒤부터 시작
+        groanTimer = groanInterval;
+
         ApplyAllStateServer();
     }
 
@@ -220,6 +266,9 @@ public class SurvivorState : NetworkBehaviour
         currentPrisonId = prisonId;
         currentCondition = SurvivorCondition.Imprisoned;
 
+        // 감옥에 들어간 직후 바로 신음이 겹치지 않게 2초 뒤부터 시작
+        groanTimer = groanInterval;
+
         if (actionState != null)
         {
             actionState.SetInteract(false);
@@ -242,6 +291,10 @@ public class SurvivorState : NetworkBehaviour
             prisonStep = 2;
 
         currentCondition = SurvivorCondition.Injured;
+
+        // 감옥에서 나온 뒤 Injured 상태이므로 2초 뒤부터 신음 시작
+        groanTimer = groanInterval;
+
         ApplyAllStateServer();
     }
 
@@ -264,6 +317,9 @@ public class SurvivorState : NetworkBehaviour
 
         currentPrisonId = 0;
         currentCondition = SurvivorCondition.Dead;
+
+        // 사망하면 신음소리를 멈춘다.
+        groanTimer = 0f;
 
         if (interactor != null)
             interactor.ForceStopInteractFromServer();
@@ -298,6 +354,9 @@ public class SurvivorState : NetworkBehaviour
         currentPrisonId = 0;
         currentCondition = SurvivorCondition.Dead;
 
+        // 사망하면 신음소리를 멈춘다.
+        groanTimer = 0f;
+
         if (interactor != null)
             interactor.ForceStopInteractFromServer();
 
@@ -330,6 +389,9 @@ public class SurvivorState : NetworkBehaviour
             return;
 
         isEscaping = true;
+
+        // 탈출 상태에서는 신음소리를 멈춘다.
+        groanTimer = 0f;
 
         StopAllCoroutines();
 
@@ -368,6 +430,69 @@ public class SurvivorState : NetworkBehaviour
     public void ApplyTrapStun(float duration)
     {
         ApplyStun(duration);
+    }
+
+    // 서버에서 모든 클라이언트에게 월드 위치 기준 3D 사운드를 재생한다.
+    // 실제로 얼마나 멀리 들리는지는 AudioManager의 AudioData Max Distance에서 조절한다.
+    [Server]
+    private void PlayWorld3DSound(AudioKey key)
+    {
+        if (key == AudioKey.None)
+            return;
+
+        NetworkAudioManager.PlayAudioForEveryone(
+            key,
+            AudioDimension.Sound3D,
+            transform.position
+        );
+    }
+
+    // 현재 생존자 성별에 맞는 신음소리 AudioKey를 반환한다.
+    private AudioKey GetGroanSoundKey()
+    {
+        if (gender == SurvivorGender.Male)
+            return maleGroanSoundKey;
+
+        if (gender == SurvivorGender.Female)
+            return femaleGroanSoundKey;
+
+        return AudioKey.None;
+    }
+
+    // Injured / Downed / Imprisoned 상태일 때 2초마다 성별에 맞는 신음소리를 3D로 재생한다.
+    [Server]
+    private void UpdateGroanSound()
+    {
+        // 사망 / 탈출 중에는 신음소리를 내지 않는다.
+        if (IsDead || IsEscaping)
+        {
+            groanTimer = 0f;
+            return;
+        }
+
+        // 다침 / 다운 / 감옥 상태일 때만 신음소리를 낸다.
+        bool shouldGroan = IsInjured || IsDowned || IsImprisoned;
+
+        if (!shouldGroan)
+        {
+            groanTimer = 0f;
+            return;
+        }
+
+        AudioKey groanKey = GetGroanSoundKey();
+
+        if (groanKey == AudioKey.None)
+            return;
+
+        groanTimer -= Time.deltaTime;
+
+        if (groanTimer > 0f)
+            return;
+
+        // 신음소리는 3D로 재생하고 Max Distance를 짧게 잡아서 가까운 사람만 듣게 한다.
+        PlayWorld3DSound(groanKey);
+
+        groanTimer = groanInterval;
     }
 
     // 서버에서 상태 즉시 반영
