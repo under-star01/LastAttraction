@@ -38,9 +38,8 @@ public class SurvivorState : NetworkBehaviour
     [SerializeField] private AudioKey femaleHitSoundKey = AudioKey.SurvivorFemaleHit;             // 여자 다칠 때 / 죽을 때 소리
     [SerializeField] private AudioKey maleDownHitSoundKey = AudioKey.SurvivorMaleDownHit;         // 남자 다운 피격 소리
     [SerializeField] private AudioKey femaleDownHitSoundKey = AudioKey.SurvivorFemaleDownHit;     // 여자 다운 피격 소리
-    [SerializeField] private AudioKey maleGroanSoundKey = AudioKey.SurvivorMaleGroan;             // 남자 신음소리
-    [SerializeField] private AudioKey femaleGroanSoundKey = AudioKey.SurvivorFemaleGroan;         // 여자 신음소리
-    [SerializeField] private float groanInterval = 2f;                                            // 신음 반복 간격
+    [SerializeField] private AudioKey maleGroanSoundKey = AudioKey.SurvivorMaleGroan;             // 남자 신음소리 루프
+    [SerializeField] private AudioKey femaleGroanSoundKey = AudioKey.SurvivorFemaleGroan;         // 여자 신음소리 루프
 
     [Header("감옥 시간")]
     [SerializeField] private float prisonFullTime = 120f;
@@ -52,7 +51,8 @@ public class SurvivorState : NetworkBehaviour
     private int normalLayer;
     private int downedLayer;
 
-    private float groanTimer;
+    private bool isGroanLoopPlaying;
+    private AudioKey currentGroanLoopKey = AudioKey.None;
 
     [SyncVar(hook = nameof(OnConditionChanged))]
     private SurvivorCondition currentCondition = SurvivorCondition.Healthy;
@@ -107,10 +107,16 @@ public class SurvivorState : NetworkBehaviour
             actionState.ApplyUse();
     }
 
+    public override void OnStopServer()
+    {
+        StopGroanLoopSound();
+        base.OnStopServer();
+    }
+
     private void Update()
     {
-        // 신음소리는 서버에서만 계산한다.
-        // 서버에서만 오디오 요청을 보내야 클라이언트마다 중복 재생되지 않는다.
+        // 신음소리는 서버에서만 시작/종료를 판단한다.
+        // 실제 재생은 NetworkAudioManager를 통해 모든 클라이언트에서 처리된다.
         if (isServer)
             UpdateGroanSound();
 
@@ -141,9 +147,7 @@ public class SurvivorState : NetworkBehaviour
             currentCondition = SurvivorCondition.Downed;
 
             // 디버그로 바로 다운 상태가 될 때는 맞아서 다운된 상황이 아니므로
-            // 다운 피격 소리는 재생하지 않고 신음 타이머만 맞춘다.
-            groanTimer = groanInterval;
-
+            // 다운 피격 소리는 재생하지 않는다.
             ApplyAllStateServer();
         }
 
@@ -183,9 +187,6 @@ public class SurvivorState : NetworkBehaviour
             // AudioManager의 Max Distance를 짧게 잡으면 가까운 사람만 듣는다.
             PlayWorld3DSound(GetHitSoundKey());
 
-            // 피격음과 신음소리가 바로 겹치지 않게 2초 뒤부터 신음 시작
-            groanTimer = groanInterval;
-
             if (actionState != null)
                 StartCoroutine(actionState.HitRoutine(hitDuration));
 
@@ -202,9 +203,6 @@ public class SurvivorState : NetworkBehaviour
             // AudioManager의 Max Distance를 크게 잡아서 맵 전체에 들리는 3D 사운드처럼 만든다.
             PlayWorld3DSound(GetDownHitSoundKey());
 
-            // 다운 피격음과 신음소리가 바로 겹치지 않게 2초 뒤부터 신음 시작
-            groanTimer = groanInterval;
-
             if (actionState != null)
                 StartCoroutine(actionState.DownHitRoutine(downHitDuration));
 
@@ -220,8 +218,8 @@ public class SurvivorState : NetworkBehaviour
 
         currentCondition = SurvivorCondition.Healthy;
 
-        // 건강 상태가 되면 신음소리를 멈춘다.
-        groanTimer = 0f;
+        // 건강 상태가 되면 신음 루프를 즉시 멈춘다.
+        StopGroanLoopSound();
 
         ApplyAllStateServer();
     }
@@ -233,9 +231,6 @@ public class SurvivorState : NetworkBehaviour
             return;
 
         currentCondition = SurvivorCondition.Injured;
-
-        // 다운에서 부상으로 회복된 뒤에도 Injured 상태이므로 2초 뒤부터 신음 시작
-        groanTimer = groanInterval;
 
         ApplyAllStateServer();
     }
@@ -272,9 +267,6 @@ public class SurvivorState : NetworkBehaviour
         currentPrisonId = prisonId;
         currentCondition = SurvivorCondition.Imprisoned;
 
-        // 감옥에 들어간 직후 바로 신음이 겹치지 않게 2초 뒤부터 시작
-        groanTimer = groanInterval;
-
         if (actionState != null)
         {
             actionState.SetInteract(false);
@@ -297,9 +289,6 @@ public class SurvivorState : NetworkBehaviour
             prisonStep = 2;
 
         currentCondition = SurvivorCondition.Injured;
-
-        // 감옥에서 나온 뒤 Injured 상태이므로 2초 뒤부터 신음 시작
-        groanTimer = groanInterval;
 
         ApplyAllStateServer();
     }
@@ -328,8 +317,8 @@ public class SurvivorState : NetworkBehaviour
         // 따라서 성별에 맞는 일반 피격 소리를 재생한다.
         PlayWorld3DSound(GetHitSoundKey());
 
-        // 사망하면 신음소리를 멈춘다.
-        groanTimer = 0f;
+        // 사망하면 신음 루프를 즉시 멈춘다.
+        StopGroanLoopSound();
 
         if (interactor != null)
             interactor.ForceStopInteractFromServer();
@@ -368,8 +357,8 @@ public class SurvivorState : NetworkBehaviour
         // 맞아서 Downed가 되는 상황이 아니므로 성별 다운 피격 소리는 재생하지 않는다.
         PlayWorld3DSound(GetHitSoundKey());
 
-        // 사망하면 신음소리를 멈춘다.
-        groanTimer = 0f;
+        // 사망하면 신음 루프를 즉시 멈춘다.
+        StopGroanLoopSound();
 
         if (interactor != null)
             interactor.ForceStopInteractFromServer();
@@ -404,8 +393,8 @@ public class SurvivorState : NetworkBehaviour
 
         isEscaping = true;
 
-        // 탈출 상태에서는 신음소리를 멈춘다.
-        groanTimer = 0f;
+        // 탈출 상태에서는 신음 루프를 즉시 멈춘다.
+        StopGroanLoopSound();
 
         StopAllCoroutines();
 
@@ -461,6 +450,44 @@ public class SurvivorState : NetworkBehaviour
         );
     }
 
+    // 신음 루프 사운드를 시작한다.
+    // ownerNetId를 넘겨서 AudioManager가 이 생존자 Transform에 사운드를 붙일 수 있게 한다.
+    [Server]
+    private void StartGroanLoopSound(AudioKey key)
+    {
+        if (key == AudioKey.None)
+            return;
+
+        NetworkAudioManager.StartLoopAudioForEveryone(
+            netId,
+            key,
+            AudioDimension.Sound3D,
+            transform.position
+        );
+
+        isGroanLoopPlaying = true;
+        currentGroanLoopKey = key;
+    }
+
+    // 현재 재생 중인 신음 루프 사운드를 멈춘다.
+    [Server]
+    private void StopGroanLoopSound()
+    {
+        if (!isGroanLoopPlaying)
+            return;
+
+        if (currentGroanLoopKey != AudioKey.None)
+        {
+            NetworkAudioManager.StopLoopAudioForEveryone(
+                netId,
+                currentGroanLoopKey
+            );
+        }
+
+        isGroanLoopPlaying = false;
+        currentGroanLoopKey = AudioKey.None;
+    }
+
     // 현재 생존자 성별에 맞는 일반 피격 소리 AudioKey를 반환한다.
     private AudioKey GetHitSoundKey()
     {
@@ -497,40 +524,38 @@ public class SurvivorState : NetworkBehaviour
         return AudioKey.None;
     }
 
-    // Injured / Downed / Imprisoned 상태일 때 2초마다 성별에 맞는 신음소리를 3D로 재생한다.
+    // Injured / Downed / Imprisoned 상태일 때 성별에 맞는 신음 루프 사운드를 재생한다.
+    // 루프 오브젝트는 AudioManager에서 ownerNetId 오브젝트에 붙기 때문에 생존자를 계속 따라다닌다.
     [Server]
     private void UpdateGroanSound()
     {
-        // 사망 / 탈출 중에는 신음소리를 내지 않는다.
-        if (IsDead || IsEscaping)
-        {
-            groanTimer = 0f;
-            return;
-        }
+        bool shouldGroan = false;
 
-        // 다침 / 다운 / 감옥 상태일 때만 신음소리를 낸다.
-        bool shouldGroan = IsInjured || IsDowned || IsImprisoned;
+        // 사망 / 탈출 중에는 신음소리를 내지 않는다.
+        if (!IsDead && !IsEscaping)
+            shouldGroan = IsInjured || IsDowned || IsImprisoned;
 
         if (!shouldGroan)
         {
-            groanTimer = 0f;
+            StopGroanLoopSound();
             return;
         }
 
         AudioKey groanKey = GetGroanSoundKey();
 
         if (groanKey == AudioKey.None)
+        {
+            StopGroanLoopSound();
+            return;
+        }
+
+        // 이미 같은 신음 루프가 재생 중이면 다시 시작하지 않는다.
+        if (isGroanLoopPlaying && currentGroanLoopKey == groanKey)
             return;
 
-        groanTimer -= Time.deltaTime;
-
-        if (groanTimer > 0f)
-            return;
-
-        // 신음소리는 3D로 재생하고 Max Distance를 짧게 잡아서 가까운 사람만 듣게 한다.
-        PlayWorld3DSound(groanKey);
-
-        groanTimer = groanInterval;
+        // 성별이 바뀌었거나 다른 루프가 켜져 있으면 기존 루프를 끄고 새로 시작한다.
+        StopGroanLoopSound();
+        StartGroanLoopSound(groanKey);
     }
 
     // 서버에서 상태 즉시 반영

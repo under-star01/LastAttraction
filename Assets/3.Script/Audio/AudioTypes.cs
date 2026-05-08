@@ -40,5 +40,10 @@ public enum AudioKey
     // 오브젝트
     ObjectVault,            // 판자 / 창틀 넘는 소리
     PalletDrop,             // 판자 내리는 소리
-    PalletBreak             // 판자 부수는 소리
+    PalletBreak,            // 판자 부수는 소리
+
+    // UI / 목표 진행
+    QTEAppear,              // QTE가 나타날 때 소리
+    QTESuccess,             // QTE 성공 소리
+    EscapeGateOpen          // 탈출 문 열리는 소리
 }

@@ -148,7 +148,8 @@ public class SurvivorCameraSkill : NetworkBehaviour
             want = input.IsCameraSkillPressed;
 
         // 현재 상태상 사용 불가능하면 강제로 끈다.
-        // 앉아 있는 상태도 CanUse()에서 막는다.
+        // 단, 앉기 상태는 여기서 막지 않는다.
+        // 앉은 상태에서 스킬을 누르면 SurvivorMove가 앉기 입력을 무시하고 일어서서 스킬을 사용한다.
         if (!CanUse())
             want = false;
 
@@ -178,11 +179,9 @@ public class SurvivorCameraSkill : NetworkBehaviour
         if (!act.CanCam())
             return false;
 
-        // 앉아 있는 상태에서는 카메라 스킬 사용 불가.
-        // 자동으로 일어서지 않고, 입력만 무시한다.
-        if (moveState != null && moveState.IsCrouching)
-            return false;
-
+        // 앉기 상태는 여기서 막지 않는다.
+        // 앉은 상태에서 카메라 스킬을 누르면 서버의 SurvivorMove.MoveTick에서
+        // 앉기 입력을 무시하고 standHeight / standCenter로 복구해서 일어서게 한다.
         return true;
     }
 
@@ -198,18 +197,9 @@ public class SurvivorCameraSkill : NetworkBehaviour
             value = false;
         }
 
-        // 서버에서도 앉기 상태를 다시 검사한다.
-        // 클라이언트에서 막아도 서버에서 한 번 더 막아야 멀티에서 안전하다.
-        if (value)
-        {
-            SurvivorMoveState serverMoveState = moveState;
-
-            if (serverMoveState == null)
-                serverMoveState = GetComponent<SurvivorMoveState>();
-
-            if (serverMoveState != null && serverMoveState.IsCrouching)
-                value = false;
-        }
+        // 앉기 상태는 여기서 막지 않는다.
+        // 스킬이 켜지면 SurvivorMove.MoveTick에서 앉기 입력을 무시하고
+        // standHeight / standCenter로 복구해서 일어서게 한다.
 
         // 스킬을 켜려는 경우, 종료 후 1초 딜레이가 끝났는지 검사한다.
         if (value && Time.time < nextSkillUseTime)
@@ -506,6 +496,9 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
             if (skillCinemachine != null)
                 skillCinemachine.Priority = 0;
+
+            if (resultCinemachine != null)
+                resultCinemachine.Priority = 0;
         }
         else
         {
@@ -514,36 +507,13 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
             if (skillCinemachine != null)
                 skillCinemachine.Priority = 0;
+
+            if (resultCinemachine != null)
+                resultCinemachine.Priority = 0;
         }
     }
 
     public void ApplyEscapeView()
-    {
-        if (!isLocalPlayer)
-            return;
-
-        if (normalCinemachine != null)
-            normalCinemachine.Priority = 0;
-
-        if (skillCinemachine != null)
-            skillCinemachine.Priority = 0;
-
-        if (resultCinemachine != null)
-            resultCinemachine.Priority = 0;
-
-        if (skillCamera != null)
-            skillCamera.enabled = false;
-
-        if (skillUI != null)
-            skillUI.Hide();
-
-        if (localCameraModel != null)
-            localCameraModel.SetActive(false);
-
-        SetFrameDetected(false, true);
-    }
-
-    public void ApplyResultView()
     {
         if (!isLocalPlayer)
             return;

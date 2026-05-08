@@ -6,6 +6,7 @@ using UnityEngine;
 // - 2D 재생
 // - 3D 재생
 // - 킬러만 / 생존자만 / 모두 들을지 판정
+// - 루프 사운드는 ownerNetId 오브젝트를 따라다니게 처리
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance;
@@ -92,9 +93,7 @@ public class AudioManager : MonoBehaviour
     }
 
     // 3D 소리 재생
-    // 월드 위치에서 나는 소리
-    // PlayClipAtPoint 대신 직접 AudioSource를 만들어서
-    // 거리 설정(min/max distance)을 같이 적용할 수 있게 함
+    // 월드 위치에서 나는 일회성 소리
     private void Play3DAudio(AudioData data, Vector3 worldPosition)
     {
         if (data == null)
@@ -124,7 +123,7 @@ public class AudioManager : MonoBehaviour
     }
 
     // 루프 사운드 시작
-    // loopId는 네트워크에서 같은 루프 사운드를 구분하기 위한 ID다.
+    // ownerNetId 오브젝트를 찾으면 그 자식으로 붙여서 소리가 따라다니게 한다.
     public void StartLoopAudio(
         uint ownerNetId,
         AudioKey key,
@@ -148,7 +147,22 @@ public class AudioManager : MonoBehaviour
             return;
 
         GameObject loopObject = new GameObject("Loop_Audio_" + key + "_" + ownerNetId);
-        loopObject.transform.position = worldPosition;
+
+        // ownerNetId에 해당하는 네트워크 오브젝트를 찾는다.
+        // 찾으면 그 오브젝트의 자식으로 붙여서 루프 사운드가 계속 따라다니게 한다.
+        Transform followTarget = GetFollowTarget(ownerNetId);
+
+        if (followTarget != null)
+        {
+            loopObject.transform.SetParent(followTarget);
+            loopObject.transform.localPosition = Vector3.zero;
+            loopObject.transform.localRotation = Quaternion.identity;
+        }
+        else
+        {
+            // 혹시 대상을 못 찾으면 기존 방식처럼 처음 위치에 생성한다.
+            loopObject.transform.position = worldPosition;
+        }
 
         AudioSource source = loopObject.AddComponent<AudioSource>();
         source.clip = data.clip;
@@ -190,6 +204,22 @@ public class AudioManager : MonoBehaviour
     private string GetLoopId(uint ownerNetId, AudioKey key)
     {
         return ownerNetId + "_" + key;
+    }
+
+    // ownerNetId에 해당하는 네트워크 오브젝트 Transform을 찾는다.
+    // 루프 3D 사운드를 플레이어에게 붙여서 따라다니게 하기 위해 사용한다.
+    private Transform GetFollowTarget(uint ownerNetId)
+    {
+        if (ownerNetId == 0)
+            return null;
+
+        if (!NetworkClient.spawned.TryGetValue(ownerNetId, out NetworkIdentity identity))
+            return null;
+
+        if (identity == null)
+            return null;
+
+        return identity.transform;
     }
 
     // 현재 이 클라이언트가 이 소리를 들어야 하는지 판정

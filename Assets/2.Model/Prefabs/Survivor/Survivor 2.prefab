@@ -2447,7 +2447,6 @@ MonoBehaviour:
   femaleDownHitSoundKey: 9
   maleGroanSoundKey: 10
   femaleGroanSoundKey: 11
-  groanInterval: 4
   prisonFullTime: 300
   prisonHalfTime: 150
 --- !u!114 &9042901668219853417
@@ -2528,7 +2527,7 @@ MonoBehaviour:
   normalFrameColor: {r: 1, g: 1, b: 1, a: 1}
   detectedFrameColor: {r: 1, g: 0, b: 0, a: 1}
   detectedHoldTime: 0.25
-  skillReuseDelay: 1
+  skillReuseDelay: 0.5
   isRecordingKiller: 0
 --- !u!95 &7436738972924962348
 Animator:

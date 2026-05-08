@@ -49,7 +49,7 @@ public class SurvivorMove : NetworkBehaviour
     private Vector2 serverMoveInput;
     private bool serverWantsRun;
     private bool serverWantsCrouch;
-    private bool isMoveLocked; 
+    private bool isMoveLocked;
     private bool isResultPlaying;
     private float serverYaw;
     private float serverPitch;
@@ -297,6 +297,20 @@ public class SurvivorMove : NetworkBehaviour
         syncedPitch = pitch;
     }
 
+    // 현재 카메라 스킬을 사용 중인지 확인한다.
+    // camSkill.IsUse와 act.IsCamSkill을 같이 검사해서
+    // SyncVar 반영 타이밍 차이가 있어도 최대한 안정적으로 처리한다.
+    private bool IsUsingCameraSkill()
+    {
+        if (camSkill != null && camSkill.IsUse)
+            return true;
+
+        if (act != null && act.IsCamSkill)
+            return true;
+
+        return false;
+    }
+
     // 서버에서 실제 이동 처리
     [Server]
     private void MoveTick()
@@ -332,8 +346,19 @@ public class SurvivorMove : NetworkBehaviour
             return;
         }
 
+        // 현재 카메라 스킬 사용 중인지 확인한다.
+        bool useCamSkill = IsUsingCameraSkill();
+
         // Hold 상호작용 중에는 새로 앉기 시작 금지
         bool canCrouch = interactor == null || !interactor.IsInteracting;
+
+        // 카메라 스킬 사용 중에는 앉기 입력을 무시한다.
+        // 앉은 상태에서 카메라 스킬을 켜면 isCrouching이 false가 되고,
+        // 아래 SetSize(standHeight, standCenter)가 실행되어 일어서게 된다.
+        // 스킬을 끈 뒤에도 Crouch 키를 계속 누르고 있으면 다시 앉아진다.
+        if (useCamSkill)
+            canCrouch = false;
+
         bool isCrouching = canCrouch && serverWantsCrouch;
 
         if (isCrouching)
@@ -360,13 +385,7 @@ public class SurvivorMove : NetworkBehaviour
         bool isMoving = move.sqrMagnitude > 0.001f;
 
         // 카메라 스킬 중인지 먼저 판정
-        bool useCamSkill = false;
-
-        if (camSkill != null && camSkill.IsUse)
-            useCamSkill = true;
-
-        if (act != null && act.IsCamSkill)
-            useCamSkill = true;
+        bool useCamSkill = IsUsingCameraSkill();
 
         // 스킬 중에는 달리기 금지
         bool isRunning = isMoving && !isCrouching && wantsRun && !useCamSkill;
@@ -756,7 +775,7 @@ public class SurvivorMove : NetworkBehaviour
             animator.SetBool("IsStunned", value);
     }
 
-    // 이동 애니메이션을 즉시 idle 쪽으로 돌릴 때 사용
+    // 이동 애니메이션을 즉시 Idle 쪽으로 돌릴 때 사용
     public void StopAnimation()
     {
         if (isServer)
@@ -817,6 +836,7 @@ public class SurvivorMove : NetworkBehaviour
             return;
 
         escapeTarget = target;
+
         RpcApplyEscapeView();
         TargetDisableSurvivorInput(connectionToClient);
 
@@ -828,7 +848,7 @@ public class SurvivorMove : NetworkBehaviour
         serverWantsRun = false;
         serverWantsCrouch = false;
 
-        // 탈출 상태 추가 시 사용
+        // 탈출 상태 적용
         if (state != null)
             state.SetEscape();
 
@@ -844,32 +864,6 @@ public class SurvivorMove : NetworkBehaviour
             ApplyFace(dir.normalized);
             RpcFace(dir.normalized);
         }
-    }
-
-    [Server]
-    public void BeginDeadResult()
-    {
-        if (isResultPlaying)
-            return;
-
-        isResultPlaying = true;
-
-        escapeTarget = null;
-
-        isMoveLocked = true;
-
-        serverMoveInput = Vector2.zero;
-        serverWantsRun = false;
-        serverWantsCrouch = false;
-
-        if (moveState != null)
-            moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
-
-        TargetDisableSurvivorInput(connectionToClient);
-
-        StartCoroutine(ResultRoutine());
-
-        Debug.Log("[SurvivorMove] Dead Result 시작");
     }
 
     [ClientRpc]
@@ -939,10 +933,6 @@ public class SurvivorMove : NetworkBehaviour
     [Server]
     private void EscapeArrive()
     {
-        if (isResultPlaying)
-            return;
-
-        isResultPlaying = true;
         escapeTarget = null;
 
         serverMoveInput = Vector2.zero;
@@ -954,42 +944,54 @@ public class SurvivorMove : NetworkBehaviour
         if (moveState != null)
             moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
 
-        StartCoroutine(ResultRoutine());
-
         Debug.Log("[SurvivorMove] Escape arrived.");
     }
 
     [Server]
-    private IEnumerator ResultRoutine()
+    public void BeginDeadResult()
     {
-        TargetSetBlackout(true);
-        yield return new WaitForSeconds(1f);
+        if (isResultPlaying)
+            return;
 
+        isResultPlaying = true;
+
+        StopAllCoroutines();
+
+        // 결과 연출 중에는 이동 입력 제거
+        serverMoveInput = Vector2.zero;
+        serverWantsRun = false;
+        serverWantsCrouch = false;
+
+        isMoveLocked = true;
+
+        // 스킬 / 상호작용 계열 애니메이션 정리
+        SetCamAnim(false);
+        SetSearching(false);
+        SetVaulting(false);
+        SetStunned(false);
+
+        // 사망 결과 위치로 이동
         MoveToResultPoint();
-        TargetShowResultViewAndUI();
-        yield return new WaitForSeconds(2f);
 
-        TargetSetBlackout(false);
+        // 결과 연출에서는 서 있는 크기로 복구
+        SetSize(standHeight, standCenter);
+
+        // 사망자는 Idle로 고정
+        if (moveState != null)
+            moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
+
+        RpcApplyDeadResultView();
+
+        Debug.Log("[SurvivorMove] Dead result view started.");
     }
 
-    [TargetRpc]
-    private void TargetSetBlackout(bool value)
+    [ClientRpc]
+    private void RpcApplyDeadResultView()
     {
-        if (ChangeSceneUI.Instance != null)
-            ChangeSceneUI.Instance.Show(value);
+        if (!isLocalPlayer)
+            return;
 
-        Debug.Log($"[SurvivorMove] 개인 블랙아웃 상태 변경: {value}");
-    }
-
-    [TargetRpc]
-    private void TargetShowResultViewAndUI()
-    {
         if (camSkill != null)
-            camSkill.ApplyResultView();
-
-        if (InGameUIManager.Instance != null)
-            InGameUIManager.Instance.ShowResultUI();
-
-        Debug.Log("[SurvivorMove] ResultCam 전환 및 ResultUI 활성화");
+            camSkill.ApplyEscapeView();
     }
 }
