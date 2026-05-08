@@ -581,7 +581,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
             skillCinemachine.Priority = 0;
 
         if (resultCinemachine != null)
-            resultCinemachine.Priority = 30;
+            resultCinemachine.Priority = 0;
 
         if (skillCamera != null)
             skillCamera.enabled = false;
