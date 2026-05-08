@@ -45,5 +45,8 @@ public enum AudioKey
     // UI / 목표 진행
     QTEAppear,              // QTE가 나타날 때 소리
     QTESuccess,             // QTE 성공 소리
-    EscapeGateOpen          // 탈출 문 열리는 소리
+    EscapeGateOpen,         // 탈출 문 열리는 소리
+
+    // 살인마
+    KillerFootstep          // 살인마 발소리, 생존자에게만 들림
 }

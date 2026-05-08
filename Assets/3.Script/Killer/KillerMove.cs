@@ -23,6 +23,13 @@ public class KillerMove : NetworkBehaviour
     [SerializeField] private float rageSpeedMultiplier = 1.1f;
     [SerializeField] private float lookSensitivity = 0.2f;
 
+    [Header("살인마 발소리")]
+    [SerializeField] private Vector3 footstepPositionOffset = new Vector3(0f, 0.1f, 0f);
+    [SerializeField] private float footstepMoveThreshold = 0.1f;
+
+    // 애니메이션 이벤트가 겹쳐서 한 프레임에 여러 번 호출되는 것을 방지하는 최소 간격
+    [SerializeField] private float footstepMinInterval = 0.08f;
+
     private CharacterController controller;
     private KillerInput input;
     private KillerState state;
@@ -35,6 +42,8 @@ public class KillerMove : NetworkBehaviour
     private KillerCondition lastAppliedCondition;
     private bool hasAppliedCondition;
     private bool isResultPlaying;
+
+    private float lastFootstepServerTime;
 
     [SyncVar] private float syncedYaw, syncedPitch, syncedMoveSpeed;
 
@@ -175,6 +184,7 @@ public class KillerMove : NetworkBehaviour
 
         serverMoveInput = Vector2.zero;
         syncedMoveSpeed = 0f;
+        lastFootstepServerTime = 0f;
 
         if (connectionToClient != null)
             TargetRefreshViewByState(connectionToClient);
@@ -190,6 +200,7 @@ public class KillerMove : NetworkBehaviour
 
         serverMoveInput = Vector2.zero;
         syncedMoveSpeed = 0f;
+        lastFootstepServerTime = 0f;
 
         if (state != null)
             state.ChangeState(KillerCondition.Idle);
@@ -262,6 +273,99 @@ public class KillerMove : NetworkBehaviour
         }
 
         BeginKillerResult();
+    }
+
+    // Animation Event Receiver에서 호출되는 함수
+    // 실제 사운드는 바로 로컬에서 재생하지 않고 서버 Command로 요청한다.
+    public void PlayKillerFootstepByAnimationEvent()
+    {
+        // Animation Event는 모든 클라이언트의 Animator에서 호출될 수 있다.
+        // 그래서 살인마를 조종하는 로컬 플레이어만 서버에 사운드 요청을 보낸다.
+        if (!isLocalPlayer)
+            return;
+
+        if (state == null)
+            return;
+
+        if (!CanRequestKillerFootstep())
+            return;
+
+        CmdPlayKillerFootstepByAnimationEvent();
+    }
+
+    private bool CanRequestKillerFootstep()
+    {
+        if (isResultPlaying)
+            return false;
+
+        if (state == null)
+            return false;
+
+        // 로비나 강제 행동 상태에서는 발소리를 보내지 않는다.
+        if (state.CurrentCondition == KillerCondition.Lobby ||
+            state.CurrentCondition == KillerCondition.Hit ||
+            state.CurrentCondition == KillerCondition.Vaulting ||
+            state.CurrentCondition == KillerCondition.Breaking ||
+            state.CurrentCondition == KillerCondition.Incage)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [Command]
+    private void CmdPlayKillerFootstepByAnimationEvent()
+    {
+        if (!CanServerPlayKillerFootstep())
+            return;
+
+        lastFootstepServerTime = Time.time;
+
+        Vector3 playPosition = transform.position + footstepPositionOffset;
+
+        // 생존자들에게만 3D 살인마 발소리를 들려준다.
+        NetworkAudioManager.PlayAudioForSurvivors(
+            AudioKey.KillerFootstep,
+            AudioDimension.Sound3D,
+            playPosition
+        );
+    }
+
+    [Server]
+    private bool CanServerPlayKillerFootstep()
+    {
+        if (isResultPlaying)
+            return false;
+
+        if (state == null)
+            return false;
+
+        if (NetworkAudioManager.Instance == null)
+            return false;
+
+        // 너무 가까운 시간에 중복 이벤트가 들어오면 무시한다.
+        if (Time.time - lastFootstepServerTime < footstepMinInterval)
+            return false;
+
+        // 서버 기준으로 이동 입력이 거의 없으면 무시한다.
+        // Animation Event를 실수로 Idle 클립에 넣었을 때 발소리가 나는 것을 막기 위한 안전장치다.
+        bool isMoving = serverMoveInput.sqrMagnitude >= footstepMoveThreshold * footstepMoveThreshold;
+
+        if (!isMoving && state.CurrentCondition != KillerCondition.Lunging)
+            return false;
+
+        // 서버 기준으로도 발소리를 내면 안 되는 상태는 차단한다.
+        if (state.CurrentCondition == KillerCondition.Lobby ||
+            state.CurrentCondition == KillerCondition.Hit ||
+            state.CurrentCondition == KillerCondition.Vaulting ||
+            state.CurrentCondition == KillerCondition.Breaking ||
+            state.CurrentCondition == KillerCondition.Incage)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     [TargetRpc]
@@ -395,6 +499,7 @@ public class KillerMove : NetworkBehaviour
 
         localPitch = 0f;
         yVelocity = 0f;
+        lastFootstepServerTime = 0f;
 
         ApplyTeleport(position, rotation);
 
