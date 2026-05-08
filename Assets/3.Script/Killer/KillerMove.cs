@@ -21,6 +21,7 @@ public class KillerMove : NetworkBehaviour
     [SerializeField] private float lungeMultiplier = 1.6f;
     [SerializeField] private float penaltyMultiplier = 0.4f;
     [SerializeField] private float rageSpeedMultiplier = 1.1f;
+    [SerializeField] private float plantingMultiplier = 0.2f;
     [SerializeField] private float lookSensitivity = 0.2f;
 
     [Header("살인마 발소리")]
@@ -450,6 +451,8 @@ public class KillerMove : NetworkBehaviour
             speed *= lungeMultiplier;
         else if (state.CurrentCondition == KillerCondition.Recovering)
             speed *= penaltyMultiplier;
+        else if (state.CurrentCondition == KillerCondition.Planting)
+            speed *= plantingMultiplier;
 
         transform.rotation = Quaternion.Euler(0f, serverYaw, 0f);
 

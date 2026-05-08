@@ -9,21 +9,17 @@ public class KillerInteractor : NetworkBehaviour
     public LayerMask interactLayer;
     public LayerMask survivorLayer;
 
-    [Header("오디오")]
-    [SerializeField] private AudioKey incageSoundKey = AudioKey.KillerIncage; // 생존자를 감옥에 넣을 때 소리
-    [SerializeField] private Vector3 incageSoundOffset = new Vector3(0f, 1.0f, 0f);
-
     private KillerInput input;
     private KillerState state;
     private IInteractable currentTarget;
 
-    private void Awake()
+    void Awake()
     {
         input = GetComponent<KillerInput>();
         state = GetComponent<KillerState>();
     }
 
-    private void Update()
+    void Update()
     {
         if (!isLocalPlayer)
             return;
@@ -49,10 +45,11 @@ public class KillerInteractor : NetworkBehaviour
     private void SearchTarget()
     {
         Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
+        RaycastHit hit;
 
         Debug.DrawRay(rayOrigin, transform.forward * interactRange, Color.red);
 
-        if (Physics.Raycast(rayOrigin, transform.forward, out RaycastHit hit, interactRange, interactLayer, QueryTriggerInteraction.Collide))
+        if (Physics.Raycast(rayOrigin, transform.forward, out hit, interactRange, interactLayer, QueryTriggerInteraction.Collide))
         {
             currentTarget = hit.collider.GetComponentInParent<IInteractable>();
         }
@@ -90,16 +87,11 @@ public class KillerInteractor : NetworkBehaviour
         if (state.CurrentCondition != KillerCondition.Idle)
             return;
 
-        if (survivorObj == null)
-            return;
-
         SurvivorState survivor = survivorObj.GetComponent<SurvivorState>();
-
         if (survivor == null || !survivor.IsDowned)
             return;
 
         Prison emptyPrison = PrisonManager.Instance.GetEmpty();
-
         if (emptyPrison == null)
             return;
 
@@ -110,40 +102,44 @@ public class KillerInteractor : NetworkBehaviour
     [Server]
     private IEnumerator IncageRoutineServer(SurvivorState survivor, Prison prison)
     {
+        RpcPlaySurvivorSmoke(survivor.gameObject);
+
         yield return new WaitForSeconds(2.1f);
-
-        if (state == null)
-            yield break;
-
-        // 대기 시간 중 대상이나 감옥이 사라졌을 수 있으므로 방어 처리
-        if (survivor == null || prison == null)
-        {
-            state.ChangeState(KillerCondition.Idle);
-            yield break;
-        }
-
-        // 감옥에 넣는 처리가 실제로 확정되는 순간 3D 사운드 재생
-        ServerPlayIncageSound(prison.transform.position);
 
         prison.SetPrisoner(survivor);
         state.ChangeState(KillerCondition.Idle);
     }
 
-    // 서버에서 감옥 넣기 성공 사운드를 모든 클라이언트에게 3D로 재생한다.
-    [Server]
-    private void ServerPlayIncageSound(Vector3 prisonPosition)
+    [ClientRpc]
+    private void RpcPlaySurvivorSmoke(GameObject survivorObj)
     {
-        if (NetworkAudioManager.Instance == null)
-            return;
+        if (survivorObj == null) return;
 
-        if (incageSoundKey == AudioKey.None)
-            return;
+        // 생존자 자식 중에서 "Smoke_air"라는 이름을 가진 파티클 시스템을 찾음
+        // transform.Find는 직계 자식만 찾으므로, 깊은 곳에 있다면 GetComponentsInChildren 사용
+        Transform smokeTransform = survivorObj.transform.Find("Smoke puff");
 
-        NetworkAudioManager.PlayAudioForEveryone(
-            incageSoundKey,
-            AudioDimension.Sound3D,
-            prisonPosition + incageSoundOffset
-        );
+        if (smokeTransform != null)
+        {
+            ParticleSystem ps = smokeTransform.GetComponent<ParticleSystem>();
+            if (ps != null)
+            {
+                ps.Play();
+            }
+        }
+        else
+        {
+            // 만약 경로가 복잡할 경우를 대비한 백업 (성능을 위해 Find를 우선 권장)
+            ParticleSystem[] allPS = survivorObj.GetComponentsInChildren<ParticleSystem>();
+            foreach (var ps in allPS)
+            {
+                if (ps.gameObject.name == "Smoke puff")
+                {
+                    ps.Play();
+                    break;
+                }
+            }
+        }
     }
 
     [Command]
@@ -156,14 +152,13 @@ public class KillerInteractor : NetworkBehaviour
             return;
 
         IInteractable interactable = target.GetComponent<IInteractable>();
-
         if (interactable == null)
             interactable = target.GetComponentInParent<IInteractable>();
 
         if (interactable == null)
             return;
 
-        interactable.BeginInteract(gameObject);
+        interactable.BeginInteract(this.gameObject);
     }
 
     // 판자 스턴 적용
@@ -176,7 +171,6 @@ public class KillerInteractor : NetworkBehaviour
             return;
 
         Debug.Log($"<color=red>[KillerHit]</color> 판자에 맞음! 스턴 시간: {duration}");
-
         state.ChangeState(KillerCondition.Hit);
         StartCoroutine(ResetHitStunRoutine(duration));
     }

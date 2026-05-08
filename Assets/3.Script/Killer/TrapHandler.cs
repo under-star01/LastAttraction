@@ -14,6 +14,7 @@ public class TrapHandler : NetworkBehaviour
 
     [Header("Cooldown")]
     [SerializeField] private float trapInstallCooldown = 5f;
+    [SerializeField] private float trapPlantingRecovery = 2.0f;
 
     public bool IsBuildMode => isBuildMode;
 
@@ -145,10 +146,10 @@ public class TrapHandler : NetworkBehaviour
                 if (ghostInstance.TryGetComponent(out TrapNode node))
                     node.enabled = false;
 
-                SetGhostVisual(ghostInstance, 0.4f);
+                SetGhostVisual(ghostInstance, 0.2f);
             }
 
-            state.CmdChangeKillerState(KillerCondition.Planting);
+            //state.CmdChangeKillerState(KillerCondition.Planting);
         }
         else
         {
@@ -223,7 +224,7 @@ public class TrapHandler : NetworkBehaviour
         NetworkServer.Spawn(trap);
         spawnedTraps.Add(trap);
 
-        Invoke(nameof(BackToIdle), 1.2f);
+        Invoke(nameof(BackToIdle), trapPlantingRecovery);
     }
 
     [ClientRpc]
@@ -294,12 +295,24 @@ public class TrapHandler : NetworkBehaviour
         {
             foreach (Material mat in r.materials)
             {
-                if (mat.HasProperty("_BaseColor"))
+                // 1. 렌더링 모드를 투명(Transparent)으로 강제 전환 (URP 기준)
+                if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1); // 0: Opaque, 1: Transparent
+                if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0);
+                mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+
+                // 2. 이름이 뭐든 상관없이 알파값 적용
+                string propName = mat.HasProperty("_BaseColor") ? "_BaseColor" : "_Color";
+                if (mat.HasProperty(propName))
                 {
-                    Color color = mat.GetColor("_BaseColor");
+                    Color color = mat.GetColor(propName);
                     color.a = alpha;
-                    mat.SetColor("_BaseColor", color);
+                    mat.SetColor(propName, color);
                 }
+
+                // 3. 투명 셰이더 큐(Queue) 우선순위 조정
+                mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             }
         }
     }
@@ -313,6 +326,7 @@ public class TrapHandler : NetworkBehaviour
         {
             foreach (Material mat in r.materials)
             {
+                // (SetGhostVisual에서 이미 투명 모드로 바꿨으므로 색상만 변경)
                 if (mat.HasProperty("_BaseColor"))
                     mat.SetColor("_BaseColor", feedbackColor);
                 else if (mat.HasProperty("_Color"))
