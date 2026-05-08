@@ -933,6 +933,10 @@ public class SurvivorMove : NetworkBehaviour
     [Server]
     private void EscapeArrive()
     {
+        if (isResultPlaying)
+            return;
+
+        isResultPlaying = true;
         escapeTarget = null;
 
         serverMoveInput = Vector2.zero;
@@ -944,7 +948,43 @@ public class SurvivorMove : NetworkBehaviour
         if (moveState != null)
             moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
 
+        StartCoroutine(ResultRoutine());
+
         Debug.Log("[SurvivorMove] Escape arrived.");
+    }
+
+    [Server]
+    private IEnumerator ResultRoutine()
+    {
+        TargetSetBlackout(true);
+        yield return new WaitForSeconds(1f);
+
+        MoveToResultPoint();
+        TargetShowResultViewAndUI();
+        yield return new WaitForSeconds(2f);
+
+        TargetSetBlackout(false);
+    }
+
+    [TargetRpc]
+    private void TargetSetBlackout(bool value)
+    {
+        if (ChangeSceneUI.Instance != null)
+            ChangeSceneUI.Instance.Show(value);
+
+        Debug.Log($"[SurvivorMove] 개인 블랙아웃 상태 변경: {value}");
+    }
+
+    [TargetRpc]
+    private void TargetShowResultViewAndUI()
+    {
+        if (camSkill != null)
+            camSkill.ApplyResultView();
+
+        if (InGameUIManager.Instance != null)
+            InGameUIManager.Instance.ShowResultUI();
+
+        Debug.Log("[SurvivorMove] ResultCam 전환 및 ResultUI 활성화");
     }
 
     [Server]
