@@ -2583,6 +2583,7 @@ MonoBehaviour:
   readyButton: {fileID: 2112168878}
   returnButton: {fileID: 97180170}
   readyCountText: {fileID: 4149838607756346627}
+  readyButtonText: {fileID: 1812308571}
   ready1Object: {fileID: 209940533}
   ready2Object: {fileID: 1389064343}
   ready3Object: {fileID: 1279591773}

@@ -17,6 +17,7 @@ public class LobbyUIManager : MonoBehaviour
 
     [Header("Lobby Text")]
     [SerializeField] private TMP_Text readyCountText;
+    [SerializeField] private Text readyButtonText;
 
     [Header("Ready State UI")]
     [SerializeField] private RectTransform ready1Object;
@@ -239,15 +240,13 @@ public class LobbyUIManager : MonoBehaviour
 
     private void UpdateReadyButtonView()
     {
-        if (readyButton == null)
+        if (readyButtonText == null && readyButton != null)
+            readyButtonText = readyButton.GetComponentInChildren<Text>();
+
+        if (readyButtonText == null)
             return;
 
-        TMP_Text buttonText = readyButton.GetComponentInChildren<TMP_Text>();
-
-        if (buttonText == null)
-            return;
-
-        buttonText.text = isReady ? "READY" : "READY?";
+        readyButtonText.text = isReady ? "준비 완료" : "준비 중";
     }
 
     public void DisableCanvas()
