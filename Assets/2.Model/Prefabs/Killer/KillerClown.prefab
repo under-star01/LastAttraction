@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7946795928289841581}
   - component: {fileID: 7977360239449139302}
+  - component: {fileID: 7364260295733776678}
   m_Layer: 8
   m_Name: Modeling
   m_TagString: Killer
@@ -56,6 +57,19 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &7364260295733776678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9789651165539730}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b60fc9d97cbe95447b442b3176394b1d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KillerAnimationEventReceiver
+  killerMove: {fileID: 835159930052555109}
 --- !u!1 &17375818028257004
 GameObject:
   m_ObjectHideFlags: 0
@@ -11715,6 +11729,9 @@ MonoBehaviour:
   penaltyMultiplier: 0.4
   rageSpeedMultiplier: 1.1
   lookSensitivity: 0.2
+  footstepPositionOffset: {x: 0, y: 0.1, z: 0}
+  footstepMoveThreshold: 0.1
+  footstepMinInterval: 0.08
 --- !u!114 &8367404895667104180
 MonoBehaviour:
   m_ObjectHideFlags: 0

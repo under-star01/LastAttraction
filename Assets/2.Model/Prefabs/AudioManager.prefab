@@ -90,7 +90,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: d28a33fb5c968b2488bdd3b7988b777b, type: 3}
     volume: 1
     minDistance: 1
-    maxDistance: 16
+    maxDistance: 32
   - key: 14
     clip: {fileID: 8300000, guid: 5ebd4ebbf09eca84bbdc67c7919c02a5, type: 3}
     volume: 1
@@ -100,27 +100,87 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 2997bb825b18c4f4c82fd6378ea0e5f7, type: 3}
     volume: 1
     minDistance: 1
-    maxDistance: 16
+    maxDistance: 32
   - key: 8
     clip: {fileID: 8300000, guid: c33ca7dffd8b57142a09972c63732d1f, type: 3}
     volume: 1
-    minDistance: 100
-    maxDistance: 120
+    minDistance: 1
+    maxDistance: 150
   - key: 9
     clip: {fileID: 8300000, guid: afedce2888c3a2e4ca838084700d6abb, type: 3}
     volume: 1
-    minDistance: 100
-    maxDistance: 120
+    minDistance: 1
+    maxDistance: 150
   - key: 10
     clip: {fileID: 8300000, guid: bfc8190a2a3cfee4dab3e94a1a61219e, type: 3}
     volume: 1
     minDistance: 1
-    maxDistance: 8
+    maxDistance: 16
   - key: 11
     clip: {fileID: 8300000, guid: d7fb386dabc54614ea2cbcb087274d19, type: 3}
     volume: 1
     minDistance: 1
+    maxDistance: 16
+  - key: 15
+    clip: {fileID: 8300000, guid: 536b4189adb196045870c575ba3195c7, type: 3}
+    volume: 1
+    minDistance: 1
     maxDistance: 8
+  - key: 16
+    clip: {fileID: 8300000, guid: 3944029c7bb0f8d4987b784fae342062, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 8
+  - key: 17
+    clip: {fileID: 8300000, guid: b5963b7577ece7841bfaba74434a4f55, type: 3}
+    volume: 0.5
+    minDistance: 1
+    maxDistance: 150
+  - key: 18
+    clip: {fileID: 8300000, guid: d7cd0f0f23eb26c46b37dea0cc93bfd4, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 24
+  - key: 19
+    clip: {fileID: 8300000, guid: 6d5008842b5a2634a8526d15d158e9ec, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 24
+  - key: 20
+    clip: {fileID: 8300000, guid: 5e5e5c0ce8ee01c4c9cf7f4e707e39c4, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 24
+  - key: 21
+    clip: {fileID: 8300000, guid: 9f348993f20df634790d40afbb835786, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 22
+    clip: {fileID: 8300000, guid: a0b165e3a238b6c4eabc80302364b53b, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 23
+    clip: {fileID: 8300000, guid: d25282a3d4857fe429293f817f194cbb, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 24
+    clip: {fileID: 8300000, guid: d25282a3d4857fe429293f817f194cbb, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 25
+    clip: {fileID: 8300000, guid: 810e027e64dd3a145a614ecd03c1cb0d, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 26
+    clip: {fileID: 8300000, guid: d25282a3d4857fe429293f817f194cbb, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
   audioSource2D: {fileID: 8766702895734314766}
 --- !u!82 &8766702895734314766
 AudioSource:

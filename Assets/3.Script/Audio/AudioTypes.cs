@@ -40,5 +40,28 @@ public enum AudioKey
     // 오브젝트
     ObjectVault,            // 판자 / 창틀 넘는 소리
     PalletDrop,             // 판자 내리는 소리
-    PalletBreak             // 판자 부수는 소리
+    PalletBreak,            // 판자 부수는 소리
+
+    // UI / 목표 진행
+    QTEAppear,              // QTE가 나타날 때 소리
+    QTESuccess,             // QTE 성공 소리
+    EscapeGateOpen,         // 탈출 문 열리는 소리
+
+    // 살인마
+    KillerFootstep,         // 살인마 발소리, 생존자에게만 들림
+
+    // 카메라
+    CameraSkillOn,          // 카메라 스킬 켤 때 소리
+    CameraSkillLoop,        // 카메라 스킬 사용 중 노이즈 루프
+
+    // 생존자 스턴 / 놀람
+    SurvivorMaleStun,       // 남자 생존자 스턴 / 놀람 소리
+    SurvivorFemaleStun,     // 여자 생존자 스턴 / 놀람 소리
+
+    TrapTrigger,            // 트랩 발동 소리
+
+    // 살인마 공격 / 레이지
+    KillerWeaponSwing,      // 살인마 무기 휘두르는 소리
+    KillerAttackHit,        // 살인마 공격 성공 타격 소리
+    KillerRageStart         // 살인마 Rage 상태 진입 소리
 }

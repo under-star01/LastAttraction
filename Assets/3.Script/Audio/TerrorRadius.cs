@@ -4,14 +4,16 @@ using UnityEngine;
 public class TerrorRadius : MonoBehaviour
 {
     [Header("AudioSource")]
-    [SerializeField] private AudioSource range1Source; // 32m 단계 음악
-    [SerializeField] private AudioSource range2Source; // 16m 단계 음악
-    [SerializeField] private AudioSource range3Source; // 8m 단계 음악
+    [SerializeField] private AudioSource ambientSource; // 32m 밖 배경음 / 바람소리
+    [SerializeField] private AudioSource range1Source;  // 32m 단계 음악
+    [SerializeField] private AudioSource range2Source;  // 16m 단계 음악
+    [SerializeField] private AudioSource range3Source;  // 8m 단계 음악
 
     [Header("음악 최대 볼륨")]
-    [SerializeField] private float range1MaxVolume = 0.2f; // 32m 음악 최대 볼륨
-    [SerializeField] private float range2MaxVolume = 0.3f; // 16m 음악 최대 볼륨
-    [SerializeField] private float range3MaxVolume = 0.4f; // 8m 음악 최대 볼륨
+    [SerializeField] private float ambientMaxVolume = 0.15f; // 32m 밖 배경음 최대 볼륨
+    [SerializeField] private float range1MaxVolume = 0.2f;   // 32m 음악 최대 볼륨
+    [SerializeField] private float range2MaxVolume = 0.3f;   // 16m 음악 최대 볼륨
+    [SerializeField] private float range3MaxVolume = 0.4f;   // 8m 음악 최대 볼륨
 
     [Header("심장소리")]
     [SerializeField] private AudioSource heartbeatSource; // 두근 소리 재생용
@@ -44,6 +46,7 @@ public class TerrorRadius : MonoBehaviour
     private float range2Sqr;
     private float range3Sqr;
 
+    private float ambientTarget;
     private float range1Target;
     private float range2Target;
     private float range3Target;
@@ -58,6 +61,7 @@ public class TerrorRadius : MonoBehaviour
         FindLocalPlayer();
         FindKiller();
 
+        StartMusicLoop(ambientSource);
         StartMusicLoop(range1Source);
         StartMusicLoop(range2Source);
         StartMusicLoop(range3Source);
@@ -76,17 +80,19 @@ public class TerrorRadius : MonoBehaviour
             FindKiller();
         }
 
+        // 로컬 플레이어 또는 킬러를 못 찾으면 모든 사운드를 천천히 줄인다.
         if (localPlayer == null || killer == null)
         {
-            SetMusicTargets(0f, 0f, 0f);
+            SetMusicTargets(0f, 0f, 0f, 0f);
             UpdateMusicVolumes();
             heartbeatTimer = 0f;
             return;
         }
 
+        // 생존자 로컬 플레이어에게만 Terror Radius 음악을 들려준다.
         if (!localPlayer.CompareTag("Survivor"))
         {
-            SetMusicTargets(0f, 0f, 0f);
+            SetMusicTargets(0f, 0f, 0f, 0f);
             UpdateMusicVolumes();
             heartbeatTimer = 0f;
             return;
@@ -144,15 +150,20 @@ public class TerrorRadius : MonoBehaviour
         heartbeatSource.spatialBlend = 0f;
     }
 
+    // 32m 밖 : 배경음 / 바람소리
     // 32~16 : 1단계 음악만 점점 커짐
     // 16~8  : 2단계 음악만 점점 커짐
     // 8 이내 : 3단계 음악 최대
     private void UpdateMusic(float sqrDistance)
     {
-        SetMusicTargets(0f, 0f, 0f);
+        SetMusicTargets(0f, 0f, 0f, 0f);
 
+        // 32m 밖이면 긴장 음악은 꺼지고 배경음만 켜진다.
         if (sqrDistance > range1Sqr)
+        {
+            ambientTarget = 1f;
             return;
+        }
 
         float distance = Mathf.Sqrt(sqrDistance);
 
@@ -173,8 +184,9 @@ public class TerrorRadius : MonoBehaviour
         range1Target = 1f - Mathf.InverseLerp(range1, range2, distance);
     }
 
-    private void SetMusicTargets(float value1, float value2, float value3)
+    private void SetMusicTargets(float ambient, float value1, float value2, float value3)
     {
+        ambientTarget = ambient;
         range1Target = value1;
         range2Target = value2;
         range3Target = value3;
@@ -182,6 +194,7 @@ public class TerrorRadius : MonoBehaviour
 
     private void UpdateMusicVolumes()
     {
+        FadeMusic(ambientSource, ambientTarget * ambientMaxVolume);
         FadeMusic(range1Source, range1Target * range1MaxVolume);
         FadeMusic(range2Source, range2Target * range2MaxVolume);
         FadeMusic(range3Source, range3Target * range3MaxVolume);
@@ -255,6 +268,7 @@ public class TerrorRadius : MonoBehaviour
         if (range2 > range1) range2 = range1;
         if (range3 > range2) range3 = range2;
 
+        if (ambientMaxVolume < 0f) ambientMaxVolume = 0f;
         if (range1MaxVolume < 0f) range1MaxVolume = 0f;
         if (range2MaxVolume < 0f) range2MaxVolume = 0f;
         if (range3MaxVolume < 0f) range3MaxVolume = 0f;

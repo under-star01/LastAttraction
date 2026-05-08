@@ -42,6 +42,10 @@ public class QTEUI : MonoBehaviour
     [SerializeField] private float maxSuccessScale = 1.5f;
     [SerializeField] private float shrinkSpeed = 4f;
 
+    [Header("오디오")]
+    [SerializeField] private AudioKey qteAppearSoundKey = AudioKey.QTEAppear;   // QTE가 나타날 때 소리
+    [SerializeField] private AudioKey qteSuccessSoundKey = AudioKey.QTESuccess; // QTE 성공 소리
+
     private InputSystem inputSys;
     private Coroutine qteRoutine;
 
@@ -74,6 +78,9 @@ public class QTEUI : MonoBehaviour
         ShowUI();
         HideAllPoints();
         ResetStepState();
+
+        // QTE는 해당 생존자 로컬 UI에서만 뜨므로 로컬 2D 소리로 재생한다.
+        PlayLocalSound(qteAppearSoundKey);
 
         qteRoutine = StartCoroutine(SingleQTERoutine());
     }
@@ -194,12 +201,28 @@ public class QTEUI : MonoBehaviour
         HideAllPoints();
         HideUI();
 
+        // 성공했을 때만 성공 소리를 재생한다.
+        if (success)
+            PlayLocalSound(qteSuccessSoundKey);
+
         Action<bool> callback = finishCallback;
         finishCallback = null;
 
         ResetStepState();
 
         callback?.Invoke(success);
+    }
+
+    private void PlayLocalSound(AudioKey key)
+    {
+        if (key == AudioKey.None)
+            return;
+
+        AudioManager.PlayLocalAudio(
+            key,
+            AudioDimension.Sound2D,
+            Vector3.zero
+        );
     }
 
     private void EnableInput()
