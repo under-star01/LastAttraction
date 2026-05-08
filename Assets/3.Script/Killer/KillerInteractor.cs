@@ -102,10 +102,44 @@ public class KillerInteractor : NetworkBehaviour
     [Server]
     private IEnumerator IncageRoutineServer(SurvivorState survivor, Prison prison)
     {
+        RpcPlaySurvivorSmoke(survivor.gameObject);
+
         yield return new WaitForSeconds(2.1f);
 
         prison.SetPrisoner(survivor);
         state.ChangeState(KillerCondition.Idle);
+    }
+
+    [ClientRpc]
+    private void RpcPlaySurvivorSmoke(GameObject survivorObj)
+    {
+        if (survivorObj == null) return;
+
+        // 생존자 자식 중에서 "Smoke_air"라는 이름을 가진 파티클 시스템을 찾음
+        // transform.Find는 직계 자식만 찾으므로, 깊은 곳에 있다면 GetComponentsInChildren 사용
+        Transform smokeTransform = survivorObj.transform.Find("Smoke_air");
+
+        if (smokeTransform != null)
+        {
+            ParticleSystem ps = smokeTransform.GetComponent<ParticleSystem>();
+            if (ps != null)
+            {
+                ps.Play();
+            }
+        }
+        else
+        {
+            // 만약 경로가 복잡할 경우를 대비한 백업 (성능을 위해 Find를 우선 권장)
+            ParticleSystem[] allPS = survivorObj.GetComponentsInChildren<ParticleSystem>();
+            foreach (var ps in allPS)
+            {
+                if (ps.gameObject.name == "Smoke_air")
+                {
+                    ps.Play();
+                    break;
+                }
+            }
+        }
     }
 
     [Command]

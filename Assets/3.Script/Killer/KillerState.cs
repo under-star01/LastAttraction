@@ -9,6 +9,7 @@ public enum KillerCondition { Idle, Lunging, Recovering, Hit, Vaulting, Breaking
 public class KillerState : NetworkBehaviour
 {
     private Animator animator;
+    [SerializeField] private ParticleSystem rageParticle;
 
     [Header("Sync Variables")]
     [SyncVar(hook = nameof(OnConditionChanged))]
@@ -48,6 +49,17 @@ public class KillerState : NetworkBehaviour
     {
         animator = GetComponentInChildren<Animator>();
         InitURPFeature();
+
+        if (rageParticle == null)
+        {
+            Transform fxTransform = transform.Find("Fire Effects White");
+            if (fxTransform != null)
+                rageParticle = fxTransform.GetComponent<ParticleSystem>();
+        }
+
+        // 게임 시작 시 파티클은 멈춰있는 상태로 보장
+        if (rageParticle != null)
+            rageParticle.Stop();
     }
 
     private void Update()
@@ -208,9 +220,20 @@ public class KillerState : NetworkBehaviour
             rageEffectFeature.SetActive(newVal);
         }
 
-        var detector = GetComponent<KillerDetector>();
+        if (rageParticle != null)
+        {
+            if (newVal) // 분노 시작
+            {
+                rageParticle.Play();
+            }
+            else // 분노 종료
+            {
+                rageParticle.Stop();
+            }
+        }
 
-        // 2. 분노가 활성화되었을 때 Detector 처리
+        // 3. Detector 처리
+        var detector = GetComponent<KillerDetector>();
         if (newVal)
         {
             detector?.SetActive(true);
