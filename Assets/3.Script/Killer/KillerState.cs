@@ -187,16 +187,16 @@ public class KillerState : NetworkBehaviour
     [Server]
     public void ActivateRage()
     {
-        Debug.Log($"[KillerState] ActivateRage 호출됨 / 현재 isRaging: {isRaging}");
+        //Debug.Log($"[KillerState] ActivateRage 호출됨 / 현재 isRaging: {isRaging}");
         if (isRaging) return;
         isRaging = true;
-        Debug.Log("[KillerState] isRaging = true 설정 완료");
+        //Debug.Log("[KillerState] isRaging = true 설정 완료");
     }
 
     [Command]
     private void CmdTestActivateRage()
     {
-        Debug.Log("[KillerState] CmdTestActivateRage 호출됨 (서버)");
+        //Debug.Log("[KillerState] CmdTestActivateRage 호출됨 (서버)");
         ActivateRage();
     }
 
@@ -208,16 +208,15 @@ public class KillerState : NetworkBehaviour
             rageEffectFeature.SetActive(newVal);
         }
 
+        var detector = GetComponent<KillerDetector>();
+
         // 2. 분노가 활성화되었을 때 Detector 처리
         if (newVal)
         {
-            var detector = GetComponent<KillerRageDetector>();
             detector?.SetActive(true);
         }
         else
         {
-            // 3. 분노가 끝났을 때 뒷정리 (실루엣 지우기 등)
-            var detector = GetComponent<KillerRageDetector>();
             detector?.SetActive(false);
         }
     }
