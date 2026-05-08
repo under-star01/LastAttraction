@@ -36,6 +36,9 @@ public class KillerState : NetworkBehaviour
     [SerializeField] private float detectRange = 15f;          // 감지 거리
     [SerializeField] private LayerMask survivorLayer;          // 생존자 레이어
 
+    [Header("Rage Effect")]
+    [SerializeField] private ParticleSystem rageParticle;
+
     [Header("Rage 오디오")]
     [SerializeField] private AudioKey rageStartSoundKey = AudioKey.KillerRageStart;
     [SerializeField] private Vector3 rageStartSoundOffset = new Vector3(0f, 1.2f, 0f);
@@ -64,6 +67,9 @@ public class KillerState : NetworkBehaviour
     {
         animator = GetComponentInChildren<Animator>();
         InitURPFeature();
+
+        if (rageParticle != null)
+            rageParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
     }
 
     private void Update()
@@ -305,6 +311,14 @@ public class KillerState : NetworkBehaviour
         // 붉은 화면 효과는 오직 킬러 본인 화면에서만 적용한다.
         if (isLocalPlayer && rageEffectFeature != null)
             rageEffectFeature.SetActive(newVal);
+
+        if (rageParticle != null)
+        {
+            if (newVal)
+                rageParticle.Play(true);
+            else
+                rageParticle.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
 
         KillerDetector detector = GetComponent<KillerDetector>();
 
