@@ -16,6 +16,7 @@ public class SurvivorMove : NetworkBehaviour
     [SerializeField] private float crouchSpeed = 1.2f;
     [SerializeField] private float crawlSpeed = 0.6f;
     [SerializeField] private float turnSpeed = 15f;
+    [SerializeField] private float escapeRunDuration = 2f;
 
     [Header("Ä«¸Þ¶ó")]
     [SerializeField] private float mouseSensitivity = 0.1f;
@@ -53,6 +54,7 @@ public class SurvivorMove : NetworkBehaviour
     private bool isResultPlaying;
     private float serverYaw;
     private float serverPitch;
+    private float escapeRunEndTime;
 
     [SyncVar] private float syncedYaw;
     [SyncVar] private float syncedPitch;
@@ -864,6 +866,8 @@ public class SurvivorMove : NetworkBehaviour
             ApplyFace(dir.normalized);
             RpcFace(dir.normalized);
         }
+
+        escapeRunEndTime = Time.time + escapeRunDuration;
     }
 
     [ClientRpc]
@@ -888,16 +892,28 @@ public class SurvivorMove : NetworkBehaviour
     [Server]
     private void EscapeMoveTick()
     {
-        Vector3 toTarget = escapeTarget.position - transform.position;
-        toTarget.y = 0f;
-
-        if (toTarget.magnitude <= 0.25f)
+        if (Time.time >= escapeRunEndTime)
         {
             EscapeArrive();
             return;
         }
 
-        Vector3 moveDir = toTarget.normalized;
+        Vector3 moveDir = Vector3.zero;
+
+        if (modelRoot != null)
+            moveDir = modelRoot.forward;
+        else if (escapeTarget != null)
+            moveDir = escapeTarget.position - transform.position;
+
+        moveDir.y = 0f;
+
+        if (moveDir.sqrMagnitude <= 0.001f)
+        {
+            EscapeArrive();
+            return;
+        }
+
+        moveDir.Normalize();
 
         if (controller.isGrounded)
             yVelocity = -1f;

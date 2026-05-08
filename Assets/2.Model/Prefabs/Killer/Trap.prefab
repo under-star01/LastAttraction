@@ -166,7 +166,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -4944353850206307341, guid: 8f8e096b4f3ee51478e33e45e9aa5ba9, type: 3}
+  - {fileID: 2100000, guid: d24085d695075964ba1a5a50e8451b03, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -593,7 +593,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -33571790391141943, guid: 8f8e096b4f3ee51478e33e45e9aa5ba9, type: 3}
+  - {fileID: 2100000, guid: c6126598238d3fa4f9493a6cb86df9a7, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1057,6 +1057,8 @@ MonoBehaviour:
   stunDuration: 3
   destroyDelay: 3
   animator: {fileID: 6791640163031684750}
+  triggerSoundKey: 23
+  soundOffset: {x: 0, y: 0.15, z: 0}
 --- !u!135 &7945759237201735083
 SphereCollider:
   m_ObjectHideFlags: 0

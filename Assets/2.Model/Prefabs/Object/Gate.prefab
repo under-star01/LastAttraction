@@ -510,6 +510,7 @@ MonoBehaviour:
   syncInterval: 0
   animator: {fileID: 8539090367418835706}
   openTriggerName: Open
+  openSoundKey: 17
 --- !u!114 &6536543671469599151
 MonoBehaviour:
   m_ObjectHideFlags: 0
