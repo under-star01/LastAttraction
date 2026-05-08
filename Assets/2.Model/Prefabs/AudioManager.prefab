@@ -182,7 +182,7 @@ MonoBehaviour:
     minDistance: 1
     maxDistance: 32
   - key: 27
-    clip: {fileID: 8300000, guid: 346e795e133c9b240b0b6af615371554, type: 3}
+    clip: {fileID: 8300000, guid: f44f0bdd1af99fa4ba701d40a242e4dc, type: 3}
     volume: 1
     minDistance: 1
     maxDistance: 32
