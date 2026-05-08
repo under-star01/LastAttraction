@@ -44,6 +44,9 @@ public class GameManager : NetworkBehaviour
     [SerializeField] private float uploadTime = 60f;
     [SerializeField] private UploadComputer[] uploadComputers;
 
+    [Header("업로드 알림음")]
+    [SerializeField] private AudioKey uploadNoticeSoundKey = AudioKey.UploadComputerReady;
+
     [Header("탈출문")]
     [SerializeField] private EscapeGate[] escapeGates;
 
@@ -399,6 +402,7 @@ public class GameManager : NetworkBehaviour
                 continue;
 
             SurvivorCameraSkill cameraSkill = conn.identity.GetComponent<SurvivorCameraSkill>();
+
             if (cameraSkill == null)
                 continue;
 
@@ -463,6 +467,9 @@ public class GameManager : NetworkBehaviour
 
         canUpload = true;
 
+        // 목표 완료로 업로드 컴퓨터가 활성화되는 순간 모두에게 2D 알림음을 재생한다.
+        ServerPlayUploadNoticeSound();
+
         Debug.Log("[GameManager] 통합 목표 완료. 업로드 컴퓨터 활성화.");
 
         for (int i = 0; i < uploadComputers.Length; i++)
@@ -470,6 +477,25 @@ public class GameManager : NetworkBehaviour
             if (uploadComputers[i] != null)
                 uploadComputers[i].SetOpen(true);
         }
+    }
+
+    // 업로드 관련 중요 알림음을 모두에게 2D로 재생한다.
+    // - 목표 완료 후 업로드 컴퓨터 활성화
+    // - 업로드 완료 후 탈출문 대기 시작
+    [Server]
+    private void ServerPlayUploadNoticeSound()
+    {
+        if (NetworkAudioManager.Instance == null)
+            return;
+
+        if (uploadNoticeSoundKey == AudioKey.None)
+            return;
+
+        NetworkAudioManager.PlayAudioForEveryone(
+            uploadNoticeSoundKey,
+            AudioDimension.Sound2D,
+            Vector3.zero
+        );
     }
 
     // 업로드 중인 생존자 수만큼 공유 진행도를 증가시킨다.
@@ -524,6 +550,9 @@ public class GameManager : NetworkBehaviour
         canUpload = false;
         isWaitingGateOpen = true;
         gateRemainTime = gateOpenDelay;
+
+        // 업로드 완료 순간에도 업로드 컴퓨터 활성화 때와 같은 2D 알림음을 재생한다.
+        ServerPlayUploadNoticeSound();
 
         Debug.Log("[GameManager] 업로드 완료. 탈출문 개방 대기 시작.");
 

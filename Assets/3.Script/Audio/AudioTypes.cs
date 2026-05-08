@@ -63,5 +63,11 @@ public enum AudioKey
     // 살인마 공격 / 레이지
     KillerWeaponSwing,      // 살인마 무기 휘두르는 소리
     KillerAttackHit,        // 살인마 공격 성공 타격 소리
-    KillerRageStart         // 살인마 Rage 상태 진입 소리
+    KillerRageStart,        // 살인마 Rage 상태 진입 소리
+
+    // 감옥
+    KillerIncage,           // 살인마가 생존자를 감옥에 넣을 때 소리
+
+    // 목표 / 업로드
+    UploadComputerReady     // 목표 완료 후 업로드 컴퓨터 활성화 경고음
 }
