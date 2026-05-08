@@ -996,7 +996,7 @@ Transform:
   m_GameObject: {fileID: 954398526661813793}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 0, y: 0.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -19515,7 +19515,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.44, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.7, y: 0.7, z: 0.7}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7911946122265337957}
@@ -26371,7 +26371,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  rageParticle: {fileID: 0}
+  rageParticle: {fileID: 3773079075084796325, guid: 7ac53a0c1e23ef34093b70eec67c8878, type: 3}
   isRaging: 0
   rageBuildThreshold: 1
   rageDuration: 10

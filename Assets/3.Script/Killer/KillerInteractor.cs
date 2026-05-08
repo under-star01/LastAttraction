@@ -117,7 +117,7 @@ public class KillerInteractor : NetworkBehaviour
 
         // 생존자 자식 중에서 "Smoke_air"라는 이름을 가진 파티클 시스템을 찾음
         // transform.Find는 직계 자식만 찾으므로, 깊은 곳에 있다면 GetComponentsInChildren 사용
-        Transform smokeTransform = survivorObj.transform.Find("Smoke_air");
+        Transform smokeTransform = survivorObj.transform.Find("Smoke puff");
 
         if (smokeTransform != null)
         {
@@ -133,7 +133,7 @@ public class KillerInteractor : NetworkBehaviour
             ParticleSystem[] allPS = survivorObj.GetComponentsInChildren<ParticleSystem>();
             foreach (var ps in allPS)
             {
-                if (ps.gameObject.name == "Smoke_air")
+                if (ps.gameObject.name == "Smoke puff")
                 {
                     ps.Play();
                     break;
