@@ -595,6 +595,32 @@ public class SurvivorCameraSkill : NetworkBehaviour
         SetFrameDetected(false, true);
     }
 
+    public void ApplyResultView()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (normalCinemachine != null)
+            normalCinemachine.Priority = 0;
+
+        if (skillCinemachine != null)
+            skillCinemachine.Priority = 0;
+
+        if (resultCinemachine != null)
+            resultCinemachine.Priority = 30;
+
+        if (skillCamera != null)
+            skillCamera.enabled = false;
+
+        if (skillUI != null)
+            skillUI.Hide();
+
+        if (localCameraModel != null)
+            localCameraModel.SetActive(false);
+
+        SetFrameDetected(false, true);
+    }
+
     [Command]
     private void CmdSetRecordingKiller(bool value)
     {
