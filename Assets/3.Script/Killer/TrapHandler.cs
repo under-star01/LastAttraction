@@ -294,11 +294,26 @@ public class TrapHandler : NetworkBehaviour
         {
             foreach (Material mat in r.materials)
             {
+                // 1. URP 재질을 강제로 투명(Transparent) 모드로 변경
+                mat.SetFloat("_Surface", 1); // 0 = Opaque, 1 = Transparent
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                mat.SetInt("_ZWrite", 0);
+                mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+
+                // 2. 투명도(Alpha) 적용
                 if (mat.HasProperty("_BaseColor"))
                 {
                     Color color = mat.GetColor("_BaseColor");
                     color.a = alpha;
                     mat.SetColor("_BaseColor", color);
+                }
+                else if (mat.HasProperty("_Color")) // 레거시 셰이더 대비
+                {
+                    Color color = mat.GetColor("_Color");
+                    color.a = alpha;
+                    mat.SetColor("_Color", color);
                 }
             }
         }
@@ -313,6 +328,7 @@ public class TrapHandler : NetworkBehaviour
         {
             foreach (Material mat in r.materials)
             {
+                // (SetGhostVisual에서 이미 투명 모드로 바꿨으므로 색상만 변경)
                 if (mat.HasProperty("_BaseColor"))
                     mat.SetColor("_BaseColor", feedbackColor);
                 else if (mat.HasProperty("_Color"))
