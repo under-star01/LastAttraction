@@ -13,7 +13,7 @@ public enum SurvivorCondition
 }
 
 // 생존자 성별
-// 다칠 때 소리, 다운 피격음, 신음소리를 남자 / 여자 캐릭터별로 다르게 재생하기 위해 사용한다.
+// 다칠 때 소리, 다운 피격음, 신음소리, 스턴 놀람 소리를 남자 / 여자 캐릭터별로 다르게 재생하기 위해 사용한다.
 public enum SurvivorGender
 {
     Male,
@@ -40,6 +40,8 @@ public class SurvivorState : NetworkBehaviour
     [SerializeField] private AudioKey femaleDownHitSoundKey = AudioKey.SurvivorFemaleDownHit;     // 여자 다운 피격 소리
     [SerializeField] private AudioKey maleGroanSoundKey = AudioKey.SurvivorMaleGroan;             // 남자 신음소리 루프
     [SerializeField] private AudioKey femaleGroanSoundKey = AudioKey.SurvivorFemaleGroan;         // 여자 신음소리 루프
+    [SerializeField] private AudioKey maleStunSoundKey = AudioKey.SurvivorMaleStun;               // 남자 QTE 실패 / 트랩 스턴 놀람 소리
+    [SerializeField] private AudioKey femaleStunSoundKey = AudioKey.SurvivorFemaleStun;           // 여자 QTE 실패 / 트랩 스턴 놀람 소리
 
     [Header("감옥 시간")]
     [SerializeField] private float prisonFullTime = 120f;
@@ -425,6 +427,16 @@ public class SurvivorState : NetworkBehaviour
         if (actionState == null)
             return;
 
+        // 이미 다운 피격 중이거나 스턴 중이면 중복 스턴과 중복 사운드를 막는다.
+        if (actionState.CurrentAction == SurvivorAction.DownHit)
+            return;
+
+        if (actionState.CurrentAction == SurvivorAction.Stunned)
+            return;
+
+        // QTE 실패 / 트랩 밟음으로 실제 스턴이 시작될 때 성별에 맞는 놀람 소리를 재생한다.
+        PlayWorld3DSound(GetStunSoundKey());
+
         StartCoroutine(actionState.StunRoutine(duration));
     }
 
@@ -520,6 +532,18 @@ public class SurvivorState : NetworkBehaviour
 
         if (gender == SurvivorGender.Female)
             return femaleGroanSoundKey;
+
+        return AudioKey.None;
+    }
+
+    // 현재 생존자 성별에 맞는 QTE 실패 / 트랩 스턴 놀람 소리 AudioKey를 반환한다.
+    private AudioKey GetStunSoundKey()
+    {
+        if (gender == SurvivorGender.Male)
+            return maleStunSoundKey;
+
+        if (gender == SurvivorGender.Female)
+            return femaleStunSoundKey;
 
         return AudioKey.None;
     }

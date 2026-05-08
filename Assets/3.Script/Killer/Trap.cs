@@ -9,6 +9,10 @@ public class Trap : NetworkBehaviour
     [SerializeField] private float destroyDelay = 3.0f;   // 발동 후 제거까지 시간
     [SerializeField] private Animator animator;
 
+    [Header("오디오")]
+    [SerializeField] private AudioKey triggerSoundKey = AudioKey.TrapTrigger; // 트랩 발동 소리
+    [SerializeField] private Vector3 soundOffset = new Vector3(0f, 0.15f, 0f); // 바닥보다 살짝 위에서 재생
+
     [SyncVar]
     private bool isTriggered = false; // 중복 발동 방지
 
@@ -49,7 +53,11 @@ public class Trap : NetworkBehaviour
 
         isTriggered = true;
 
+        // 트랩 발동 순간 모든 클라이언트에게 3D 사운드를 한 번 재생한다.
+        PlayTriggerSound();
+
         // 생존자에게 공통 스턴 적용
+        // SurvivorState.ApplyStun 안에서 성별 놀람 소리도 같이 재생된다.
         survivor.ApplyStun(stunDuration);
 
         // 트랩 자체 발동 애니메이션 동기화
@@ -59,14 +67,29 @@ public class Trap : NetworkBehaviour
         StartCoroutine(DestroyAfterDelay(destroyDelay));
     }
 
+    // 서버에서 트랩 발동 사운드 재생
+    [Server]
+    private void PlayTriggerSound()
+    {
+        if (triggerSoundKey == AudioKey.None)
+            return;
+
+        if (NetworkAudioManager.Instance == null)
+            return;
+
+        NetworkAudioManager.PlayAudioForEveryone(
+            triggerSoundKey,
+            AudioDimension.Sound3D,
+            transform.position + soundOffset
+        );
+    }
+
     // 모든 클라이언트에서 트랩 발동 연출 실행
     [ClientRpc]
     private void RpcPlayTriggerEffects()
     {
         if (animator != null)
             animator.SetTrigger("Snap");
-
-        // 필요하면 여기에 발동 사운드 추가 가능
     }
 
     // 서버에서 트랩 제거

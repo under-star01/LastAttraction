@@ -140,7 +140,47 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: d7cd0f0f23eb26c46b37dea0cc93bfd4, type: 3}
     volume: 1
     minDistance: 1
-    maxDistance: 16
+    maxDistance: 24
+  - key: 19
+    clip: {fileID: 8300000, guid: 6d5008842b5a2634a8526d15d158e9ec, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 24
+  - key: 20
+    clip: {fileID: 8300000, guid: 5e5e5c0ce8ee01c4c9cf7f4e707e39c4, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 24
+  - key: 21
+    clip: {fileID: 8300000, guid: 9f348993f20df634790d40afbb835786, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 22
+    clip: {fileID: 8300000, guid: a0b165e3a238b6c4eabc80302364b53b, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 23
+    clip: {fileID: 8300000, guid: d25282a3d4857fe429293f817f194cbb, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 24
+    clip: {fileID: 8300000, guid: d25282a3d4857fe429293f817f194cbb, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 25
+    clip: {fileID: 8300000, guid: 810e027e64dd3a145a614ecd03c1cb0d, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 26
+    clip: {fileID: 8300000, guid: d25282a3d4857fe429293f817f194cbb, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
   audioSource2D: {fileID: 8766702895734314766}
 --- !u!82 &8766702895734314766
 AudioSource:

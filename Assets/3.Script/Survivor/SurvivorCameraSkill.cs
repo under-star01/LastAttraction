@@ -45,6 +45,9 @@ public class SurvivorCameraSkill : NetworkBehaviour
     [Header("스킬 재사용 딜레이")]
     [SerializeField] private float skillReuseDelay = 1f;        // 스킬 종료 후 다시 켜기까지 걸리는 시간
 
+    [Header("카메라 스킬 사운드")]
+    [SerializeField] private Vector3 cameraSkillSoundOffset = new Vector3(0f, 1.2f, 0f);
+
     private Image[] frameImages;
 
     [SyncVar(hook = nameof(OnSkillChanged))]
@@ -137,6 +140,15 @@ public class SurvivorCameraSkill : NetworkBehaviour
         }
     }
 
+    public override void OnStopClient()
+    {
+        base.OnStopClient();
+
+        // 네트워크 오브젝트가 사라질 때 카메라 노이즈 루프가 남는 것을 방지한다.
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.StopLoopAudio(netId, AudioKey.CameraSkillLoop);
+    }
+
     private void Update()
     {
         if (!isLocalPlayer)
@@ -216,9 +228,53 @@ public class SurvivorCameraSkill : NetworkBehaviour
         isUse = value;
         act.SetCam(value);
 
+        // 서버에서 실제 카메라 스킬 상태가 바뀐 순간에만 사운드를 처리한다.
+        // 켜질 때는 시작 소리 + 노이즈 루프 시작,
+        // 꺼질 때는 노이즈 루프만 정지한다.
+        ServerSetCameraSkillSound(value);
+
         // 카메라 스킬이 꺼지는 순간 촬영 상태도 서버 기준으로 초기화한다.
         if (!value)
             isRecordingKiller = false;
+    }
+
+    // 서버에서 카메라 스킬 사운드를 처리한다.
+    // 켜질 때: 카메라 켜지는 소리 1회 + 노이즈 루프 시작
+    // 꺼질 때: 노이즈 루프만 정지
+    [Server]
+    private void ServerSetCameraSkillSound(bool value)
+    {
+        if (NetworkAudioManager.Instance == null)
+            return;
+
+        Vector3 playPosition = transform.position + cameraSkillSoundOffset;
+
+        if (value)
+        {
+            // 카메라를 켜는 순간 나는 3D 소리
+            NetworkAudioManager.PlayAudioForEveryone(
+                AudioKey.CameraSkillOn,
+                AudioDimension.Sound3D,
+                playPosition
+            );
+
+            // 카메라를 사용하는 동안 계속 나는 노이즈 루프
+            // netId를 넘겨서 루프 사운드가 생존자를 따라다니게 한다.
+            NetworkAudioManager.StartLoopAudioForEveryone(
+                netId,
+                AudioKey.CameraSkillLoop,
+                AudioDimension.Sound3D,
+                playPosition
+            );
+        }
+        else
+        {
+            // 꺼지는 소리는 재생하지 않고, 노이즈 루프만 멈춘다.
+            NetworkAudioManager.StopLoopAudioForEveryone(
+                netId,
+                AudioKey.CameraSkillLoop
+            );
+        }
     }
 
     // 스킬 on/off가 바뀌면 애니메이션 / 카메라 모델 / 로컬 화면을 갱신한다.
