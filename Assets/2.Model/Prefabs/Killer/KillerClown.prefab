@@ -70,6 +70,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KillerAnimationEventReceiver
   killerMove: {fileID: 835159930052555109}
+  killerCombat: {fileID: 7075201297679001473}
 --- !u!1 &17375818028257004
 GameObject:
   m_ObjectHideFlags: 0
@@ -26305,6 +26306,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   baseAttackAnimationLength: 1.5
+  weaponSwingSoundKey: 24
+  attackHitSoundKey: 25
+  weaponSwingSoundOffset: {x: 0, y: 1.2, z: 0}
+  attackHitSoundOffset: {x: 0, y: 1, z: 0}
+  weaponSwingMinInterval: 0.08
 --- !u!114 &5235919282365729995
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26342,6 +26348,8 @@ MonoBehaviour:
   survivorLayer:
     serializedVersion: 2
     m_Bits: 2112
+  incageSoundKey: 27
+  incageSoundOffset: {x: 0, y: 1, z: 0}
 --- !u!114 &835159930052555109
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26396,6 +26404,8 @@ MonoBehaviour:
   survivorLayer:
     serializedVersion: 2
     m_Bits: 393280
+  rageStartSoundKey: 26
+  rageStartSoundOffset: {x: 0, y: 1.2, z: 0}
 --- !u!114 &3390365132958246041
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -9,6 +9,10 @@ public class KillerInteractor : NetworkBehaviour
     public LayerMask interactLayer;
     public LayerMask survivorLayer;
 
+    [Header("오디오")]
+    [SerializeField] private AudioKey incageSoundKey = AudioKey.KillerIncage; // 생존자를 감옥에 넣을 때 소리
+    [SerializeField] private Vector3 incageSoundOffset = new Vector3(0f, 1.0f, 0f);
+
     private KillerInput input;
     private KillerState state;
     private IInteractable currentTarget;
@@ -106,8 +110,28 @@ public class KillerInteractor : NetworkBehaviour
 
         yield return new WaitForSeconds(2.1f);
 
+        // 감옥에 넣는 처리가 실제로 확정되는 순간 3D 사운드 재생
+        ServerPlayIncageSound(prison.transform.position);
+
         prison.SetPrisoner(survivor);
         state.ChangeState(KillerCondition.Idle);
+    }
+
+    // 서버에서 감옥 넣기 성공 사운드를 모든 클라이언트에게 3D로 재생한다.
+    [Server]
+    private void ServerPlayIncageSound(Vector3 prisonPosition)
+    {
+        if (NetworkAudioManager.Instance == null)
+            return;
+
+        if (incageSoundKey == AudioKey.None)
+            return;
+
+        NetworkAudioManager.PlayAudioForEveryone(
+            incageSoundKey,
+            AudioDimension.Sound3D,
+            prisonPosition + incageSoundOffset
+        );
     }
 
     [ClientRpc]
