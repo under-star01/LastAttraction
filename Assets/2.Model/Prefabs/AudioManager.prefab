@@ -133,7 +133,7 @@ MonoBehaviour:
     maxDistance: 8
   - key: 17
     clip: {fileID: 8300000, guid: b5963b7577ece7841bfaba74434a4f55, type: 3}
-    volume: 0.5
+    volume: 0.3
     minDistance: 1
     maxDistance: 150
   - key: 18
@@ -168,7 +168,7 @@ MonoBehaviour:
     maxDistance: 32
   - key: 24
     clip: {fileID: 8300000, guid: 9f72bed8015a6de4193df5d7b19a5481, type: 3}
-    volume: 1
+    volume: 0.7
     minDistance: 1
     maxDistance: 32
   - key: 25
@@ -179,6 +179,16 @@ MonoBehaviour:
   - key: 26
     clip: {fileID: 8300000, guid: 83944af3d8c28fd4eb4abc7ff8fe0037, type: 3}
     volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 27
+    clip: {fileID: 8300000, guid: 346e795e133c9b240b0b6af615371554, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 28
+    clip: {fileID: 8300000, guid: 34a52cace7a84f04a94ed959d577ea88, type: 3}
+    volume: 0.5
     minDistance: 1
     maxDistance: 32
   audioSource2D: {fileID: 8766702895734314766}
