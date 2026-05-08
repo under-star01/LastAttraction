@@ -995,7 +995,7 @@ public class SurvivorMove : NetworkBehaviour
 
         isResultPlaying = true;
 
-        StopAllCoroutines();
+        escapeTarget = null;
 
         // 결과 연출 중에는 이동 입력 제거
         serverMoveInput = Vector2.zero;
@@ -1004,14 +1004,14 @@ public class SurvivorMove : NetworkBehaviour
 
         isMoveLocked = true;
 
+        // 사망 후 로컬 입력 비활성화
+        TargetDisableSurvivorInput(connectionToClient);
+
         // 스킬 / 상호작용 계열 애니메이션 정리
         SetCamAnim(false);
         SetSearching(false);
         SetVaulting(false);
         SetStunned(false);
-
-        // 사망 결과 위치로 이동
-        MoveToResultPoint();
 
         // 결과 연출에서는 서 있는 크기로 복구
         SetSize(standHeight, standCenter);
@@ -1020,18 +1020,8 @@ public class SurvivorMove : NetworkBehaviour
         if (moveState != null)
             moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
 
-        RpcApplyDeadResultView();
+        StartCoroutine(ResultRoutine());
 
-        Debug.Log("[SurvivorMove] Dead result view started.");
-    }
-
-    [ClientRpc]
-    private void RpcApplyDeadResultView()
-    {
-        if (!isLocalPlayer)
-            return;
-
-        if (camSkill != null)
-            camSkill.ApplyEscapeView();
+        Debug.Log("[SurvivorMove] Dead result routine started.");
     }
 }
