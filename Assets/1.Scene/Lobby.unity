@@ -2587,14 +2587,14 @@ MonoBehaviour:
   ready2Object: {fileID: 1389064343}
   ready3Object: {fileID: 1279591773}
   ready4Object: {fileID: 1605977591}
-  killerReady1Pos: {x: -710, y: 100}
-  killerReady2Pos: {x: -480, y: 100}
-  killerReady3Pos: {x: -250, y: 100}
-  killerReady4Pos: {x: -20, y: 100}
-  survivorReady1Pos: {x: -630, y: 120}
-  survivorReady2Pos: {x: -250, y: 120}
-  survivorReady3Pos: {x: 130, y: 120}
-  survivorReady4Pos: {x: 510, y: 120}
+  killerReady1Pos: {x: -735, y: 100}
+  killerReady2Pos: {x: -535, y: 100}
+  killerReady3Pos: {x: -335, y: 100}
+  killerReady4Pos: {x: -135, y: 100}
+  survivorReady1Pos: {x: -650, y: 120}
+  survivorReady2Pos: {x: -300, y: 120}
+  survivorReady3Pos: {x: 50, y: 120}
+  survivorReady4Pos: {x: 400, y: 120}
   loadingPanel: {fileID: 250621163}
 --- !u!1 &1389064342
 GameObject:
