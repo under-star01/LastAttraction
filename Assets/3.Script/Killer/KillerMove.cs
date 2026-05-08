@@ -268,7 +268,9 @@ public class KillerMove : NetworkBehaviour
             if (survivors[i] == null)
                 continue;
 
-            if (!survivors[i].IsDead)
+            bool isFinished = survivors[i].IsDead || survivors[i].IsEscaping;
+
+            if (!isFinished)
                 return;
         }
 

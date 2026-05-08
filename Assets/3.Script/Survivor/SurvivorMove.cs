@@ -854,6 +854,11 @@ public class SurvivorMove : NetworkBehaviour
         if (state != null)
             state.SetEscape();
 
+        KillerMove killer = FindFirstObjectByType<KillerMove>();
+
+        if (killer != null)
+            killer.CheckAllSurvivorsDeadAndShowResult();
+
         // 앉은 상태였다면 서 있는 크기로 복구
         SetSize(standHeight, standCenter);
 
