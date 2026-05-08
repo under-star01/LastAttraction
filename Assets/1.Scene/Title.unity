@@ -1546,7 +1546,7 @@ MonoBehaviour:
   onlineScene: 
   offlineSceneLoadDelay: 0
   transport: {fileID: 937750406}
-  networkAddress: 15.164.50.111
+  networkAddress: 13.125.250.255
   maxConnections: 100
   disconnectInactiveConnections: 0
   disconnectInactiveTimeout: 60
@@ -1570,7 +1570,7 @@ MonoBehaviour:
   evaluationMethod: 0
   evaluationInterval: 3
   timeInterpolationGui: 0
-  authAddress: 15.164.50.111
+  authAddress: 13.125.250.255
   authPort: 7770
   kcpTransport: {fileID: 937750406}
 --- !u!114 &937750406
