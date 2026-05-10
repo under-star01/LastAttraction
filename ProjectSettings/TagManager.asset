@@ -8,6 +8,7 @@ TagManager:
   - Killer
   - Pallet
   - Window
+  - Evidence
   layers:
   - Default
   - TransparentFX
@@ -23,11 +24,11 @@ TagManager:
   - Downed
   - Door
   - Sur_Trigger
-  - 
-  - 
-  - 
-  - 
-  - 
+  - CamLocal
+  - CamWorld
+  - HideSelf
+  - BoxOutline
+  - SurvivorSilhouette
   - 
   - 
   - 

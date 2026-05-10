@@ -145,6 +145,24 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Interact3"",
+                    ""type"": ""Button"",
+                    ""id"": ""f5ff4896-a227-4292-9c85-e9e76d6d89b9"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""CameraSkill"",
+                    ""type"": ""Button"",
+                    ""id"": ""9d6fc406-5359-44bd-ad17-8a8c80ea78c7"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -255,6 +273,61 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": "";PC"",
                     ""action"": ""Interact2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""0dfde9f0-3738-4a6d-9a79-667195989f77"",
+                    ""path"": ""<Keyboard>/w"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";PC"",
+                    ""action"": ""Interact3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1b1e8a34-87e4-4a67-a723-e0e764b3a400"",
+                    ""path"": ""<Keyboard>/a"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";PC"",
+                    ""action"": ""Interact3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""703b465b-b601-47d5-ba01-4ff8e3397b02"",
+                    ""path"": ""<Keyboard>/s"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";PC"",
+                    ""action"": ""Interact3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""49d6a001-fb37-4a5c-8da7-c824c4ede180"",
+                    ""path"": ""<Keyboard>/d"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";PC"",
+                    ""action"": ""Interact3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2353b9f2-cf6e-4477-8467-598f4629d994"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";PC"",
+                    ""action"": ""CameraSkill"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -460,6 +533,8 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         m_Player_Crouch = m_Player.FindAction("Crouch", throwIfNotFound: true);
         m_Player_Interact1 = m_Player.FindAction("Interact1", throwIfNotFound: true);
         m_Player_Interact2 = m_Player.FindAction("Interact2", throwIfNotFound: true);
+        m_Player_Interact3 = m_Player.FindAction("Interact3", throwIfNotFound: true);
+        m_Player_CameraSkill = m_Player.FindAction("CameraSkill", throwIfNotFound: true);
         // Killer
         m_Killer = asset.FindActionMap("Killer", throwIfNotFound: true);
         m_Killer_Move = m_Killer.FindAction("Move", throwIfNotFound: true);
@@ -555,6 +630,8 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Crouch;
     private readonly InputAction m_Player_Interact1;
     private readonly InputAction m_Player_Interact2;
+    private readonly InputAction m_Player_Interact3;
+    private readonly InputAction m_Player_CameraSkill;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -590,6 +667,14 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/Interact2".
         /// </summary>
         public InputAction @Interact2 => m_Wrapper.m_Player_Interact2;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Interact3".
+        /// </summary>
+        public InputAction @Interact3 => m_Wrapper.m_Player_Interact3;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/CameraSkill".
+        /// </summary>
+        public InputAction @CameraSkill => m_Wrapper.m_Player_CameraSkill;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -634,6 +719,12 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
             @Interact2.started += instance.OnInteract2;
             @Interact2.performed += instance.OnInteract2;
             @Interact2.canceled += instance.OnInteract2;
+            @Interact3.started += instance.OnInteract3;
+            @Interact3.performed += instance.OnInteract3;
+            @Interact3.canceled += instance.OnInteract3;
+            @CameraSkill.started += instance.OnCameraSkill;
+            @CameraSkill.performed += instance.OnCameraSkill;
+            @CameraSkill.canceled += instance.OnCameraSkill;
         }
 
         /// <summary>
@@ -663,6 +754,12 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
             @Interact2.started -= instance.OnInteract2;
             @Interact2.performed -= instance.OnInteract2;
             @Interact2.canceled -= instance.OnInteract2;
+            @Interact3.started -= instance.OnInteract3;
+            @Interact3.performed -= instance.OnInteract3;
+            @Interact3.canceled -= instance.OnInteract3;
+            @CameraSkill.started -= instance.OnCameraSkill;
+            @CameraSkill.performed -= instance.OnCameraSkill;
+            @CameraSkill.canceled -= instance.OnCameraSkill;
         }
 
         /// <summary>
@@ -909,6 +1006,20 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnInteract2(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Interact3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInteract3(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "CameraSkill" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCameraSkill(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Killer" which allows adding and removing callbacks.

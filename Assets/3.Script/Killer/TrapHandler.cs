@@ -1,6 +1,8 @@
-using UnityEngine;
-using Mirror;
+using System.Collections;
 using System.Collections.Generic;
+using Mirror;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class TrapHandler : NetworkBehaviour
 {
@@ -10,36 +12,121 @@ public class TrapHandler : NetworkBehaviour
     public LayerMask groundMask;
     public LayerMask obstacleMask;
 
+    [Header("Cooldown")]
+    [SerializeField] private float trapInstallCooldown = 5f;
+
+    public bool IsBuildMode => isBuildMode;
+
+    private KillerSkillUI killerSkillUI;
+    private Coroutine trapCooldownRoutine;
     private GameObject ghostInstance;
+    private bool isTrapCooldown;
     private bool isBuildMode = false;
 
-    private Animator animator;
     private Camera cam;
+    private KillerState state;
+    private KillerInput killerInput;
+    private Animator animator;
 
-    // 서버에서 설치된 함정들을 관리할 리스트 (서버 전용) [cite: 2026-04-06]
+    // 서버에서 설치된 함정들을 관리할 리스트
     private readonly List<GameObject> spawnedTraps = new List<GameObject>();
 
-    void Awake()
+    private void Awake()
     {
-        animator = GetComponent<Animator>();
-        cam = GetComponentInChildren<Camera>();
+        state = GetComponent<KillerState>();
+        killerInput = GetComponent<KillerInput>();
+        animator = GetComponentInChildren<Animator>();
     }
 
-    void Update()
+    private void OnEnable()
     {
-        if (!isLocalPlayer || TestMng.inputSys == null) return;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
 
-        if (TestMng.inputSys.Killer.TrapMode.WasPressedThisFrame())
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        if (trapCooldownRoutine != null)
         {
-            ToggleTrapMode();
+            StopCoroutine(trapCooldownRoutine);
+            trapCooldownRoutine = null;
         }
 
-        if (isBuildMode && TestMng.inputSys.Killer.Attack.WasPressedThisFrame())
+        isTrapCooldown = false;
+    }
+
+    public override void OnStartLocalPlayer()
+    {
+        base.OnStartLocalPlayer();
+
+        StartCoroutine(AssignMainCameraNextFrame());
+    }
+
+    public override void OnStopClient()
+    {
+        base.OnStopClient();
+
+        if (isLocalPlayer)
+        {
+            cam = null;
+            CleanupGhost();
+        }
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (!isLocalPlayer)
+            return;
+
+        StartCoroutine(AssignMainCameraNextFrame());
+    }
+
+    private IEnumerator AssignMainCameraNextFrame()
+    {
+        // 씬 로드 직후 Main Camera / CinemachineBrain 초기화 타이밍을 한 프레임 기다림
+        yield return null;
+
+        cam = Camera.main;
+
+        if (cam == null)
+        {
+            Debug.LogWarning("[TrapHandler] Main Camera를 찾지 못했습니다. 씬의 Main Camera 태그를 확인해주세요.", this);
+            yield break;
+        }
+
+        Debug.Log($"[TrapHandler] Main Camera 연결 완료: {cam.name}");
+    }
+
+    private void BindUI()
+    {
+        if (killerSkillUI != null)
+            return;
+
+        if (InGameUIManager.Instance != null)
+            killerSkillUI = InGameUIManager.Instance.GetKillerSkillUI();
+    }
+
+    private void Update()
+    {
+        if (!isLocalPlayer || killerInput == null)
+            return;
+
+        // 함정 모드 토글
+        if (killerInput.IsTrapModePressed)
+        {
+            if (!isTrapCooldown)
+                ToggleTrapMode();
+        }
+
+        if (!isBuildMode)
+            return;
+
+        if (killerInput.IsAttackWasPressed)
         {
             ConfirmInstallation();
         }
-
-        if (isBuildMode && ghostInstance != null)
+        else if (ghostInstance != null)
         {
             UpdateGhostPosition();
         }
@@ -54,58 +141,117 @@ public class TrapHandler : NetworkBehaviour
             if (ghostInstance == null)
             {
                 ghostInstance = Instantiate(trapPrefab);
-                if (ghostInstance.TryGetComponent(out TrapNode node)) node.enabled = false;
+
+                if (ghostInstance.TryGetComponent(out TrapNode node))
+                    node.enabled = false;
+
                 SetGhostVisual(ghostInstance, 0.4f);
             }
+
+            state.CmdChangeKillerState(KillerCondition.Planting);
         }
         else
         {
             CleanupGhost();
+            state.CmdChangeKillerState(KillerCondition.Idle);
         }
     }
 
     private void ConfirmInstallation()
     {
-        if (CanPlace(out Vector3 installPos))
-        {
-            // [수정] 로컬 생성이 아닌 서버 명령(Command)을 반드시 호출해야 합니다. [cite: 2026-04-06]
-            CmdSpawnTrap(installPos);
+        if (isTrapCooldown)
+            return;
 
-            ToggleTrapMode();
-        }
+        if (ghostInstance == null)
+            return;
+
+        if (!CanPlace(out Vector3 installPos))
+            return;
+
+        BindUI();
+
+        if (killerSkillUI != null)
+            killerSkillUI.SetTrapUsing();
+
+        CmdStartPlanting(installPos, ghostInstance.transform.rotation);
+
+        ExitBuildMode();
+
+        StartTrapCooldown();
     }
 
-    [Command] // 클라이언트가 요청하면 서버에서 실행 [cite: 2026-04-06]
-    private void CmdSpawnTrap(Vector3 pos)
+    private void StartTrapCooldown()
     {
-        // 1. 개수 제한 체크 (FIFO 로직) [cite: 2026-04-06]
-        // 리스트에 이미 5개가 있다면 가장 오래된 것(0번)을 제거합니다.
+        if (trapCooldownRoutine != null)
+            StopCoroutine(trapCooldownRoutine);
+
+        trapCooldownRoutine = StartCoroutine(TrapCooldownRoutine());
+    }
+
+    private IEnumerator TrapCooldownRoutine()
+    {
+        isTrapCooldown = true;
+
+        BindUI();
+
+        if (killerSkillUI != null)
+            killerSkillUI.StartTrapCooldown(trapInstallCooldown);
+
+        yield return new WaitForSeconds(trapInstallCooldown);
+
+        isTrapCooldown = false;
+        trapCooldownRoutine = null;
+    }
+
+    [Command]
+    private void CmdStartPlanting(Vector3 pos, Quaternion rot)
+    {
+        state.ChangeState(KillerCondition.Planting);
+
         while (spawnedTraps.Count >= 5)
         {
-            GameObject oldestTrap = spawnedTraps[0];
+            GameObject oldest = spawnedTraps[0];
             spawnedTraps.RemoveAt(0);
 
-            if (oldestTrap != null)
-            {
-                // 서버와 모든 클라이언트 화면에서 동시에 삭제합니다. [cite: 2026-04-06]
-                NetworkServer.Destroy(oldestTrap);
-            }
+            if (oldest != null)
+                NetworkServer.Destroy(oldest);
         }
 
-        // 2. 서버에서 새 함정 물리적 생성
-        GameObject trap = Instantiate(trapPrefab, pos, Quaternion.identity);
+        RpcPlayPlantingEffect();
 
-        // 3. 네트워크 상의 모든 클라이언트에게 이 오브젝트를 보이게 함 (Spawn) [cite: 2026-04-06]
+        GameObject trap = Instantiate(trapPrefab, pos, rot);
         NetworkServer.Spawn(trap);
-
-        // 4. 관리를 위해 리스트에 추가
         spawnedTraps.Add(trap);
+
+        Invoke(nameof(BackToIdle), 1.2f);
     }
 
-    // --- 이하 Ghost 및 예외 처리 로직 (로컬 전용이므로 수정 불필요) ---
+    [ClientRpc]
+    private void RpcPlayPlantingEffect()
+    {
+        if (animator != null)
+            animator.SetTrigger("Planting");
+    }
+
+    private void BackToIdle()
+    {
+        if (isServer)
+            state.ChangeState(KillerCondition.Idle);
+    }
+
+    public void ExitBuildMode()
+    {
+        isBuildMode = false;
+        CleanupGhost();
+    }
+
     private void UpdateGhostPosition()
     {
-        Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+        if (cam == null)
+            return;
+
+        Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+
         if (Physics.Raycast(ray, out RaycastHit hit, maxInstallDist, groundMask))
         {
             ghostInstance.SetActive(true);
@@ -121,14 +267,25 @@ public class TrapHandler : NetworkBehaviour
     private bool CanPlace(out Vector3 pos)
     {
         pos = Vector3.zero;
-        Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-        if (Physics.Raycast(ray, out RaycastHit hit, maxInstallDist, groundMask))
-        {
-            pos = hit.point;
-            bool isBlocked = Physics.CheckBox(pos + Vector3.up * 0.1f, new Vector3(0.3f, 0.1f, 0.3f), Quaternion.identity, obstacleMask);
-            return !isBlocked;
-        }
-        return false;
+
+        if (cam == null)
+            return false;
+
+        Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+
+        if (!Physics.Raycast(ray, out RaycastHit hit, maxInstallDist, groundMask))
+            return false;
+
+        pos = hit.point;
+
+        bool isBlocked = Physics.CheckBox(
+            pos + Vector3.up * 0.1f,
+            new Vector3(0.3f, 0.1f, 0.3f),
+            Quaternion.identity,
+            obstacleMask
+        );
+
+        return !isBlocked;
     }
 
     private void SetGhostVisual(GameObject target, float alpha)
@@ -151,12 +308,15 @@ public class TrapHandler : NetworkBehaviour
     {
         Color feedbackColor = canPlace ? Color.green : Color.red;
         feedbackColor.a = 0.4f;
+
         foreach (Renderer r in ghostInstance.GetComponentsInChildren<Renderer>())
         {
             foreach (Material mat in r.materials)
             {
-                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", feedbackColor);
-                else if (mat.HasProperty("_Color")) mat.SetColor("_Color", feedbackColor);
+                if (mat.HasProperty("_BaseColor"))
+                    mat.SetColor("_BaseColor", feedbackColor);
+                else if (mat.HasProperty("_Color"))
+                    mat.SetColor("_Color", feedbackColor);
             }
         }
     }
@@ -172,7 +332,9 @@ public class TrapHandler : NetworkBehaviour
 
     public void ForceCancelTrapMode()
     {
-        isBuildMode = false;
-        CleanupGhost();
+        if (isBuildMode)
+        {
+            ExitBuildMode();
+        }
     }
 }

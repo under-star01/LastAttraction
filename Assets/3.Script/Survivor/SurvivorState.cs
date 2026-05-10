@@ -1,61 +1,72 @@
-using System.Collections;
 using Mirror;
 using UnityEngine;
+using System.Collections;
 
-// 생존자 상태 종류
+// 몸 상태 전용
 public enum SurvivorCondition
 {
-    Healthy,      // 정상0
-    Injured,      // 부상1
-    Downed,       // 다운2
-    Imprisoned,   // 감옥3
-    Dead          // 사망4
+    Healthy,
+    Injured,
+    Downed,
+    Imprisoned,
+    Dead
+}
+
+// 생존자 성별
+// 다칠 때 소리, 다운 피격음, 신음소리, 스턴 놀람 소리를 남자 / 여자 캐릭터별로 다르게 재생하기 위해 사용한다.
+public enum SurvivorGender
+{
+    Male,
+    Female
 }
 
 public class SurvivorState : NetworkBehaviour
 {
     [Header("참조")]
-    [SerializeField] private Animator animator;              // 애니메이터
-    [SerializeField] private SurvivorInteractor interactor;  // 상호작용 스크립트
+    [SerializeField] private Animator animator;
+    [SerializeField] private SurvivorInteractor interactor;
 
-    [Header("다운 연출")]
-    [SerializeField] private float downHitDuration = 3f;     // 다운 피격 연출 시간
+    [Header("피격 연출")]
+    [SerializeField] private float hitDuration = 0.8f;      // Healthy -> Injured 일반 피격 애니메이션 시간
+    [SerializeField] private float downHitDuration = 3f;    // Injured -> Downed 다운 피격 시간
+
+    [Header("캐릭터 정보")]
+    [SerializeField] private SurvivorGender gender = SurvivorGender.Male;
+
+    [Header("오디오")]
+    [SerializeField] private AudioKey maleHitSoundKey = AudioKey.SurvivorMaleHit;                 // 남자 다칠 때 / 죽을 때 소리
+    [SerializeField] private AudioKey femaleHitSoundKey = AudioKey.SurvivorFemaleHit;             // 여자 다칠 때 / 죽을 때 소리
+    [SerializeField] private AudioKey maleDownHitSoundKey = AudioKey.SurvivorMaleDownHit;         // 남자 다운 피격 소리
+    [SerializeField] private AudioKey femaleDownHitSoundKey = AudioKey.SurvivorFemaleDownHit;     // 여자 다운 피격 소리
+    [SerializeField] private AudioKey maleGroanSoundKey = AudioKey.SurvivorMaleGroan;             // 남자 신음소리 루프
+    [SerializeField] private AudioKey femaleGroanSoundKey = AudioKey.SurvivorFemaleGroan;         // 여자 신음소리 루프
+    [SerializeField] private AudioKey maleStunSoundKey = AudioKey.SurvivorMaleStun;               // 남자 QTE 실패 / 트랩 스턴 놀람 소리
+    [SerializeField] private AudioKey femaleStunSoundKey = AudioKey.SurvivorFemaleStun;           // 여자 QTE 실패 / 트랩 스턴 놀람 소리
 
     [Header("감옥 시간")]
-    [SerializeField] private float prisonFullTime = 120f;    // 첫 감옥 시간
-    [SerializeField] private float prisonHalfTime = 60f;     // 두 번째 감옥 시간
+    [SerializeField] private float prisonFullTime = 120f;
+    [SerializeField] private float prisonHalfTime = 60f;
 
-    private SurvivorMove move;                               // 이동 스크립트
+    private SurvivorMove move;
+    private SurvivorActionState actionState;
 
-    private int normalLayer;                                 // 일반 상태 레이어
-    private int downedLayer;                                 // 다운 상태 레이어
+    private int normalLayer;
+    private int downedLayer;
 
-    // 현재 상태는 서버가 들고 있고 자동 동기화됨
-    [SyncVar(hook = nameof(OnCondition))]
+    private bool isGroanLoopPlaying;
+    private AudioKey currentGroanLoopKey = AudioKey.None;
+
+    [SyncVar(hook = nameof(OnConditionChanged))]
     private SurvivorCondition currentCondition = SurvivorCondition.Healthy;
 
-    // 다운 피격 연출 중인지
-    [SyncVar(hook = nameof(OnBusy))]
-    private bool isToDowned;
-
-    // 현재 다른 생존자에게 힐을 받고 있는 중인지
-    [SyncVar(hook = nameof(OnHealed))]
-    private bool isBeingHealed;
-
-    // 현재 Hold 상호작용 중인지
-    [SyncVar]
-    private bool isDoingInteraction;
-
-    // 현재 들어가 있는 감옥 netId
     [SyncVar]
     private uint currentPrisonId;
 
-    // 다음 감옥 단계
-    // 0 = 다음 감옥 120초
-    // 1 = 다음 감옥 60초
-    // 2 = 다음 감옥 즉사
     [SyncVar]
     private int prisonStep;
+
+    [SyncVar]
+    private bool isEscaping;
 
     public SurvivorCondition CurrentCondition => currentCondition;
 
@@ -64,15 +75,18 @@ public class SurvivorState : NetworkBehaviour
     public bool IsDowned => currentCondition == SurvivorCondition.Downed;
     public bool IsImprisoned => currentCondition == SurvivorCondition.Imprisoned;
     public bool IsDead => currentCondition == SurvivorCondition.Dead;
+    public bool IsEscaping => isEscaping;
 
-    public bool IsBusy => isToDowned;
-    public bool IsBeingHealed => isBeingHealed;
-    public bool IsDoingInteraction => isDoingInteraction;
     public uint CurrentPrisonId => currentPrisonId;
+
+    public int PrisonStep => prisonStep;
+    public float PrisonFullTime => prisonFullTime;
+    public float PrisonHalfTime => prisonHalfTime;
 
     private void Awake()
     {
         move = GetComponent<SurvivorMove>();
+        actionState = GetComponent<SurvivorActionState>();
 
         if (animator == null)
             animator = GetComponentInChildren<Animator>();
@@ -80,7 +94,6 @@ public class SurvivorState : NetworkBehaviour
         if (interactor == null)
             interactor = GetComponent<SurvivorInteractor>();
 
-        // 레이어 이름을 프로젝트에서 사용하는 이름으로 가져옴
         normalLayer = LayerMask.NameToLayer("Survivor");
         downedLayer = LayerMask.NameToLayer("Downed");
     }
@@ -89,15 +102,26 @@ public class SurvivorState : NetworkBehaviour
     {
         base.OnStartClient();
 
-        // 클라이언트가 새로 들어왔을 때 현재 상태를 외형에 즉시 반영
-        ApplyInteract();
         ApplyLayer();
         UpdateAnim();
+
+        if (actionState != null)
+            actionState.ApplyUse();
+    }
+
+    public override void OnStopServer()
+    {
+        StopGroanLoopSound();
+        base.OnStopServer();
     }
 
     private void Update()
     {
-        // 디버그 입력은 로컬 플레이어만 사용
+        // 신음소리는 서버에서만 시작/종료를 판단한다.
+        // 실제 재생은 NetworkAudioManager를 통해 모든 클라이언트에서 처리된다.
+        if (isServer)
+            UpdateGroanSound();
+
         if (!isLocalPlayer)
             return;
 
@@ -108,10 +132,6 @@ public class SurvivorState : NetworkBehaviour
             CmdDebugGoPrison();
     }
 
-    // -----------------------------
-    // 디버그
-    // -----------------------------
-
     [Command]
     private void CmdDebugTakeHit()
     {
@@ -121,14 +141,15 @@ public class SurvivorState : NetworkBehaviour
     [Command]
     private void CmdDebugGoPrison()
     {
-        // 이미 감옥 / 사망 상태면 무시
         if (IsImprisoned || IsDead)
             return;
 
-        // 다운 상태가 아니면 강제로 다운 상태로 변경
         if (!IsDowned)
         {
             currentCondition = SurvivorCondition.Downed;
+
+            // 디버그로 바로 다운 상태가 될 때는 맞아서 다운된 상황이 아니므로
+            // 다운 피격 소리는 재생하지 않는다.
             ApplyAllStateServer();
         }
 
@@ -137,136 +158,86 @@ public class SurvivorState : NetworkBehaviour
             prison.SetPrisoner(this);
     }
 
-    // -----------------------------
-    // 피격 / 회복
-    // -----------------------------
-
-    // 서버에서만 피격 처리
+    // 피격 처리
     [Server]
     public void TakeHit()
     {
-        // 다운 연출 중 / 감옥 / 사망 상태면 무시
-        if (isToDowned || IsImprisoned || IsDead)
+        // 다운 피격 중에는 추가 피격 무시
+        if (actionState != null && actionState.CurrentAction == SurvivorAction.DownHit)
             return;
 
-        // 피격되면 현재 상호작용 강제 종료
-        if (interactor != null)
-            interactor.ForceStopInteract();
+        if (IsImprisoned || IsDead || IsEscaping)
+            return;
 
-        // 정상 -> 부상
+        StopAllCoroutines();
+
+        // 피격되는 순간 서버 상태와 소유 클라이언트의 실제 Hold 상호작용을 같이 끊는다.
+        if (interactor != null)
+            interactor.ForceStopInteractFromServer();
+
+        // 서버 행동 상태 초기화
+        if (actionState != null)
+            actionState.ForceResetActionServer();
+
+        // Healthy -> Injured
         if (currentCondition == SurvivorCondition.Healthy)
         {
             currentCondition = SurvivorCondition.Injured;
-
-            // 중요:
-            // 상태를 서버에서 바꾼 직후 서버에서도 바로 적용해줘야
-            // 실제 충돌 판정용 레이어도 즉시 바뀜
             ApplyAllStateServer();
+
+            // 맞아서 다칠 때는 성별에 맞는 일반 피격 소리를 재생한다.
+            // AudioManager의 Max Distance를 짧게 잡으면 가까운 사람만 듣는다.
+            PlayWorld3DSound(GetHitSoundKey());
+
+            if (actionState != null)
+                StartCoroutine(actionState.HitRoutine(hitDuration));
+
             return;
         }
 
-        // 부상 -> 다운
+        // Injured -> Downed
         if (currentCondition == SurvivorCondition.Injured)
-            StartCoroutine(DownRoutine());
+        {
+            currentCondition = SurvivorCondition.Downed;
+            ApplyAllStateServer();
+
+            // 꼭 맞아서 Downed 상태가 되는 순간에만 성별 다운 피격 소리를 재생한다.
+            // AudioManager의 Max Distance를 크게 잡아서 맵 전체에 들리는 3D 사운드처럼 만든다.
+            PlayWorld3DSound(GetDownHitSoundKey());
+
+            if (actionState != null)
+                StartCoroutine(actionState.DownHitRoutine(downHitDuration));
+
+            return;
+        }
     }
 
-    // 서버에서 부상 -> 정상 회복
     [Server]
     public void HealToHealthy()
     {
-        if (isToDowned || IsImprisoned || IsDead)
+        if (IsImprisoned || IsDead || IsEscaping)
             return;
 
         currentCondition = SurvivorCondition.Healthy;
+
+        // 건강 상태가 되면 신음 루프를 즉시 멈춘다.
+        StopGroanLoopSound();
+
         ApplyAllStateServer();
     }
 
-    // 서버에서 다운 -> 부상 회복
     [Server]
     public void RecoverToInjured()
     {
-        if (isToDowned || IsImprisoned || IsDead)
+        if (IsImprisoned || IsDead || IsEscaping)
             return;
 
         currentCondition = SurvivorCondition.Injured;
+
         ApplyAllStateServer();
     }
 
-    // 서버에서 힐받는 상태 변경
-    [Server]
-    public void SetBeingHealedServer(bool value)
-    {
-        isBeingHealed = value;
-
-        // 힐받는 중에는 상호작용을 막으므로 서버에서도 즉시 반영
-        ApplyInteract();
-    }
-
-    // 서버에서 Hold 상호작용 중 여부 저장
-    [Server]
-    public void SetDoingInteractionServer(bool value)
-    {
-        isDoingInteraction = value;
-    }
-
-    // 서버에서 다운 연출 시작
-    [Server]
-    private IEnumerator DownRoutine()
-    {
-        isToDowned = true;
-
-        // 다운되면 현재 하던 상호작용 상태 해제
-        isDoingInteraction = false;
-
-        // 다운 상태로 변경
-        currentCondition = SurvivorCondition.Downed;
-
-        // 중요:
-        // 다운 상태가 되는 순간 서버에서도 레이어를 즉시 바꿔야
-        // CharacterController / 물리 충돌 판정이 바로 바뀜
-        ApplyAllStateServer();
-
-        // 모든 클라이언트에서 다운 피격 애니메이션 실행
-        RpcDownHit();
-
-        yield return new WaitForSeconds(downHitDuration);
-
-        isToDowned = false;
-    }
-
-    // 모든 클라이언트에서 다운 피격 애니메이션 재생
-    [ClientRpc]
-    private void RpcDownHit()
-    {
-        if (interactor != null)
-            interactor.ForceStopInteract();
-
-        if (move != null)
-        {
-            move.SetMoveLock(true);
-            move.StopAnimation();
-        }
-
-        if (animator != null)
-            animator.SetTrigger("DownHit");
-
-        StartCoroutine(LocalDown());
-    }
-
-    // 각 클라이언트에서 다운 연출 시간만큼 잠금 유지
-    private IEnumerator LocalDown()
-    {
-        yield return new WaitForSeconds(downHitDuration);
-
-        if (move != null && IsDowned)
-            move.SetMoveLock(false);
-    }
-
-    // -----------------------------
-    // 감옥
-    // -----------------------------
-
-    // 이 생존자가 다음 감옥에 들어갈 때 시작할 시간 반환
+    // 다음 감옥 시작 시간 계산
     [Server]
     public float GetPrisonStartTime()
     {
@@ -276,119 +247,366 @@ public class SurvivorState : NetworkBehaviour
         if (prisonStep == 1)
             return prisonHalfTime;
 
-        // 2 이상이면 다음 감옥은 즉사
         return 0f;
     }
 
-    // 감옥에 들어가기
+    // 감옥 진입
     [Server]
     public bool EnterPrison(uint prisonId)
     {
-        // 즉사 단계면 바로 사망
+        if (IsEscaping)
+            return false;
+
+        // 이미 2단계까지 진행된 생존자가 다시 잡히면 감옥에 넣지 않고 사망 처리한다.
         if (prisonStep >= 2)
         {
             Die();
             return false;
         }
 
-        // 기존 상호작용 상태 초기화
-        isDoingInteraction = false;
-        isBeingHealed = false;
+        prisonStep++;
 
         currentPrisonId = prisonId;
         currentCondition = SurvivorCondition.Imprisoned;
 
-        // 감옥 상태도 서버에서 즉시 반영
+        if (actionState != null)
+        {
+            actionState.SetInteract(false);
+            actionState.SetHeal(false);
+            actionState.SetCam(false);
+            actionState.SetAct(SurvivorAction.None);
+        }
+
         ApplyAllStateServer();
         return true;
     }
 
-    // 감옥에서 나왔을 때 호출
+    // 감옥 탈출 후 상태
     [Server]
     public void LeavePrison(float remainTime)
     {
         currentPrisonId = 0;
 
-        // 60초 초과 남기고 나왔으면 다음 감옥은 60초부터
-        if (remainTime > prisonHalfTime)
-            prisonStep = 1;
-        else
+        if (remainTime <= prisonHalfTime && prisonStep < 2)
             prisonStep = 2;
 
-        // 살아서 나오면 부상 상태로 복귀
         currentCondition = SurvivorCondition.Injured;
+
         ApplyAllStateServer();
     }
 
-    // -----------------------------
-    // 사망
-    // -----------------------------
+    // 감옥에 갇힌 상태에서 시간이 절반 이하로 줄어들면 2단계 판정으로 바꾼다.
+    [Server]
+    public void MarkPrisonHalfPassed()
+    {
+        if (!IsImprisoned)
+            return;
+
+        if (prisonStep < 2)
+            prisonStep = 2;
+    }
 
     [Server]
     public void Die()
     {
-        if (animator != null)
-            animator.SetTrigger("DownHit");
+        if (IsDead)
+            return;
 
         currentPrisonId = 0;
-        isDoingInteraction = false;
-        isBeingHealed = false;
         currentCondition = SurvivorCondition.Dead;
+
+        // 죽는 소리는 맞아서 다칠 때 소리와 통일한다.
+        // 따라서 성별에 맞는 일반 피격 소리를 재생한다.
+        PlayWorld3DSound(GetHitSoundKey());
+
+        // 사망하면 신음 루프를 즉시 멈춘다.
+        StopGroanLoopSound();
+
+        if (interactor != null)
+            interactor.ForceStopInteractFromServer();
+
+        if (actionState != null)
+        {
+            actionState.SetInteract(false);
+            actionState.SetHeal(false);
+            actionState.SetCam(false);
+            actionState.SetAct(SurvivorAction.None);
+        }
+
+        ApplyAllStateServer();
+
+        if (move != null)
+            move.BeginDeadResult();
+
+        KillerMove killerMove = FindFirstObjectByType<KillerMove>();
+
+        if (killerMove != null)
+            killerMove.CheckAllSurvivorsDeadAndShowResult();
+    }
+
+    // 감옥 시간이 다 되어 죽을 때 사용한다.
+    // 일반 Die와 다르게 DownHit 애니메이션 트리거를 함께 실행한다.
+    [Server]
+    public void DieByPrisonTime()
+    {
+        if (IsDead)
+            return;
+
+        currentPrisonId = 0;
+        currentCondition = SurvivorCondition.Dead;
+
+        // 감옥 시간 초과 사망도 죽는 소리는 일반 피격 소리와 통일한다.
+        // 맞아서 Downed가 되는 상황이 아니므로 성별 다운 피격 소리는 재생하지 않는다.
+        PlayWorld3DSound(GetHitSoundKey());
+
+        // 사망하면 신음 루프를 즉시 멈춘다.
+        StopGroanLoopSound();
+
+        if (interactor != null)
+            interactor.ForceStopInteractFromServer();
+
+        if (actionState != null)
+        {
+            actionState.SetInteract(false);
+            actionState.SetHeal(false);
+            actionState.SetCam(false);
+            actionState.SetAct(SurvivorAction.None);
+        }
+
+        ApplyAllStateServer();
+
+        if (actionState != null)
+            StartCoroutine(actionState.DownHitRoutine(downHitDuration));
+
+        if (move != null)
+            move.BeginDeadResult();
+
+        KillerMove killerMove = FindFirstObjectByType<KillerMove>();
+
+        if (killerMove != null)
+            killerMove.CheckAllSurvivorsDeadAndShowResult();
+    }
+
+    [Server]
+    public void SetEscape()
+    {
+        if (IsDead || IsImprisoned)
+            return;
+
+        isEscaping = true;
+
+        // 탈출 상태에서는 신음 루프를 즉시 멈춘다.
+        StopGroanLoopSound();
+
+        StopAllCoroutines();
+
+        if (interactor != null)
+            interactor.ForceStopInteractFromServer();
+
+        if (actionState != null)
+        {
+            actionState.SetInteract(false);
+            actionState.SetHeal(false);
+            actionState.SetCam(false);
+            actionState.SetAct(SurvivorAction.None);
+        }
 
         ApplyAllStateServer();
     }
 
-    // -----------------------------
-    // 상태 반영
-    // -----------------------------
+    // 트랩, QTE 실패 등에서 공통으로 사용하는 스턴 함수
+    [Server]
+    public void ApplyStun(float duration)
+    {
+        if (duration <= 0f)
+            return;
 
-    // 서버에서 상태를 바꾼 직후 바로 호출해서
-    // 서버 충돌 / 상호작용 / 애니메이션 상태까지 즉시 맞춤
+        if (IsDowned || IsDead || IsImprisoned || IsEscaping)
+            return;
+
+        if (actionState == null)
+            return;
+
+        // 이미 다운 피격 중이거나 스턴 중이면 중복 스턴과 중복 사운드를 막는다.
+        if (actionState.CurrentAction == SurvivorAction.DownHit)
+            return;
+
+        if (actionState.CurrentAction == SurvivorAction.Stunned)
+            return;
+
+        // QTE 실패 / 트랩 밟음으로 실제 스턴이 시작될 때 성별에 맞는 놀람 소리를 재생한다.
+        PlayWorld3DSound(GetStunSoundKey());
+
+        StartCoroutine(actionState.StunRoutine(duration));
+    }
+
+    // 기존 Trap 코드가 ApplyTrapStun을 호출하는 경우를 위한 호환 함수
+    [Server]
+    public void ApplyTrapStun(float duration)
+    {
+        ApplyStun(duration);
+    }
+
+    // 서버에서 모든 클라이언트에게 월드 위치 기준 3D 사운드를 재생한다.
+    // 실제로 얼마나 멀리 들리는지는 AudioManager의 AudioData Max Distance에서 조절한다.
+    [Server]
+    private void PlayWorld3DSound(AudioKey key)
+    {
+        if (key == AudioKey.None)
+            return;
+
+        NetworkAudioManager.PlayAudioForEveryone(
+            key,
+            AudioDimension.Sound3D,
+            transform.position
+        );
+    }
+
+    // 신음 루프 사운드를 시작한다.
+    // ownerNetId를 넘겨서 AudioManager가 이 생존자 Transform에 사운드를 붙일 수 있게 한다.
+    [Server]
+    private void StartGroanLoopSound(AudioKey key)
+    {
+        if (key == AudioKey.None)
+            return;
+
+        NetworkAudioManager.StartLoopAudioForEveryone(
+            netId,
+            key,
+            AudioDimension.Sound3D,
+            transform.position
+        );
+
+        isGroanLoopPlaying = true;
+        currentGroanLoopKey = key;
+    }
+
+    // 현재 재생 중인 신음 루프 사운드를 멈춘다.
+    [Server]
+    private void StopGroanLoopSound()
+    {
+        if (!isGroanLoopPlaying)
+            return;
+
+        if (currentGroanLoopKey != AudioKey.None)
+        {
+            NetworkAudioManager.StopLoopAudioForEveryone(
+                netId,
+                currentGroanLoopKey
+            );
+        }
+
+        isGroanLoopPlaying = false;
+        currentGroanLoopKey = AudioKey.None;
+    }
+
+    // 현재 생존자 성별에 맞는 일반 피격 소리 AudioKey를 반환한다.
+    private AudioKey GetHitSoundKey()
+    {
+        if (gender == SurvivorGender.Male)
+            return maleHitSoundKey;
+
+        if (gender == SurvivorGender.Female)
+            return femaleHitSoundKey;
+
+        return AudioKey.None;
+    }
+
+    // 현재 생존자 성별에 맞는 다운 피격 소리 AudioKey를 반환한다.
+    private AudioKey GetDownHitSoundKey()
+    {
+        if (gender == SurvivorGender.Male)
+            return maleDownHitSoundKey;
+
+        if (gender == SurvivorGender.Female)
+            return femaleDownHitSoundKey;
+
+        return AudioKey.None;
+    }
+
+    // 현재 생존자 성별에 맞는 신음소리 AudioKey를 반환한다.
+    private AudioKey GetGroanSoundKey()
+    {
+        if (gender == SurvivorGender.Male)
+            return maleGroanSoundKey;
+
+        if (gender == SurvivorGender.Female)
+            return femaleGroanSoundKey;
+
+        return AudioKey.None;
+    }
+
+    // 현재 생존자 성별에 맞는 QTE 실패 / 트랩 스턴 놀람 소리 AudioKey를 반환한다.
+    private AudioKey GetStunSoundKey()
+    {
+        if (gender == SurvivorGender.Male)
+            return maleStunSoundKey;
+
+        if (gender == SurvivorGender.Female)
+            return femaleStunSoundKey;
+
+        return AudioKey.None;
+    }
+
+    // Injured / Downed / Imprisoned 상태일 때 성별에 맞는 신음 루프 사운드를 재생한다.
+    // 루프 오브젝트는 AudioManager에서 ownerNetId 오브젝트에 붙기 때문에 생존자를 계속 따라다닌다.
+    [Server]
+    private void UpdateGroanSound()
+    {
+        bool shouldGroan = false;
+
+        // 사망 / 탈출 중에는 신음소리를 내지 않는다.
+        if (!IsDead && !IsEscaping)
+            shouldGroan = IsInjured || IsDowned || IsImprisoned;
+
+        if (!shouldGroan)
+        {
+            StopGroanLoopSound();
+            return;
+        }
+
+        AudioKey groanKey = GetGroanSoundKey();
+
+        if (groanKey == AudioKey.None)
+        {
+            StopGroanLoopSound();
+            return;
+        }
+
+        // 이미 같은 신음 루프가 재생 중이면 다시 시작하지 않는다.
+        if (isGroanLoopPlaying && currentGroanLoopKey == groanKey)
+            return;
+
+        // 성별이 바뀌었거나 다른 루프가 켜져 있으면 기존 루프를 끄고 새로 시작한다.
+        StopGroanLoopSound();
+        StartGroanLoopSound(groanKey);
+    }
+
+    // 서버에서 상태 즉시 반영
     [Server]
     private void ApplyAllStateServer()
     {
-        ApplyInteract();
         ApplyLayer();
         UpdateAnim();
+
+        if (actionState != null)
+            actionState.ApplyUse();
     }
 
-    // 상태가 바뀌면 모든 클라이언트에서 외형 / 상호작용 / 레이어 갱신
-    private void OnCondition(SurvivorCondition oldValue, SurvivorCondition newValue)
+    private void OnConditionChanged(SurvivorCondition oldValue, SurvivorCondition newValue)
     {
-        ApplyInteract();
         ApplyLayer();
         UpdateAnim();
+
+        if (actionState != null)
+            actionState.ApplyUse();
     }
 
-    // 다운 연출 중 여부가 바뀌면 이동 잠금 반영
-    private void OnBusy(bool oldValue, bool newValue)
-    {
-        if (move != null)
-            move.SetMoveLock(newValue);
-    }
-
-    // 힐받는 상태가 바뀌면 상호작용 가능 여부 반영
-    private void OnHealed(bool oldValue, bool newValue)
-    {
-        ApplyInteract();
-    }
-
-    // 상태에 따라 상호작용 가능 여부 적용
-    private void ApplyInteract()
-    {
-        if (interactor == null)
-            return;
-
-        // 다운 / 힐받는 중 / 사망 상태면 상호작용 불가
-        interactor.enabled = !IsDowned && !IsBeingHealed && !IsDead;
-    }
-
-    // 상태에 따라 레이어 변경
+    // 다운 상태일 때만 Downed 레이어 적용
     private void ApplyLayer()
     {
         int targetLayer = normalLayer;
 
-        // 다운 상태일 때만 Downed 레이어로 변경
         if (IsDowned)
             targetLayer = downedLayer;
 
@@ -398,14 +616,27 @@ public class SurvivorState : NetworkBehaviour
         SetLayerRecursive(transform, targetLayer);
     }
 
-    // 자기 자신 + 자식들 레이어 전부 변경
     private void SetLayerRecursive(Transform target, int layer)
     {
         if (target == null)
             return;
 
+        int camLocalLayer = LayerMask.NameToLayer("CamLocal");
+        int camWorldLayer = LayerMask.NameToLayer("CamWorld");
+        int hideSelfLayer = LayerMask.NameToLayer("HideSelf");
+
         // 힐 트리거는 레이어 변경 제외
         if (target.GetComponent<SurvivorHeal>() != null)
+            return;
+
+        // 카메라 모델 / 스킬 숨김용 레이어는 유지
+        if (target.gameObject.layer == camLocalLayer)
+            return;
+
+        if (target.gameObject.layer == camWorldLayer)
+            return;
+
+        if (target.gameObject.layer == hideSelfLayer)
             return;
 
         target.gameObject.layer = layer;
@@ -414,7 +645,7 @@ public class SurvivorState : NetworkBehaviour
             SetLayerRecursive(child, layer);
     }
 
-    // 애니메이터 파라미터 갱신
+    // 몸 상태 애니메이터 반영
     private void UpdateAnim()
     {
         if (animator == null)
