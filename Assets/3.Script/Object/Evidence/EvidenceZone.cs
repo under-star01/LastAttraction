@@ -161,8 +161,23 @@ public class EvidenceZone : MonoBehaviour
 
         // 현재 GameManager는 Zone 기준으로 증거 개수만 올린다.
         // 나중에 결과창을 만들 때는 여기서 evidenceType, DisplayName, icon, finderNetId를 기록하면 된다.
+        
         if (GameManager.Instance != null)
+        {
+            // 기존 목표 진행도 갱신
             GameManager.Instance.AddEvidence(this);
+
+            // 결과창에 표시할 생존자별 획득 증거 기록
+            if (NetworkServer.spawned.TryGetValue(finderNetId, out NetworkIdentity finderIdentity))
+            {
+                int evidenceIndex = (int)evidenceType - 1;
+
+                GameManager.Instance.UpdateSurvivorResult(
+                    finderIdentity,
+                    evidenceIndex
+                );
+            }
+        }
     }
 
     // EvidenceType에 맞는 기본 한글 이름을 반환한다.

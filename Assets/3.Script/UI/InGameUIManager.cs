@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Text;
 
 // 인게임 UI 전체를 관리한다.
 // - 모든 생존자의 상태 UI
@@ -31,6 +32,7 @@ public class InGameUIManager : MonoBehaviour
     [SerializeField] private GameObject skillUI_Survivor;
     [SerializeField] private CameraSkillUI cameraSkillUI;
     [SerializeField] private Image[] frameUI;
+    [SerializeField] private Text recordingTimeText;
 
     [Header("살인마 전용 UI")]
     [SerializeField] private GameObject skillUI_Killer;
@@ -64,6 +66,9 @@ public class InGameUIManager : MonoBehaviour
     private EvidencePoint[] evidences = new EvidencePoint[0];
     private Prison[] prisons = new Prison[0];
     private UploadComputer[] uploadComputers = new UploadComputer[0];
+    private readonly StringBuilder recordingTimeBuilder = new StringBuilder(32);
+    private int lastRecordingSecond = -1;
+    private float localRecordingTime;
 
     private bool sceneObjectsBound;
     private Coroutine bindRoutine;
@@ -80,6 +85,9 @@ public class InGameUIManager : MonoBehaviour
         if (resultUI != null)
             resultUI.SetActive(false);
 
+        if (recordingTimeText != null)
+            recordingTimeText.text = "Recording : 0s";
+
         if (CustomNetworkManager.Instance != null)
             SetRoleUI(CustomNetworkManager.Instance.CurrentLocalJoinRole);
         else
@@ -95,6 +103,7 @@ public class InGameUIManager : MonoBehaviour
         // 연결된 목록을 기준으로 UI 표시만 매 프레임 갱신한다.
         UpdateSurvivorListUI();
         UpdateLocalActionUI();
+        UpdateLocalRecordingTimeUI();
     }
 
     private void OnDestroy()
@@ -731,5 +740,55 @@ public class InGameUIManager : MonoBehaviour
 
         localActionUI.SetClickUsed(clickUsed);
         localActionUI.SetRightClickUsed(rightClickUsed);
+    }
+
+    private void UpdateLocalRecordingTimeUI()
+    {
+        if (recordingTimeText == null)
+            return;
+
+        if (!IsLocalSurvivor())
+            return;
+
+        if (NetworkClient.localPlayer == null)
+            return;
+
+        SurvivorCameraSkill cameraSkill =
+            NetworkClient.localPlayer.GetComponent<SurvivorCameraSkill>();
+
+        if (cameraSkill == null)
+            return;
+
+        if (cameraSkill.IsRecordingKiller)
+            localRecordingTime += Time.deltaTime;
+
+        int totalSeconds = Mathf.FloorToInt(localRecordingTime);
+
+        if (totalSeconds == lastRecordingSecond)
+            return;
+
+        lastRecordingSecond = totalSeconds;
+
+        recordingTimeBuilder.Clear();
+        recordingTimeBuilder.Append("Recording : ");
+
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+
+        if (minutes > 0)
+        {
+            recordingTimeBuilder.Append(minutes);
+            recordingTimeBuilder.Append("m ");
+
+            recordingTimeBuilder.Append(seconds);
+            recordingTimeBuilder.Append("s");
+        }
+        else
+        {
+            recordingTimeBuilder.Append(seconds);
+            recordingTimeBuilder.Append("s");
+        }
+
+        recordingTimeText.text = recordingTimeBuilder.ToString();
     }
 }

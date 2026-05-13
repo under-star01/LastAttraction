@@ -1,10 +1,20 @@
+using System;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
+[Serializable]
+public class SurvivorResultData
+{
+    public uint netId;
+    public string nickname;
+    public float killerRecordTime;
+    public List<int> evidenceIndexes = new List<int>();
+    public bool reachedResult;
+}
+
 public class GameManager : NetworkBehaviour
 {
-    // 어디서든 GameManager에 접근하기 위한 싱글턴이다.
     public static GameManager Instance { get; private set; }
 
     [Header("생존자 입력 상태")]
@@ -57,11 +67,17 @@ public class GameManager : NetworkBehaviour
     [Header("탈출문 개방 대기")]
     [SerializeField] private float gateOpenDelay = 60f;
 
+    [Header("결과 데이터 - 생존자")]
+    [SerializeField] private List<SurvivorResultData> survivorResultList = new List<SurvivorResultData>();
+
     // 맵에 있는 EvidenceZone들을 서버에서 등록해둔다.
     private readonly HashSet<EvidenceZone> zones = new HashSet<EvidenceZone>();
 
     // 이미 진짜 증거를 찾은 EvidenceZone들을 서버에서 기록한다.
     private readonly HashSet<EvidenceZone> foundZones = new HashSet<EvidenceZone>();
+
+    // 생존자 결과 데이터를 기록한다.
+    private readonly Dictionary<uint, SurvivorResultData> survivorResultMap = new Dictionary<uint, SurvivorResultData>();
 
     // 현재 찾은 진짜 증거 개수다.
     private int foundEvidenceCount;
@@ -392,7 +408,14 @@ public class GameManager : NetworkBehaviour
             }
 
             if (cameraSkill.IsRecordingKiller)
+            {
                 count++;
+
+                SurvivorResultData data = GetOrCreateSurvivorResult(conn.identity);
+
+                if (data != null)
+                    data.killerRecordTime += Time.deltaTime;
+            }
         }
 
         return count;
@@ -652,5 +675,64 @@ public class GameManager : NetworkBehaviour
     public Transform GetKillerResultPoint()
     {
         return killerResultPoint;
+    }
+
+    [Server]
+    private SurvivorResultData GetOrCreateSurvivorResult(NetworkIdentity survivorIdentity)
+    {
+        if (survivorIdentity == null)
+            return null;
+
+        uint netId = survivorIdentity.netId;
+
+        if (survivorResultMap.TryGetValue(netId, out SurvivorResultData data))
+            return data;
+
+        data = new SurvivorResultData();
+        data.netId = netId;
+        data.nickname = GetPlayerNickname(survivorIdentity);
+        data.killerRecordTime = 0f;
+        data.reachedResult = false;
+
+        survivorResultMap.Add(netId, data);
+        survivorResultList.Add(data);
+
+        Debug.Log($"[GameManager] 생존자 결과 데이터 생성: {data.nickname} / netId: {netId}");
+
+        return data;
+    }
+
+    private string GetPlayerNickname(NetworkIdentity identity)
+    {
+        if (identity == null)
+            return "NickName";
+
+        PlayerUIProfile profile = identity.GetComponent<PlayerUIProfile>();
+
+        if (profile == null)
+            profile = identity.GetComponentInChildren<PlayerUIProfile>();
+
+        if (profile == null)
+            return "NickName";
+
+        return profile.DisplayName;
+    }
+
+    [Server]
+    public void UpdateSurvivorResult(
+    NetworkIdentity survivorIdentity,
+    int evidenceIndex = -1,
+    bool reachedResult = false)
+    {
+        SurvivorResultData data = GetOrCreateSurvivorResult(survivorIdentity);
+
+        if (data == null)
+            return;
+
+        if (evidenceIndex >= 0 && !data.evidenceIndexes.Contains(evidenceIndex))
+            data.evidenceIndexes.Add(evidenceIndex);
+
+        if (reachedResult)
+            data.reachedResult = true;
     }
 }
