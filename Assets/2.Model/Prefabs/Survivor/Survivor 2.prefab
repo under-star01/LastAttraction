@@ -2670,7 +2670,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   inGameSceneName: InGame
-  detectRadius: 5
+  detectRadius: 10
   interactableLayer:
     serializedVersion: 2
     m_Bits: 128
