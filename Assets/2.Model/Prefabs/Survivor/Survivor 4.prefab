@@ -3380,6 +3380,7 @@ GameObject:
   - component: {fileID: 5747250994685647726}
   - component: {fileID: 2069850198979918394}
   - component: {fileID: 7524002875152657783}
+  - component: {fileID: 2278312107223894732}
   m_Layer: 6
   m_Name: Survivor 4
   m_TagString: Survivor
@@ -3728,6 +3729,30 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   portrait: {fileID: 21300000, guid: c248d762443fd154b91c61b828b0b26b, type: 3}
+--- !u!114 &2278312107223894732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 981c56bcd4f342c4b80e56c55d540976, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivorInteractIconFinder
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  inGameSceneName: InGame
+  detectRadius: 5
+  interactableLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  updateInterval: 0.05
+  circleIconImage: {fileID: 0}
+  targetCamera: {fileID: 0}
+  screenOffset: {x: 0, y: 0}
 --- !u!1 &4074163626032848579
 GameObject:
   m_ObjectHideFlags: 0
