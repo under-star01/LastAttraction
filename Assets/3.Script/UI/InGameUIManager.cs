@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 // 인게임 UI 전체를 관리한다.
 // - 모든 생존자의 상태 UI
@@ -57,6 +59,9 @@ public class InGameUIManager : MonoBehaviour
     [Header("씬 오브젝트 1회 연결")]
     [SerializeField] private float sceneObjectBindDelay = 0.35f;
     [SerializeField] private float localPlayerWaitTimeout = 3f;
+
+    [Header("Post Processing")]
+    [SerializeField] private Volume globalVolume;
 
     private readonly List<SurvivorState> survivors = new List<SurvivorState>();
 
@@ -321,6 +326,8 @@ public class InGameUIManager : MonoBehaviour
 
         if (objectiveProgressUIObject != null)
             objectiveProgressUIObject.SetActive(isSurvivor);
+
+        ApplyVignetteByRole();
     }
 
     private void HideAllSlots()
@@ -732,4 +739,31 @@ public class InGameUIManager : MonoBehaviour
         localActionUI.SetClickUsed(clickUsed);
         localActionUI.SetRightClickUsed(rightClickUsed);
     }
+
+
+    private void ApplyVignetteByRole()
+    {
+        if (globalVolume == null || globalVolume.profile == null)
+            return;
+
+        if (!globalVolume.profile.TryGet(out Vignette vignette))
+            return;
+
+        JoinRole role = JoinRole.None;
+
+        if (CustomNetworkManager.Instance != null)
+            role = CustomNetworkManager.Instance.CurrentLocalJoinRole;
+
+        if (role == JoinRole.Killer)
+        {
+            vignette.intensity.Override(0.5f);
+            vignette.smoothness.Override(0.15f);
+        }
+        else if (role == JoinRole.Survivor)
+        {
+            vignette.intensity.Override(0.55f);
+            vignette.smoothness.Override(0.2f);
+        }
+    }
+
 }
