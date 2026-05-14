@@ -119,14 +119,9 @@ public class ResultUI : MonoBehaviour
 
                 builder.Clear();
 
-                if (minutes > 0)
-                {
-                    builder.Append(minutes);
-                    builder.Append("m ");
-                }
-
-                builder.Append(seconds);
-                builder.Append("s");
+                builder.Append(minutes.ToString("00"));
+                builder.Append(":");
+                builder.Append(seconds.ToString("00"));
 
                 slot.recordingTimeText.text = builder.ToString();
             }
