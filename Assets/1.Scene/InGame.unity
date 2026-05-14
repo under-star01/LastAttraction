@@ -23797,7 +23797,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 0m 30s
+  m_Text: 00:00
 --- !u!1 &7134753516885036493
 GameObject:
   m_ObjectHideFlags: 0
@@ -24053,7 +24053,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 0m 30s
+  m_Text: 00:00
 --- !u!1 &7374901645755302181
 GameObject:
   m_ObjectHideFlags: 0
@@ -25549,7 +25549,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 0m 30s
+  m_Text: 00:00
 --- !u!224 &8801688484635414877
 RectTransform:
   m_ObjectHideFlags: 0
@@ -25880,7 +25880,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: 0m 30s
+  m_Text: 00:00
 --- !u!224 &9145903639867711436
 RectTransform:
   m_ObjectHideFlags: 0
