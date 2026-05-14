@@ -106,15 +106,28 @@ public class KillerInteractor : NetworkBehaviour
     [Server]
     private IEnumerator IncageRoutineServer(SurvivorState survivor, Prison prison)
     {
+        // 1. [기존 기능] 생존자에게 연기 이펙트 재생 (모든 클라이언트)
         RpcPlaySurvivorSmoke(survivor.gameObject);
 
+        // 2. [새 기능] 당하는 생존자 화면에만 '잡아먹히는' 카메라 연출 시작 (해당 클라이언트 전용)
+        SurvivorIncageEffect effect = survivor.GetComponent<SurvivorIncageEffect>();
+        if (effect != null && survivor.connectionToClient != null)
+        {
+            // TargetRpc를 통해 당하는 생존자의 connection으로만 신호를 보냅니다.
+            effect.TargetPlayIncageEffect(survivor.connectionToClient, this.gameObject);
+        }
+
+        // 3. 연출을 위한 대기 시간 (기존과 동일하게 2.1초)
         yield return new WaitForSeconds(2.1f);
 
-        // 감옥에 넣는 처리가 실제로 확정되는 순간 3D 사운드 재생
+        // 4. [기존 기능] 감옥 위치에서 3D 사운드 재생 (모든 클라이언트)
         ServerPlayIncageSound(prison.transform.position);
 
+        // 5. [기존 기능] 실제 감옥 투옥 처리 및 살인마 상태 복구
         prison.SetPrisoner(survivor);
         state.ChangeState(KillerCondition.Idle);
+
+        Debug.Log("<color=green>[Incage]</color> 모든 연출 및 투옥 로직 완료");
     }
 
     // 서버에서 감옥 넣기 성공 사운드를 모든 클라이언트에게 3D로 재생한다.

@@ -2811,6 +2811,7 @@ GameObject:
   - component: {fileID: 242177296979900774}
   - component: {fileID: 2069850198979918394}
   - component: {fileID: 2241930871020932771}
+  - component: {fileID: -1662289340532313120}
   m_Layer: 6
   m_Name: Survivor 3
   m_TagString: Survivor
@@ -2954,6 +2955,8 @@ MonoBehaviour:
   femaleDownHitSoundKey: 9
   maleGroanSoundKey: 10
   femaleGroanSoundKey: 11
+  maleStunSoundKey: 21
+  femaleStunSoundKey: 22
   prisonFullTime: 300
   prisonHalfTime: 150
 --- !u!114 &9042901668219853417
@@ -3035,6 +3038,7 @@ MonoBehaviour:
   detectedFrameColor: {r: 1, g: 0, b: 0, a: 1}
   detectedHoldTime: 0.25
   skillReuseDelay: 0.5
+  cameraSkillSoundOffset: {x: 0, y: 1.2, z: 0}
   isRecordingKiller: 0
 --- !u!95 &7436738972924962348
 Animator:
@@ -3156,6 +3160,26 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   portrait: {fileID: 21300000, guid: 86299bf7b535e454ea223538583bfbc6, type: 3}
+--- !u!114 &-1662289340532313120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7ba182d3fe7d1646b849aec89b46c93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivorIncageEffect
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  normalCinemachine: {fileID: 6907075847553500461}
+  postProcessVolume: {fileID: 0}
+  fovZoom: 25
+  fadeDuration: 0.8
+  targetVignetteIntensity: 0.9
 --- !u!1 &4113257929306123816
 GameObject:
   m_ObjectHideFlags: 0
