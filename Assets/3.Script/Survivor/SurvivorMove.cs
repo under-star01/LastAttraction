@@ -1002,8 +1002,8 @@ public class SurvivorMove : NetworkBehaviour
         if (camSkill != null)
             camSkill.ApplyResultView();
 
-        if (InGameUIManager.Instance != null)
-            InGameUIManager.Instance.ShowResultUI();
+        if (GameManager.Instance != null)
+            GameManager.Instance.EnterResultUI(connectionToClient);
 
         Debug.Log("[SurvivorMove] ResultCam 전환 및 ResultUI 활성화");
     }

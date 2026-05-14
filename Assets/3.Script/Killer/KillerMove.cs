@@ -400,8 +400,8 @@ public class KillerMove : NetworkBehaviour
         SetCameraPriority(normalCam, false);
         SetCameraPriority(resultCam, true);
 
-        if (InGameUIManager.Instance != null)
-            InGameUIManager.Instance.ShowResultUI();
+        if (GameManager.Instance != null)
+            GameManager.Instance.EnterResultUI(connectionToClient);
 
         Debug.Log("[KillerMove] ResultCam 전환 및 ResultUI 활성화");
     }

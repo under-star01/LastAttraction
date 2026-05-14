@@ -79,6 +79,9 @@ public class GameManager : NetworkBehaviour
     // 생존자 결과 데이터를 기록한다.
     private readonly Dictionary<uint, SurvivorResultData> survivorResultMap = new Dictionary<uint, SurvivorResultData>();
 
+    // 현재 ResultUI를 보고 있는 클라이언트들이다.
+    private readonly HashSet<NetworkConnectionToClient> resultViewers = new HashSet<NetworkConnectionToClient>();
+
     // 현재 찾은 진짜 증거 개수다.
     private int foundEvidenceCount;
 
@@ -734,5 +737,176 @@ public class GameManager : NetworkBehaviour
 
         if (reachedResult)
             data.reachedResult = true;
+    }
+
+    [Server]
+    public void EnterResultUI(NetworkConnectionToClient conn)
+    {
+        if (conn == null)
+            return;
+
+        if (conn.identity != null)
+        {
+            SurvivorState survivorState = conn.identity.GetComponent<SurvivorState>();
+
+            if (survivorState != null)
+            {
+                UpdateSurvivorResult(
+                    conn.identity,
+                    reachedResult: true
+                );
+            }
+        }
+
+        resultViewers.Add(conn);
+
+        RefreshResultViewers();
+    }
+
+    [Server]
+    private void RefreshResultViewers()
+    {
+        string[] nicknames;
+        float[] recordTimes;
+        int[] evidenceMasks;
+        bool[] reachedResults;
+
+        BuildSurvivorResultArrays(
+            out nicknames,
+            out recordTimes,
+            out evidenceMasks,
+            out reachedResults
+        );
+
+        List<NetworkConnectionToClient> invalidConnections = null;
+
+        foreach (NetworkConnectionToClient conn in resultViewers)
+        {
+            if (conn == null)
+            {
+                if (invalidConnections == null)
+                    invalidConnections = new List<NetworkConnectionToClient>();
+
+                invalidConnections.Add(conn);
+                continue;
+            }
+
+            TargetRefreshResultUI(
+                conn,
+                nicknames,
+                recordTimes,
+                evidenceMasks,
+                reachedResults
+            );
+        }
+
+        if (invalidConnections != null)
+        {
+            for (int i = 0; i < invalidConnections.Count; i++)
+                resultViewers.Remove(invalidConnections[i]);
+        }
+    }
+
+    [Server]
+    private void BuildSurvivorResultArrays(
+        out string[] nicknames,
+        out float[] recordTimes,
+        out int[] evidenceMasks,
+        out bool[] reachedResults)
+    {
+        int count = GetResultSurvivorSlotCount();
+
+        nicknames = new string[count];
+        recordTimes = new float[count];
+        evidenceMasks = new int[count];
+        reachedResults = new bool[count];
+
+        if (CustomNetworkManager.Instance == null)
+            return;
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null || conn.identity == null)
+                continue;
+
+            SurvivorState survivorState = conn.identity.GetComponent<SurvivorState>();
+
+            if (survivorState == null)
+                continue;
+
+            if (!CustomNetworkManager.Instance.TryGetSurvivorIndex(conn, out int survivorIndex))
+                continue;
+
+            if (survivorIndex < 0 || survivorIndex >= count)
+                continue;
+
+            SurvivorResultData data = GetOrCreateSurvivorResult(conn.identity);
+
+            if (data == null)
+                continue;
+
+            nicknames[survivorIndex] = data.nickname;
+            recordTimes[survivorIndex] = data.killerRecordTime;
+            evidenceMasks[survivorIndex] = GetEvidenceMask(data);
+            reachedResults[survivorIndex] = data.reachedResult;
+        }
+    }
+
+    private int GetResultSurvivorSlotCount()
+    {
+        if (survivorResultPoints != null && survivorResultPoints.Length > 0)
+            return survivorResultPoints.Length;
+
+        return 4;
+    }
+
+    private int GetEvidenceMask(SurvivorResultData data)
+    {
+        if (data == null || data.evidenceIndexes == null)
+            return 0;
+
+        int mask = 0;
+
+        for (int i = 0; i < data.evidenceIndexes.Count; i++)
+        {
+            int index = data.evidenceIndexes[i];
+
+            if (index < 0)
+                continue;
+
+            mask |= 1 << index;
+        }
+
+        return mask;
+    }
+
+    [TargetRpc]
+    private void TargetRefreshResultUI(
+        NetworkConnectionToClient target,
+        string[] nicknames,
+        float[] recordTimes,
+        int[] evidenceMasks,
+        bool[] reachedResults)
+    {
+        if (InGameUIManager.Instance != null)
+            InGameUIManager.Instance.ShowResultUI();
+
+        ResultUI resultUI = ResultUI.Instance;
+
+        if (resultUI == null)
+            resultUI = FindFirstObjectByType<ResultUI>();
+
+        if (resultUI == null)
+        {
+            Debug.LogWarning("[GameManager] ResultUI를 찾지 못했습니다.");
+            return;
+        }
+
+        resultUI.ApplySurvivorResults(
+            nicknames,
+            recordTimes,
+            evidenceMasks,
+            reachedResults
+        );
     }
 }
