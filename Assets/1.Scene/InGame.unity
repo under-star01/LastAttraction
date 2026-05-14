@@ -17359,7 +17359,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1471202006}
         m_TargetAssemblyTypeName: InGameUIManager, Assembly-CSharp
         m_MethodName: OnClickReturnLobby
         m_Mode: 1
