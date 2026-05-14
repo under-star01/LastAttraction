@@ -981,7 +981,14 @@ public class SurvivorMove : NetworkBehaviour
         yield return new WaitForSeconds(1f);
 
         MoveToResultPoint();
-        TargetShowResultViewAndUI();
+
+        // 1. 로컬 카메라만 결과 시점으로 전환
+        TargetShowResultView();
+
+        // 2. 서버 GameManager를 통해 ResultUI 갱신 요청
+        if (GameManager.Instance != null)
+            GameManager.Instance.EnterResultUI(connectionToClient);
+
         yield return new WaitForSeconds(2f);
 
         TargetSetBlackout(false);
@@ -997,15 +1004,12 @@ public class SurvivorMove : NetworkBehaviour
     }
 
     [TargetRpc]
-    private void TargetShowResultViewAndUI()
+    private void TargetShowResultView()
     {
         if (camSkill != null)
             camSkill.ApplyResultView();
 
-        if (GameManager.Instance != null)
-            GameManager.Instance.EnterResultUI(connectionToClient);
-
-        Debug.Log("[SurvivorMove] ResultCam 전환 및 ResultUI 활성화");
+        Debug.Log("[SurvivorMove] ResultCam 전환");
     }
 
     [Server]

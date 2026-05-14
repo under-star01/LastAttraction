@@ -13,11 +13,19 @@ public class ResultUI : MonoBehaviour
         public GameObject root;
         public Text nicknameText;
         public Text recordingTimeText;
+        public GameObject dieObject;
         public GameObject[] evidences;
     }
 
     [Header("생존자 결과 슬롯")]
     [SerializeField] private SurvivorResultSlot[] survivorSlots;
+
+    [Header("살인마 결과 슬롯")]
+    [SerializeField] private GameObject killerRoot;
+    [SerializeField] private Text killerNicknameText;
+    [SerializeField] private Text killerDownCountText;
+    [SerializeField] private Text killerPrisonCountText;
+    [SerializeField] private Text killerKillCountText;
 
     private readonly StringBuilder builder = new StringBuilder(32);
 
@@ -36,7 +44,8 @@ public class ResultUI : MonoBehaviour
         string[] nicknames,
         float[] recordTimes,
         int[] evidenceMasks,
-        bool[] reachedResults)
+        bool[] reachedResults,
+        bool[] deadResults)
     {
         if (survivorSlots == null)
             return;
@@ -55,6 +64,11 @@ public class ResultUI : MonoBehaviour
 
             if (slot.root != null)
                 slot.root.SetActive(show);
+
+            bool isDead = deadResults != null && (i < deadResults.Length && deadResults[i]);
+
+            if (slot.dieObject != null)
+                slot.dieObject.SetActive(show && isDead);
 
             int evidenceMask =
                 evidenceMasks != null && i < evidenceMasks.Length
@@ -98,7 +112,6 @@ public class ResultUI : MonoBehaviour
                 int seconds = totalSeconds % 60;
 
                 builder.Clear();
-                builder.Append("Recording : ");
 
                 if (minutes > 0)
                 {
@@ -112,5 +125,31 @@ public class ResultUI : MonoBehaviour
                 slot.recordingTimeText.text = builder.ToString();
             }
         }
+    }
+
+    public void ApplyKillerResult(
+    string nickname,
+    int downCount,
+    int prisonCount,
+    int killCount,
+    bool show)
+    {
+        if (killerRoot != null)
+            killerRoot.SetActive(show);
+
+        if (!show)
+            return;
+
+        if (killerNicknameText != null)
+            killerNicknameText.text = string.IsNullOrEmpty(nickname) ? "Killer" : nickname;
+
+        if (killerDownCountText != null)
+            killerDownCountText.text = downCount.ToString();
+
+        if (killerPrisonCountText != null)
+            killerPrisonCountText.text = prisonCount.ToString();
+
+        if (killerKillCountText != null)
+            killerKillCountText.text = killCount.ToString();
     }
 }

@@ -201,8 +201,9 @@ public class SurvivorState : NetworkBehaviour
             currentCondition = SurvivorCondition.Downed;
             ApplyAllStateServer();
 
-            // 꼭 맞아서 Downed 상태가 되는 순간에만 성별 다운 피격 소리를 재생한다.
-            // AudioManager의 Max Distance를 크게 잡아서 맵 전체에 들리는 3D 사운드처럼 만든다.
+            if (GameManager.Instance != null)
+                GameManager.Instance.AddKillerResult(addDown: 1);
+
             PlayWorld3DSound(GetDownHitSoundKey());
 
             if (actionState != null)
@@ -278,6 +279,10 @@ public class SurvivorState : NetworkBehaviour
         }
 
         ApplyAllStateServer();
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.AddKillerResult(addPrison: 1);
+
         return true;
     }
 
@@ -314,6 +319,9 @@ public class SurvivorState : NetworkBehaviour
 
         currentPrisonId = 0;
         currentCondition = SurvivorCondition.Dead;
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.AddKillerResult(addKill: 1);
 
         // 죽는 소리는 맞아서 다칠 때 소리와 통일한다.
         // 따라서 성별에 맞는 일반 피격 소리를 재생한다.
@@ -354,6 +362,9 @@ public class SurvivorState : NetworkBehaviour
 
         currentPrisonId = 0;
         currentCondition = SurvivorCondition.Dead;
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.AddKillerResult(addKill: 1);
 
         // 감옥 시간 초과 사망도 죽는 소리는 일반 피격 소리와 통일한다.
         // 맞아서 Downed가 되는 상황이 아니므로 성별 다운 피격 소리는 재생하지 않는다.

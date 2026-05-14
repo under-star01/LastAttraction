@@ -13,6 +13,16 @@ public class SurvivorResultData
     public bool reachedResult;
 }
 
+[Serializable]
+public class KillerResultData
+{
+    public string nickname;
+    public int downCount;
+    public int prisonCount;
+    public int killCount;
+    public bool reachedResult;
+}
+
 public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -69,6 +79,9 @@ public class GameManager : NetworkBehaviour
 
     [Header("결과 데이터 - 생존자")]
     [SerializeField] private List<SurvivorResultData> survivorResultList = new List<SurvivorResultData>();
+
+    [Header("결과 데이터 - 살인마")]
+    [SerializeField] private KillerResultData killerResultData = new KillerResultData();
 
     // 맵에 있는 EvidenceZone들을 서버에서 등록해둔다.
     private readonly HashSet<EvidenceZone> zones = new HashSet<EvidenceZone>();
@@ -740,6 +753,59 @@ public class GameManager : NetworkBehaviour
     }
 
     [Server]
+    public void UpdateKillerResult(
+    NetworkIdentity killerIdentity,
+    int addDown = 0,
+    int addPrison = 0,
+    int addKill = 0,
+    bool reachedResult = false)
+    {
+        if (killerIdentity != null && string.IsNullOrEmpty(killerResultData.nickname))
+            killerResultData.nickname = GetPlayerNickname(killerIdentity);
+
+        killerResultData.downCount += addDown;
+        killerResultData.prisonCount += addPrison;
+        killerResultData.killCount += addKill;
+
+        if (reachedResult)
+            killerResultData.reachedResult = true;
+
+        if (resultViewers.Count > 0)
+            RefreshResultViewers();
+    }
+
+    [Server]
+    public void AddKillerResult(
+    int addDown = 0,
+    int addPrison = 0,
+    int addKill = 0)
+    {
+        NetworkIdentity killerIdentity = GetCurrentKillerIdentity();
+
+        UpdateKillerResult(
+            killerIdentity,
+            addDown,
+            addPrison,
+            addKill
+        );
+    }
+
+    [Server]
+    private NetworkIdentity GetCurrentKillerIdentity()
+    {
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null || conn.identity == null)
+                continue;
+
+            if (conn.identity.GetComponent<KillerInput>() != null)
+                return conn.identity;
+        }
+
+        return null;
+    }
+
+    [Server]
     public void EnterResultUI(NetworkConnectionToClient conn)
     {
         if (conn == null)
@@ -756,6 +822,18 @@ public class GameManager : NetworkBehaviour
                     reachedResult: true
                 );
             }
+            else
+            {
+                KillerInput killerInput = conn.identity.GetComponent<KillerInput>();
+
+                if (killerInput != null)
+                {
+                    UpdateKillerResult(
+                        conn.identity,
+                        reachedResult: true
+                    );
+                }
+            }
         }
 
         resultViewers.Add(conn);
@@ -770,12 +848,14 @@ public class GameManager : NetworkBehaviour
         float[] recordTimes;
         int[] evidenceMasks;
         bool[] reachedResults;
+        bool[] deadResults;
 
         BuildSurvivorResultArrays(
             out nicknames,
             out recordTimes,
             out evidenceMasks,
-            out reachedResults
+            out reachedResults,
+            out deadResults
         );
 
         List<NetworkConnectionToClient> invalidConnections = null;
@@ -796,7 +876,13 @@ public class GameManager : NetworkBehaviour
                 nicknames,
                 recordTimes,
                 evidenceMasks,
-                reachedResults
+                reachedResults,
+                deadResults,
+                killerResultData.nickname,
+                killerResultData.downCount,
+                killerResultData.prisonCount,
+                killerResultData.killCount,
+                killerResultData.reachedResult
             );
         }
 
@@ -809,10 +895,11 @@ public class GameManager : NetworkBehaviour
 
     [Server]
     private void BuildSurvivorResultArrays(
-        out string[] nicknames,
-        out float[] recordTimes,
-        out int[] evidenceMasks,
-        out bool[] reachedResults)
+    out string[] nicknames,
+    out float[] recordTimes,
+    out int[] evidenceMasks,
+    out bool[] reachedResults,
+    out bool[] deadResults)
     {
         int count = GetResultSurvivorSlotCount();
 
@@ -820,6 +907,7 @@ public class GameManager : NetworkBehaviour
         recordTimes = new float[count];
         evidenceMasks = new int[count];
         reachedResults = new bool[count];
+        deadResults = new bool[count];
 
         if (CustomNetworkManager.Instance == null)
             return;
@@ -849,6 +937,7 @@ public class GameManager : NetworkBehaviour
             recordTimes[survivorIndex] = data.killerRecordTime;
             evidenceMasks[survivorIndex] = GetEvidenceMask(data);
             reachedResults[survivorIndex] = data.reachedResult;
+            deadResults[survivorIndex] = survivorState.IsDead;
         }
     }
 
@@ -882,11 +971,17 @@ public class GameManager : NetworkBehaviour
 
     [TargetRpc]
     private void TargetRefreshResultUI(
-        NetworkConnectionToClient target,
-        string[] nicknames,
-        float[] recordTimes,
-        int[] evidenceMasks,
-        bool[] reachedResults)
+    NetworkConnectionToClient target,
+    string[] nicknames,
+    float[] recordTimes,
+    int[] evidenceMasks,
+    bool[] reachedResults,
+    bool[] deadResults,
+    string killerNickname,
+    int killerDownCount,
+    int killerPrisonCount,
+    int killerKillCount,
+    bool showKillerResult)
     {
         if (InGameUIManager.Instance != null)
             InGameUIManager.Instance.ShowResultUI();
@@ -906,7 +1001,16 @@ public class GameManager : NetworkBehaviour
             nicknames,
             recordTimes,
             evidenceMasks,
-            reachedResults
+            reachedResults,
+            deadResults
+        );
+
+        resultUI.ApplyKillerResult(
+            killerNickname,
+            killerDownCount,
+            killerPrisonCount,
+            killerKillCount,
+            showKillerResult
         );
     }
 }
