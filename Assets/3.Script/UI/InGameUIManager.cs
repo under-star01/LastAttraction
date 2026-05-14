@@ -33,6 +33,7 @@ public class InGameUIManager : MonoBehaviour
     [SerializeField] private CameraSkillUI cameraSkillUI;
     [SerializeField] private Image[] frameUI;
     [SerializeField] private Text recordingTimeText;
+    [SerializeField] private Image[] acquiredEvidenceImages;
 
     [Header("살인마 전용 UI")]
     [SerializeField] private GameObject skillUI_Killer;
@@ -85,6 +86,8 @@ public class InGameUIManager : MonoBehaviour
         if (resultUI != null)
             resultUI.SetActive(false);
 
+        HideAcquiredEvidenceImages();
+
         if (recordingTimeText != null)
             recordingTimeText.text = "Recording : 0s";
 
@@ -116,6 +119,30 @@ public class InGameUIManager : MonoBehaviour
             StopCoroutine(bindRoutine);
             bindRoutine = null;
         }
+    }
+
+    private void HideAcquiredEvidenceImages()
+    {
+        if (acquiredEvidenceImages == null)
+            return;
+
+        for (int i = 0; i < acquiredEvidenceImages.Length; i++)
+        {
+            if (acquiredEvidenceImages[i] != null)
+                acquiredEvidenceImages[i].gameObject.SetActive(false);
+        }
+    }
+
+    public void ShowAcquiredEvidence(int evidenceIndex)
+    {
+        if (acquiredEvidenceImages == null)
+            return;
+
+        if (evidenceIndex < 0 || evidenceIndex >= acquiredEvidenceImages.Length)
+            return;
+
+        if (acquiredEvidenceImages[evidenceIndex] != null)
+            acquiredEvidenceImages[evidenceIndex].gameObject.SetActive(true);
     }
 
     // 인게임 씬 입장 후 한 번만 씬 오브젝트를 찾는다.
