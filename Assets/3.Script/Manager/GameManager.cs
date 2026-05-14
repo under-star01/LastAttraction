@@ -983,8 +983,13 @@ public class GameManager : NetworkBehaviour
     int killerKillCount,
     bool showKillerResult)
     {
-        if (InGameUIManager.Instance != null)
-            InGameUIManager.Instance.ShowResultUI();
+        if (InGameUIManager.Instance == null)
+        {
+            Debug.LogWarning("[GameManager] InGameUIManager.Instance가 없습니다.");
+            return;
+        }
+
+        InGameUIManager.Instance.ShowResultUI();
 
         ResultUI resultUI = ResultUI.Instance;
 
@@ -993,7 +998,7 @@ public class GameManager : NetworkBehaviour
 
         if (resultUI == null)
         {
-            Debug.LogWarning("[GameManager] ResultUI를 찾지 못했습니다.");
+            Debug.LogWarning("[GameManager] ResultUI를 찾지 못했습니다. ResultUI 오브젝트가 활성화되었는지 확인하세요.");
             return;
         }
 
@@ -1012,5 +1017,7 @@ public class GameManager : NetworkBehaviour
             killerKillCount,
             showKillerResult
         );
+
+        Debug.Log("[GameManager] TargetRefreshResultUI 적용 완료");
     }
 }

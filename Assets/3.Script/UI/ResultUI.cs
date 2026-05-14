@@ -31,6 +31,12 @@ public class ResultUI : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("[ResultUI] 중복 Instance가 감지되었습니다.");
+            return;
+        }
+
         Instance = this;
     }
 
