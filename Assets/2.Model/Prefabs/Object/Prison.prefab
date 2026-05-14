@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6062691050706451980}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: LookPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 360686072347462713}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -26, y: 0, z: 125}
+  m_LocalPosition: {x: -26, y: 95, z: 125}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -43,7 +43,7 @@ GameObject:
   - component: {fileID: 1451447458886388135}
   - component: {fileID: 7965318166722146624}
   - component: {fileID: 1944004087800071074}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: bars_GEO
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -152,7 +152,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5951201188469760772}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: GatePivot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -189,7 +189,8 @@ GameObject:
   - component: {fileID: 2935743300009364622}
   - component: {fileID: 5910468382344112094}
   - component: {fileID: 567487740841450905}
-  m_Layer: 0
+  - component: {fileID: 1330180338980166064}
+  m_Layer: 7
   m_Name: Prison
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -316,6 +317,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 200, y: 200, z: 100}
   m_Center: {x: 0, y: 100, z: 125}
+--- !u!114 &1330180338980166064
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4049048245582396780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31e83fc14fe06a841a23bc7ca5c9f926, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractIconPoint
+  iconPoint: {fileID: 6062691050706451980}
+  canShowIcon: 1
+  holdOnly: 1
 --- !u!1 &4213498741751731894
 GameObject:
   m_ObjectHideFlags: 0
@@ -328,7 +344,7 @@ GameObject:
   - component: {fileID: 8454517714232151147}
   - component: {fileID: 9022245449235848549}
   - component: {fileID: 8091884711231684979}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: door_frame_GEO
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -440,7 +456,7 @@ GameObject:
   - component: {fileID: 3591100958163267184}
   - component: {fileID: 6567322418034230393}
   - component: {fileID: 3210858456983185486}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: polls_GEO
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -552,7 +568,7 @@ GameObject:
   - component: {fileID: 8050589770482445942}
   - component: {fileID: 8053616905637082402}
   - component: {fileID: 5011544511096184759}
-  m_Layer: 12
+  m_Layer: 7
   m_Name: gate_GEO
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -664,7 +680,7 @@ GameObject:
   - component: {fileID: 6026045417873973851}
   - component: {fileID: 8868932300591791217}
   - component: {fileID: 4950588422725098055}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: roof_GEO
   m_TagString: Untagged
   m_Icon: {fileID: 0}

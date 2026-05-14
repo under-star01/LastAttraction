@@ -1,13 +1,16 @@
+using System.Collections;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Text;
 
 // 인게임 UI 전체를 관리한다.
 // - 모든 생존자의 상태 UI
 // - 생존자 입장에서만 모든 생존자의 현재 행동 UI 표시
 // - 살인마 입장에서는 생존자 상태 UI만 표시하고 Action UI는 숨김
 // - 내 로컬 플레이어의 클릭 / 우클릭 입력 UI
+// - 씬 오브젝트 연결은 Update에서 계속 찾지 않고, 인게임 씬 진입 후 한 번만 찾는다.
 public class InGameUIManager : MonoBehaviour
 {
     public static InGameUIManager Instance { get; private set; }
@@ -20,12 +23,16 @@ public class InGameUIManager : MonoBehaviour
     [SerializeField] private ProgressUI progressUI;
     [SerializeField] private QTEUI qteUI;
 
+    [Header("상호작용 표시 UI")]
+    [SerializeField] private Image interactCircleIcon;
+
     [Header("생존자 전용 UI")]
     [SerializeField] private LocalActionUI localActionUI;
     [SerializeField] private GameObject objectiveProgressUIObject;
     [SerializeField] private GameObject skillUI_Survivor;
     [SerializeField] private CameraSkillUI cameraSkillUI;
     [SerializeField] private Image[] frameUI;
+    [SerializeField] private Text recordingTimeText;
 
     [Header("살인마 전용 UI")]
     [SerializeField] private GameObject skillUI_Killer;
@@ -49,10 +56,9 @@ public class InGameUIManager : MonoBehaviour
     [SerializeField] private Sprite prisonActionIcon;
     [SerializeField] private Sprite uploadActionIcon;
 
-    [Header("갱신 설정")]
-    [SerializeField] private float refreshInterval = 0.1f;
-
-    private float refreshTimer;
+    [Header("씬 오브젝트 1회 연결")]
+    [SerializeField] private float sceneObjectBindDelay = 0.35f;
+    [SerializeField] private float localPlayerWaitTimeout = 3f;
 
     private readonly List<SurvivorState> survivors = new List<SurvivorState>();
 
@@ -60,6 +66,12 @@ public class InGameUIManager : MonoBehaviour
     private EvidencePoint[] evidences = new EvidencePoint[0];
     private Prison[] prisons = new Prison[0];
     private UploadComputer[] uploadComputers = new UploadComputer[0];
+    private readonly StringBuilder recordingTimeBuilder = new StringBuilder(32);
+    private int lastRecordingSecond = -1;
+    private float localRecordingTime;
+
+    private bool sceneObjectsBound;
+    private Coroutine bindRoutine;
 
     private void Awake()
     {
@@ -68,31 +80,79 @@ public class InGameUIManager : MonoBehaviour
 
     private void Start()
     {
-        RefreshSceneObjects();
         HideAllSlots();
 
         if (resultUI != null)
             resultUI.SetActive(false);
 
+        if (recordingTimeText != null)
+            recordingTimeText.text = "Recording : 0s";
+
         if (CustomNetworkManager.Instance != null)
             SetRoleUI(CustomNetworkManager.Instance.CurrentLocalJoinRole);
         else
             SetRoleUI(JoinRole.None);
+
+        // 인게임 씬이 로드되고 네트워크 플레이어 / 씬 오브젝트가 준비된 뒤 한 번만 연결한다.
+        bindRoutine = StartCoroutine(BindSceneObjectsOnceRoutine());
     }
 
     private void Update()
     {
-        // 매 프레임 FindObjects를 하면 비용이 크므로 일정 간격으로만 씬 오브젝트를 다시 찾는다.
-        refreshTimer += Time.deltaTime;
-
-        if (refreshTimer >= refreshInterval)
-        {
-            refreshTimer = 0f;
-            RefreshSceneObjects();
-        }
-
+        // 이제 여기서 FindObjectsByType을 반복 호출하지 않는다.
+        // 연결된 목록을 기준으로 UI 표시만 매 프레임 갱신한다.
         UpdateSurvivorListUI();
         UpdateLocalActionUI();
+        UpdateLocalRecordingTimeUI();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+
+        if (bindRoutine != null)
+        {
+            StopCoroutine(bindRoutine);
+            bindRoutine = null;
+        }
+    }
+
+    // 인게임 씬 입장 후 한 번만 씬 오브젝트를 찾는다.
+    private IEnumerator BindSceneObjectsOnceRoutine()
+    {
+        // InGameUIManager, NetworkClient.localPlayer, 씬 오브젝트들이 준비될 시간을 준다.
+        yield return null;
+
+        if (sceneObjectBindDelay > 0f)
+            yield return new WaitForSeconds(sceneObjectBindDelay);
+
+        // 로컬 플레이어가 아직 준비되지 않았으면 잠깐 기다린다.
+        // 이 대기는 인게임 진입 시 한 번만 실행되며, Update에서 계속 찾는 구조가 아니다.
+        float elapsed = 0f;
+
+        while (NetworkClient.localPlayer == null && elapsed < localPlayerWaitTimeout)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        RefreshSceneObjects();
+
+        sceneObjectsBound = true;
+        bindRoutine = null;
+
+        Debug.Log("[InGameUIManager] 씬 오브젝트 1회 연결 완료");
+    }
+
+    // 필요할 때 수동으로 다시 연결하고 싶을 때 사용할 수 있다.
+    // 일반 플레이 중에는 호출하지 않아도 된다.
+    public void RebindSceneObjectsOnce()
+    {
+        RefreshSceneObjects();
+        sceneObjectsBound = true;
+
+        Debug.Log("[InGameUIManager] 씬 오브젝트 수동 재연결 완료");
     }
 
     public ProgressUI GetProgressUI()
@@ -115,12 +175,17 @@ public class InGameUIManager : MonoBehaviour
         return frameUI;
     }
 
+    public Image GetInteractCircleIcon()
+    {
+        return interactCircleIcon;
+    }
+
     public KillerSkillUI GetKillerSkillUI()
     {
         return killerSkillUI;
     }
 
-    // 씬 안의 생존자와 상호작용 오브젝트를 찾는다.
+    // 씬 안의 생존자와 상호작용 오브젝트를 한 번 찾는다.
     private void RefreshSceneObjects()
     {
         survivors.Clear();
@@ -165,6 +230,12 @@ public class InGameUIManager : MonoBehaviour
     {
         if (survivorSlots == null || survivorSlots.Length == 0)
             return;
+
+        if (!sceneObjectsBound)
+        {
+            HideAllSlots();
+            return;
+        }
 
         if (!ShouldShowSurvivorList())
         {
@@ -669,5 +740,55 @@ public class InGameUIManager : MonoBehaviour
 
         localActionUI.SetClickUsed(clickUsed);
         localActionUI.SetRightClickUsed(rightClickUsed);
+    }
+
+    private void UpdateLocalRecordingTimeUI()
+    {
+        if (recordingTimeText == null)
+            return;
+
+        if (!IsLocalSurvivor())
+            return;
+
+        if (NetworkClient.localPlayer == null)
+            return;
+
+        SurvivorCameraSkill cameraSkill =
+            NetworkClient.localPlayer.GetComponent<SurvivorCameraSkill>();
+
+        if (cameraSkill == null)
+            return;
+
+        if (cameraSkill.IsRecordingKiller)
+            localRecordingTime += Time.deltaTime;
+
+        int totalSeconds = Mathf.FloorToInt(localRecordingTime);
+
+        if (totalSeconds == lastRecordingSecond)
+            return;
+
+        lastRecordingSecond = totalSeconds;
+
+        recordingTimeBuilder.Clear();
+        recordingTimeBuilder.Append("Recording : ");
+
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+
+        if (minutes > 0)
+        {
+            recordingTimeBuilder.Append(minutes);
+            recordingTimeBuilder.Append("m ");
+
+            recordingTimeBuilder.Append(seconds);
+            recordingTimeBuilder.Append("s");
+        }
+        else
+        {
+            recordingTimeBuilder.Append(seconds);
+            recordingTimeBuilder.Append("s");
+        }
+
+        recordingTimeText.text = recordingTimeBuilder.ToString();
     }
 }

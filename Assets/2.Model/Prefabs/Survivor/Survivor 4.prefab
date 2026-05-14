@@ -1762,7 +1762,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5330205222421736794}
   - component: {fileID: 6907075847553500461}
-  - component: {fileID: 5574379841978392642}
   m_Layer: 6
   m_Name: 'NormalCam '
   m_TagString: Untagged
@@ -1828,36 +1827,6 @@ MonoBehaviour:
       BarrelClipping: 0.25
       Anamorphism: 0
   BlendHint: 0
---- !u!114 &5574379841978392642
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2013035584447060845}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca7de3aefa901374ba29464584a3109a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineDecollider
-  CameraRadius: 0.3
-  Decollision:
-    Enabled: 1
-    ObstacleLayers:
-      serializedVersion: 2
-      m_Bits: 1
-    UseFollowTarget:
-      Enabled: 0
-      YOffset: 0
-    Damping: 0
-    SmoothingTime: 0
-  TerrainResolution:
-    Enabled: 0
-    TerrainLayers:
-      serializedVersion: 2
-      m_Bits: 1024
-    MaximumRaycast: 10
-    Damping: 0.5
 --- !u!1 &2091562841921642771
 GameObject:
   m_ObjectHideFlags: 0
@@ -3380,6 +3349,7 @@ GameObject:
   - component: {fileID: 5747250994685647726}
   - component: {fileID: 2069850198979918394}
   - component: {fileID: 7524002875152657783}
+  - component: {fileID: 2278312107223894732}
   m_Layer: 6
   m_Name: Survivor 4
   m_TagString: Survivor
@@ -3728,6 +3698,30 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0
   portrait: {fileID: 21300000, guid: c248d762443fd154b91c61b828b0b26b, type: 3}
+--- !u!114 &2278312107223894732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 981c56bcd4f342c4b80e56c55d540976, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivorInteractIconFinder
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  inGameSceneName: InGame
+  detectRadius: 10
+  interactableLayer:
+    serializedVersion: 2
+    m_Bits: 128
+  updateInterval: 0.05
+  circleIconImage: {fileID: 0}
+  targetCamera: {fileID: 0}
+  screenOffset: {x: 0, y: 0}
 --- !u!1 &4074163626032848579
 GameObject:
   m_ObjectHideFlags: 0
@@ -4696,7 +4690,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1156023091170717378}
   - component: {fileID: 2818308340247081044}
-  - component: {fileID: 1663661485461448784}
   m_Layer: 6
   m_Name: ResultCam
   m_TagString: Untagged
@@ -4762,36 +4755,6 @@ MonoBehaviour:
       BarrelClipping: 0.25
       Anamorphism: 0
   BlendHint: 0
---- !u!114 &1663661485461448784
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5670456167938367137}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca7de3aefa901374ba29464584a3109a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineDecollider
-  CameraRadius: 0.3
-  Decollision:
-    Enabled: 1
-    ObstacleLayers:
-      serializedVersion: 2
-      m_Bits: 1
-    UseFollowTarget:
-      Enabled: 0
-      YOffset: 0
-    Damping: 0
-    SmoothingTime: 0
-  TerrainResolution:
-    Enabled: 0
-    TerrainLayers:
-      serializedVersion: 2
-      m_Bits: 1024
-    MaximumRaycast: 10
-    Damping: 0.5
 --- !u!1 &5684548569213216242
 GameObject:
   m_ObjectHideFlags: 0
@@ -6174,7 +6137,6 @@ GameObject:
   m_Component:
   - component: {fileID: 8220968550766265854}
   - component: {fileID: 5365576005356907084}
-  - component: {fileID: 505967970470244155}
   m_Layer: 6
   m_Name: 'SkillCam '
   m_TagString: Untagged
@@ -6240,36 +6202,6 @@ MonoBehaviour:
       BarrelClipping: 0.25
       Anamorphism: 0
   BlendHint: 0
---- !u!114 &505967970470244155
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8052692729864094507}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca7de3aefa901374ba29464584a3109a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineDecollider
-  CameraRadius: 0.3
-  Decollision:
-    Enabled: 0
-    ObstacleLayers:
-      serializedVersion: 2
-      m_Bits: 1
-    UseFollowTarget:
-      Enabled: 0
-      YOffset: 0
-    Damping: 0
-    SmoothingTime: 0
-  TerrainResolution:
-    Enabled: 1
-    TerrainLayers:
-      serializedVersion: 2
-      m_Bits: 1024
-    MaximumRaycast: 10
-    Damping: 0.5
 --- !u!1 &8099510432132232517
 GameObject:
   m_ObjectHideFlags: 0

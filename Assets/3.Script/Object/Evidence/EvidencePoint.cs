@@ -15,59 +15,54 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
     [SerializeField] private int maxQteCount = 4;
     [SerializeField] private float qteFailStunTime = 3f;
 
-    // 이 증거 상자가 속한 EvidenceZone이다.
-    // 서버에서 완료 보고할 때 사용한다.
     private EvidenceZone zone;
 
-    // EvidenceZone에서 받은 증거 종류다.
-    // 공용 상자 프리팹을 쓰기 때문에 타입은 Zone에서 주입받는다.
     [SyncVar]
     private EvidenceType evidenceType = EvidenceType.None;
 
-    // EvidenceZone에서 받은 표시 이름이다.
-    // 클라이언트 UI나 결과창에서 사용할 수 있게 SyncVar로 둔다.
     [SyncVar]
     private string displayName;
 
-    // 조사 완료 여부를 서버에서 동기화한다.
+    // 실제로 조사 완료된 증거인지 여부다.
+    // true가 되면 완료된 증거 오브젝트는 보이지 않게 처리한다.
     [SyncVar(hook = nameof(OnCompletedChanged))]
     private bool isCompleted;
 
-    // 현재 조사 중인지 서버에서 동기화한다.
+    // 목표 완료 후 강제로 상호작용만 막힌 상태다.
+    // true가 되어도 오브젝트는 계속 보이고, 조사와 원 아이콘만 막힌다.
+    [SyncVar(hook = nameof(OnInteractionDisabledChanged))]
+    private bool isInteractionDisabled;
+
     [SyncVar]
     private bool isInteracting;
 
-    // 현재 조사 진행도다.
     [SyncVar]
     private float progress;
 
-    // 현재 조사 중인 플레이어의 netId다.
     [SyncVar]
     private uint currentInteractorNetId;
 
-    // QTE 결과를 기다리는 중인지 저장한다.
     [SyncVar]
     private bool isWaitingQTE;
 
-    // 서버에서 생성한 QTE 발생 타이밍 목록이다.
     private readonly List<float> qteTriggerProgressList = new List<float>();
 
-    // 현재 몇 번째 QTE인지 저장한다.
     private int currentQteIndex;
 
-    // 로컬 플레이어의 상호작용 컴포넌트다.
     private SurvivorInteractor localInteractor;
-
-    // 로컬 플레이어의 이동 컴포넌트다.
     private SurvivorMove localMove;
-
-    // 로컬 플레이어의 QTE UI다.
     private QTEUI localQTEUI;
 
-    // 내 로컬 플레이어가 이 증거 범위 안에 있는지 여부다.
     private bool isLocalInside;
 
     public EvidenceType EvidenceType => evidenceType;
+    public bool IsCompleted => isCompleted;
+    public bool IsInteractionDisabled => isInteractionDisabled;
+    public bool IsInteractionBlocked => isCompleted || isInteractionDisabled;
+    public bool CanShowInteractIcon => !IsInteractionBlocked;
+
+    public bool IsInteractingForUI => isInteracting;
+    public uint CurrentInteractorNetId => currentInteractorNetId;
 
     public string DisplayName
     {
@@ -80,9 +75,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         }
     }
 
-    public bool IsInteractingForUI => isInteracting;
-    public uint CurrentInteractorNetId => currentInteractorNetId;
-
     public float Progress01
     {
         get
@@ -94,8 +86,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         }
     }
 
-    // EvidenceZone이 서버에서 증거 상자를 생성한 직후 호출한다.
-    // 이 구조에서는 생성된 EvidencePoint가 무조건 진짜 증거다.
     [Server]
     public void ServerInit(EvidenceZone ownerZone, EvidenceType type, string nameText)
     {
@@ -104,46 +94,43 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         displayName = nameText;
     }
 
-    // 예전 코드 호환용이다.
     public void SetZone(EvidenceZone evidenceZone)
     {
         zone = evidenceZone;
     }
 
-    // 예전 구조에서는 진짜/가짜 증거 구분에 사용했다.
-    // 새 구조에서는 생성된 EvidencePoint가 무조건 진짜라서 사용하지 않는다.
     [Server]
     public void SetIsRealEvidenceServer(bool value)
     {
-        // 사용하지 않음.
+        // 현재 구조에서는 생성된 EvidencePoint가 무조건 진짜 증거라서 사용하지 않는다.
     }
 
     public override void OnStartClient()
     {
         base.OnStartClient();
 
-        // 이미 완료된 증거라면 늦게 들어온 클라이언트에서도 숨김 처리한다.
         if (isCompleted)
+        {
             HideEvidenceLocal();
+            return;
+        }
+
+        if (isInteractionDisabled)
+            StopLocalUse(true, true);
     }
 
     private void Update()
     {
-        // 서버에서만 실제 조사 진행도를 증가시킨다.
         if (isServer)
             ServerUpdateInteract();
 
-        // 로컬 플레이어에게 ProgressUI를 갱신한다.
         UpdateLocalUI();
-
-        // 로컬 플레이어 기준으로 상호작용 후보 등록/해제를 갱신한다.
         RefreshLocalAvailability();
     }
 
-    // 로컬 플레이어가 조사 시작 입력을 했을 때 호출된다.
     public void BeginInteract(GameObject actor)
     {
-        if (isCompleted)
+        if (IsInteractionBlocked)
             return;
 
         if (localInteractor == null)
@@ -152,50 +139,29 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         if (IsBusyByOtherLocal())
             return;
 
-        // 조사 시작 시 증거 방향을 바라보게 한다.
         FaceToEvidenceLocal();
-
-        // 조사 중 이동을 잠근다.
         LockMovementLocal(true);
-
-        // 조사 애니메이션을 켠다.
         SetSearchingLocal(true);
 
-        // 시작하자마자 0% ProgressUI를 보여준다.
         localInteractor.ShowProgress(this, 0f);
 
-        // 서버에 조사 시작을 요청한다.
         CmdBeginInteract();
     }
 
-    // 로컬 플레이어가 조사 입력을 놓았을 때 호출된다.
     public void EndInteract()
     {
         if (localInteractor == null)
             return;
 
-        // 이동 잠금 해제
-        LockMovementLocal(false);
+        StopLocalUse(true, false);
 
-        // 조사 애니메이션 해제
-        SetSearchingLocal(false);
-
-        // QTE가 떠 있었다면 닫는다.
-        if (localQTEUI != null)
-            localQTEUI.ForceClose(false);
-
-        // ProgressUI 숨김
-        localInteractor.HideProgress(this, true);
-
-        // 서버에 조사 종료를 요청한다.
         CmdEndInteract();
     }
 
-    // 클라이언트가 서버에 조사 시작을 요청한다.
     [Command(requiresAuthority = false)]
     private void CmdBeginInteract(NetworkConnectionToClient sender = null)
     {
-        if (isCompleted)
+        if (IsInteractionBlocked)
             return;
 
         if (sender == null || sender.identity == null)
@@ -209,11 +175,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         if (move == null)
             return;
 
-        // 이미 다른 사람이 조사 중이면 시작하지 않는다.
         if (isInteracting && currentInteractorNetId != sender.identity.netId)
             return;
 
-        // 서버 기준으로 거리가 멀면 시작하지 않는다.
         if (!CanInteractorUseThis(sender.identity.transform))
             return;
 
@@ -227,7 +191,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         StartLoopSound();
     }
 
-    // 클라이언트가 서버에 조사 종료를 요청한다.
     [Command(requiresAuthority = false)]
     private void CmdEndInteract(NetworkConnectionToClient sender = null)
     {
@@ -243,7 +206,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         StopServerInteract();
     }
 
-    // 클라이언트가 서버에 QTE 결과를 전달한다.
     [Command(requiresAuthority = false)]
     private void CmdSubmitQTEResult(bool success, NetworkConnectionToClient sender = null)
     {
@@ -269,7 +231,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         currentQteIndex++;
     }
 
-    // 서버에서 QTE 실패를 처리한다.
     [Server]
     private void FailQTEServer(NetworkIdentity identity)
     {
@@ -284,19 +245,16 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         if (survivorState == null)
             survivorState = identity.GetComponentInParent<SurvivorState>();
 
-        // 먼저 조사 상태를 중단한다.
         StopServerInteract();
 
-        // 생존자에게 스턴을 적용한다.
         if (survivorState != null)
             survivorState.ApplyStun(qteFailStunTime);
     }
 
-    // 서버에서 조사 진행도와 QTE 타이밍을 처리한다.
     [Server]
     private void ServerUpdateInteract()
     {
-        if (!isInteracting || isCompleted)
+        if (!isInteracting || IsInteractionBlocked)
             return;
 
         if (!NetworkServer.spawned.TryGetValue(currentInteractorNetId, out NetworkIdentity identity))
@@ -305,9 +263,7 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             return;
         }
 
-        SurvivorInteractor interactor = identity.GetComponent<SurvivorInteractor>();
-
-        if (interactor == null)
+        if (identity.GetComponent<SurvivorInteractor>() == null)
         {
             StopServerInteract();
             return;
@@ -319,7 +275,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             return;
         }
 
-        // QTE 결과를 기다리는 동안에는 진행도를 멈춘다.
         if (isWaitingQTE)
             return;
 
@@ -341,42 +296,24 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             CompleteServer();
     }
 
-    // 서버에서 조사 중단 상태를 정리한다.
     [Server]
     private void StopServerInteract()
     {
         StopLoopSound();
-
-        isInteracting = false;
-        currentInteractorNetId = 0;
-        progress = 0f;
-        isWaitingQTE = false;
-
-        qteTriggerProgressList.Clear();
-        currentQteIndex = 0;
-
-        RpcForceStopLocalEffects(true);
+        ResetServerInteract(0f);
+        RpcStopLocalUse(true, false);
     }
 
-    // 서버에서 조사 완료를 처리한다.
     [Server]
     private void CompleteServer()
     {
         StopLoopSound();
 
-        // 현재 조사한 플레이어를 결과 기록용으로 저장한다.
         uint finderNetId = currentInteractorNetId;
 
         isCompleted = true;
-        isInteracting = false;
-        currentInteractorNetId = 0;
-        progress = interactTime;
-        isWaitingQTE = false;
+        ResetServerInteract(interactTime);
 
-        qteTriggerProgressList.Clear();
-        currentQteIndex = 0;
-
-        // 새 구조에서는 생성된 EvidencePoint가 무조건 진짜 증거다.
         if (zone != null)
         {
             Debug.Log(
@@ -394,14 +331,40 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             );
         }
 
-        // 서버에서도 콜라이더와 렌더러를 꺼서 완전히 사라지게 한다.
+        // 완료한 증거는 서버에서도 즉시 안 보이게 처리한다.
         HideEvidenceLocal();
 
-        // 모든 클라이언트에서도 숨김 처리한다.
+        // 모든 클라이언트에서도 완료한 증거를 안 보이게 처리한다.
         RpcCompleteEvidence();
     }
 
-    // 서버에서 QTE 발생 타이밍을 랜덤으로 생성한다.
+    // 목표 완료 후 이 증거를 숨기지 않고 상호작용만 막는다.
+    [Server]
+    public void ServerDisableInteractionOnly()
+    {
+        if (isCompleted || isInteractionDisabled)
+            return;
+
+        StopLoopSound();
+
+        isInteractionDisabled = true;
+        ResetServerInteract(0f);
+
+        RpcStopLocalUse(true, true);
+    }
+
+    [Server]
+    private void ResetServerInteract(float newProgress)
+    {
+        isInteracting = false;
+        currentInteractorNetId = 0;
+        progress = newProgress;
+        isWaitingQTE = false;
+
+        qteTriggerProgressList.Clear();
+        currentQteIndex = 0;
+    }
+
     [Server]
     private void SetupQTEPointsServer()
     {
@@ -425,7 +388,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         }
     }
 
-    // 조사 중인 클라이언트에게만 QTE를 시작시킨다.
     [TargetRpc]
     private void TargetStartQTE(NetworkConnection target)
     {
@@ -441,36 +403,42 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         localQTEUI.StartQTE(OnLocalQTEFinished);
     }
 
-    // 로컬 QTE가 끝났을 때 호출된다.
     private void OnLocalQTEFinished(bool success)
     {
         CmdSubmitQTEResult(success);
     }
 
-    // 조사 중단 시 모든 클라이언트에서 로컬 연출을 정리한다.
     [ClientRpc]
-    private void RpcForceStopLocalEffects(bool resetProgress)
+    private void RpcStopLocalUse(bool resetProgress, bool clearInside)
     {
-        StopLocalEffects(resetProgress);
+        StopLocalUse(resetProgress, clearInside);
     }
 
-    // 조사 완료 시 모든 클라이언트에서 증거를 숨긴다.
     [ClientRpc]
     private void RpcCompleteEvidence()
     {
-        StopLocalEffects(true);
+        StopLocalUse(true, true);
         HideEvidenceLocal();
     }
 
-    // 완료 상태가 늦게 들어온 클라이언트에도 반영되게 한다.
     private void OnCompletedChanged(bool oldValue, bool newValue)
     {
-        if (newValue)
-            HideEvidenceLocal();
+        if (!newValue)
+            return;
+
+        StopLocalUse(true, true);
+        HideEvidenceLocal();
     }
 
-    // 로컬 플레이어의 이동 잠금, 애니메이션, UI를 정리한다.
-    private void StopLocalEffects(bool resetProgress)
+    private void OnInteractionDisabledChanged(bool oldValue, bool newValue)
+    {
+        if (!newValue)
+            return;
+
+        StopLocalUse(true, true);
+    }
+
+    private void StopLocalUse(bool resetProgress, bool clearInside)
     {
         if (localMove != null)
         {
@@ -487,19 +455,21 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             localInteractor.HideProgress(this, resetProgress);
             localInteractor.ClearInteractable(this);
         }
+
+        if (clearInside)
+        {
+            isLocalInside = false;
+            localInteractor = null;
+            localMove = null;
+            localQTEUI = null;
+        }
     }
 
-    // 증거 오브젝트를 보이지 않고 충돌하지 않게 만든다.
+    // 완료한 증거만 안 보이게 한다.
+    // 목표 완료로 상호작용만 막힌 증거에는 이 함수를 호출하지 않는다.
     private void HideEvidenceLocal()
     {
-        if (localInteractor != null)
-        {
-            localInteractor.HideProgress(this, true);
-            localInteractor.ClearInteractable(this);
-        }
-
-        if (localQTEUI != null)
-            localQTEUI.ForceClose(false);
+        StopLocalUse(true, true);
 
         Collider[] cols = GetComponentsInChildren<Collider>(true);
 
@@ -510,18 +480,15 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
 
         for (int i = 0; i < renderers.Length; i++)
             renderers[i].enabled = false;
-
-        isLocalInside = false;
     }
 
-    // 로컬 플레이어가 조사 중일 때만 ProgressUI를 표시한다.
     private void UpdateLocalUI()
     {
         if (localInteractor == null)
             return;
 
         bool isMyInteract = isInteracting &&
-                            !isCompleted &&
+                            !IsInteractionBlocked &&
                             localInteractor.netId == currentInteractorNetId;
 
         if (isMyInteract)
@@ -535,7 +502,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         }
     }
 
-    // 현재 로컬 플레이어가 이 증거를 상호작용 후보로 유지할지 판단한다.
     private void RefreshLocalAvailability()
     {
         if (!isLocalInside)
@@ -544,13 +510,7 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         if (localInteractor == null)
             return;
 
-        if (isCompleted)
-        {
-            localInteractor.ClearInteractable(this);
-            return;
-        }
-
-        if (IsBusyByOtherLocal())
+        if (IsInteractionBlocked || IsBusyByOtherLocal())
         {
             localInteractor.ClearInteractable(this);
             return;
@@ -559,7 +519,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         localInteractor.SetInteractable(this);
     }
 
-    // 다른 플레이어가 조사 중인지 로컬 기준으로 판단한다.
     private bool IsBusyByOtherLocal()
     {
         if (!isInteracting)
@@ -571,7 +530,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         return currentInteractorNetId != localInteractor.netId;
     }
 
-    // 서버 기준으로 조사 가능한 거리인지 검사한다.
     private bool CanInteractorUseThis(Transform interactorTransform)
     {
         if (interactorTransform == null)
@@ -588,11 +546,9 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         Vector3 closest = myCol.ClosestPoint(interactorTransform.position);
         float sqrDist = (closest - interactorTransform.position).sqrMagnitude;
 
-        // 4m 이내면 조사 가능
         return sqrDist <= 4f;
     }
 
-    // 로컬 플레이어가 증거 쪽을 바라보게 한다.
     private void FaceToEvidenceLocal()
     {
         if (localMove == null)
@@ -607,21 +563,18 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         localMove.FaceDirection(lookDir.normalized);
     }
 
-    // 로컬 플레이어 이동 잠금을 설정한다.
     private void LockMovementLocal(bool value)
     {
         if (localMove != null)
             localMove.SetMoveLock(value);
     }
 
-    // 로컬 플레이어 조사 애니메이션을 설정한다.
     private void SetSearchingLocal(bool value)
     {
         if (localMove != null)
             localMove.SetSearching(value);
     }
 
-    // 증거 조사 루프 사운드 시작
     [Server]
     private void StartLoopSound()
     {
@@ -633,7 +586,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         );
     }
 
-    // 증거 조사 루프 사운드 종료
     [Server]
     private void StopLoopSound()
     {
@@ -643,10 +595,12 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         );
     }
 
-    // 로컬 생존자가 증거 범위 안에 들어오면 호출된다.
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Survivor"))
+            return;
+
+        if (IsInteractionBlocked)
             return;
 
         SurvivorInteractor interactor = other.GetComponent<SurvivorInteractor>();
@@ -658,9 +612,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
             return;
 
         if (!interactor.isLocalPlayer)
-            return;
-
-        if (isCompleted)
             return;
 
         localInteractor = interactor;
@@ -677,7 +628,6 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         RefreshLocalAvailability();
     }
 
-    // 로컬 생존자가 증거 범위 밖으로 나가면 호출된다.
     private void OnTriggerExit(Collider other)
     {
         if (!other.CompareTag("Survivor"))
@@ -701,13 +651,7 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         if (localInteractor != interactor)
             return;
 
-        LockMovementLocal(false);
-        SetSearchingLocal(false);
-
-        localInteractor.HideProgress(this, true);
-
-        if (localQTEUI != null)
-            localQTEUI.ForceClose(false);
+        StopLocalUse(true, false);
 
         CmdEndInteract();
 

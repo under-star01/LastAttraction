@@ -1,10 +1,20 @@
+using System;
 using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
+[Serializable]
+public class SurvivorResultData
+{
+    public uint netId;
+    public string nickname;
+    public float killerRecordTime;
+    public List<int> evidenceIndexes = new List<int>();
+    public bool reachedResult;
+}
+
 public class GameManager : NetworkBehaviour
 {
-    // 어디서든 GameManager에 접근하기 위한 싱글턴이다.
     public static GameManager Instance { get; private set; }
 
     [Header("생존자 입력 상태")]
@@ -57,11 +67,17 @@ public class GameManager : NetworkBehaviour
     [Header("탈출문 개방 대기")]
     [SerializeField] private float gateOpenDelay = 60f;
 
+    [Header("결과 데이터 - 생존자")]
+    [SerializeField] private List<SurvivorResultData> survivorResultList = new List<SurvivorResultData>();
+
     // 맵에 있는 EvidenceZone들을 서버에서 등록해둔다.
     private readonly HashSet<EvidenceZone> zones = new HashSet<EvidenceZone>();
 
     // 이미 진짜 증거를 찾은 EvidenceZone들을 서버에서 기록한다.
     private readonly HashSet<EvidenceZone> foundZones = new HashSet<EvidenceZone>();
+
+    // 생존자 결과 데이터를 기록한다.
+    private readonly Dictionary<uint, SurvivorResultData> survivorResultMap = new Dictionary<uint, SurvivorResultData>();
 
     // 현재 찾은 진짜 증거 개수다.
     private int foundEvidenceCount;
@@ -80,6 +96,9 @@ public class GameManager : NetworkBehaviour
 
     // 탈출문이 열렸는지 여부다.
     private bool gateOpened;
+
+    // 증거 목표 완료 또는 통합 목표 완료 후 남은 증거 상호작용을 한 번만 막기 위한 플래그다.
+    private bool evidenceInteractionDisabled;
 
     public bool SurvivorInputEnabled => survivorInputEnabled;
     public int FoundEvidenceCount => foundEvidenceCount;
@@ -110,11 +129,9 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
-            // 서버에서는 실제 목표 게이지를 사용한다.
             if (NetworkServer.active)
                 return objectiveProgress;
 
-            // 클라이언트에서는 SyncVar로 받은 목표 게이지를 사용한다.
             return syncedObjectiveProgress;
         }
     }
@@ -142,11 +159,9 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
-            // 서버에서는 실제 촬영 인원 수를 사용한다.
             if (NetworkServer.active)
                 return currentKillerDetectUserCount;
 
-            // 클라이언트에서는 SyncVar로 받은 촬영 인원 수를 사용한다.
             return syncedKillerDetectUserCount;
         }
     }
@@ -155,11 +170,9 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
-            // 서버에서는 실제 촬영 배율을 사용한다.
             if (NetworkServer.active)
                 return currentKillerDetectMultiplier;
 
-            // 클라이언트에서는 SyncVar로 받은 촬영 배율을 사용한다.
             return syncedKillerDetectMultiplier;
         }
     }
@@ -168,7 +181,6 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
-            // 업로드 시간이 0 이하이면 완료로 처리한다.
             if (uploadTime <= 0f)
                 return 1f;
 
@@ -180,7 +192,6 @@ public class GameManager : NetworkBehaviour
     {
         get
         {
-            // 대기 시간이 0 이하이면 0으로 처리한다.
             if (gateOpenDelay <= 0f)
                 return 0f;
 
@@ -197,7 +208,6 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    // 기존 CameraProgressUI나 다른 코드가 이 값을 읽어도 통합 목표 게이지를 반환한다.
     public float KillerDetectProgress01
     {
         get
@@ -206,7 +216,6 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    // 이제 촬영 단독 완료가 아니라 통합 목표 완료 여부를 반환한다.
     public bool IsKillerDetectComplete
     {
         get
@@ -217,27 +226,23 @@ public class GameManager : NetworkBehaviour
 
     private void Awake()
     {
-        // 중복 GameManager가 생기면 제거한다.
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
 
-        // 현재 GameManager를 싱글턴으로 저장한다.
         Instance = this;
     }
 
     private void Start()
     {
-        // 서버에서만 시작 입력 상태를 정한다.
         if (NetworkServer.active)
             SetAllSurvivorInput(false);
     }
 
     private void Update()
     {
-        // 서버에서만 목표 진행과 문 개방 타이머를 계산한다.
         if (!NetworkServer.active)
             return;
 
@@ -245,7 +250,6 @@ public class GameManager : NetworkBehaviour
         TickGateOpenTimer();
     }
 
-    // 모든 생존자의 입력 가능 여부를 서버에서 바꾼다.
     public void SetAllSurvivorInput(bool value)
     {
         if (!NetworkServer.active)
@@ -269,19 +273,16 @@ public class GameManager : NetworkBehaviour
         Debug.Log($"[GameManager] 생존자 입력 상태 변경: {value}");
     }
 
-    // 게임 시작 시 생존자 입력을 허용한다.
     public void StartGame()
     {
         SetAllSurvivorInput(true);
     }
 
-    // 로비 진입 시 생존자 입력을 막는다.
     public void EnterLobby()
     {
         SetAllSurvivorInput(false);
     }
 
-    // EvidenceZone이 시작될 때 자기 자신을 등록한다.
     public void AddZone(EvidenceZone zone)
     {
         if (!NetworkServer.active)
@@ -295,7 +296,6 @@ public class GameManager : NetworkBehaviour
         Debug.Log($"[GameManager] EvidenceZone 등록: {zone.name} / 총 {zones.Count}개");
     }
 
-    // 진짜 증거 발견 시 EvidenceZone에서 호출한다.
     public void AddEvidence(EvidenceZone zone)
     {
         if (!NetworkServer.active)
@@ -304,14 +304,12 @@ public class GameManager : NetworkBehaviour
         if (zone == null)
             return;
 
-        // 같은 구역이 여러 번 카운트되는 것을 막는다.
         if (foundZones.Contains(zone))
             return;
 
         foundZones.Add(zone);
         foundEvidenceCount = foundZones.Count;
 
-        // 증거 하나를 찾으면 통합 목표 게이지를 15% 증가시킨다.
         AddObjective(evidenceObjectiveAdd);
 
         Debug.Log(
@@ -319,10 +317,13 @@ public class GameManager : NetworkBehaviour
             $"목표 게이지: {ObjectiveProgress01 * 100f:F0}%"
         );
 
+        // 필요한 증거 개수를 모두 찾으면 남은 증거들은 보이지만 상호작용만 막는다.
+        if (IsEvidenceComplete)
+            DisableAllEvidenceInteractions();
+
         CheckUpload();
     }
 
-    // 서버에서 통합 목표 게이지를 증가시킨다.
     [Server]
     private void AddObjective(float amount)
     {
@@ -338,17 +339,14 @@ public class GameManager : NetworkBehaviour
         SyncObjectiveState();
     }
 
-    // 서버에서 살인마 촬영으로 통합 목표 게이지를 갱신한다.
     private void UpdateObjectiveByCamera()
     {
-        // 업로드 가능 / 문 대기 / 문 열림 상태에서는 목표 진행을 멈춘다.
         if (canUpload || isWaitingGateOpen || gateOpened)
         {
             SyncObjectiveState();
             return;
         }
 
-        // 목표 게이지가 이미 다 찼으면 업로드 조건을 확인한다.
         if (IsObjectiveComplete)
         {
             objectiveProgress = objectiveMaxValue;
@@ -360,7 +358,6 @@ public class GameManager : NetworkBehaviour
             return;
         }
 
-        // 기준 시간이 0 이하이면 카메라 촬영으로는 증가하지 않게 막는다.
         if (needKillerDetectTime <= 0f)
         {
             SyncObjectiveState();
@@ -372,18 +369,15 @@ public class GameManager : NetworkBehaviour
         currentKillerDetectUserCount = detectingCount;
         currentKillerDetectMultiplier = GetKillerDetectMultiplier(detectingCount);
 
-        // 아무도 살인마를 촬영 중이 아니면 진행도 증가 없음.
         if (currentKillerDetectMultiplier <= 0f)
         {
             SyncObjectiveState();
             return;
         }
 
-        // 기존 촬영 방식처럼 시간과 배율에 따라 통합 목표 게이지를 증가시킨다.
         float addValue = Time.deltaTime * currentKillerDetectMultiplier / needKillerDetectTime;
         AddObjective(addValue);
 
-        // 목표를 막 달성했다면 업로드 가능 조건을 다시 검사한다.
         if (IsObjectiveComplete)
         {
             Debug.Log("[GameManager] 통합 목표 게이지 완료.");
@@ -391,7 +385,6 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    // 현재 카메라로 살인마를 촬영 중인 생존자 수를 계산한다.
     private int GetRecordingKillerSurvivorCount()
     {
         int count = 0;
@@ -408,7 +401,6 @@ public class GameManager : NetworkBehaviour
 
             SurvivorState survivorState = conn.identity.GetComponent<SurvivorState>();
 
-            // 다운 / 사망 / 감옥 상태는 안전하게 제외한다.
             if (survivorState != null)
             {
                 if (survivorState.IsDead || survivorState.IsDowned || survivorState.IsImprisoned)
@@ -416,13 +408,19 @@ public class GameManager : NetworkBehaviour
             }
 
             if (cameraSkill.IsRecordingKiller)
+            {
                 count++;
+
+                SurvivorResultData data = GetOrCreateSurvivorResult(conn.identity);
+
+                if (data != null)
+                    data.killerRecordTime += Time.deltaTime;
+            }
         }
 
         return count;
     }
 
-    // 촬영 중인 생존자 수에 따른 진행 속도 배율을 반환한다.
     private float GetKillerDetectMultiplier(int userCount)
     {
         switch (userCount)
@@ -444,7 +442,6 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    // 서버 계산값을 클라이언트 UI 표시용 SyncVar에 복사한다.
     private void SyncObjectiveState()
     {
         syncedObjectiveProgress = objectiveProgress;
@@ -452,7 +449,6 @@ public class GameManager : NetworkBehaviour
         syncedKillerDetectMultiplier = currentKillerDetectMultiplier;
     }
 
-    // 통합 목표 게이지가 완료됐는지 검사하고 컴퓨터를 활성화한다.
     private void CheckUpload()
     {
         if (!NetworkServer.active)
@@ -461,13 +457,14 @@ public class GameManager : NetworkBehaviour
         if (canUpload || isWaitingGateOpen || gateOpened)
             return;
 
-        // 이제 업로드 조건은 통합 목표 게이지 100% 하나다.
         if (!IsObjectiveComplete)
             return;
 
         canUpload = true;
 
-        // 목표 완료로 업로드 컴퓨터가 활성화되는 순간 모두에게 2D 알림음을 재생한다.
+        // 카메라 촬영으로 목표가 먼저 완료된 경우에도 남은 증거 상호작용을 막는다.
+        DisableAllEvidenceInteractions();
+
         ServerPlayUploadNoticeSound();
 
         Debug.Log("[GameManager] 통합 목표 완료. 업로드 컴퓨터 활성화.");
@@ -479,9 +476,28 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    // 업로드 관련 중요 알림음을 모두에게 2D로 재생한다.
-    // - 목표 완료 후 업로드 컴퓨터 활성화
-    // - 업로드 완료 후 탈출문 대기 시작
+    [Server]
+    private void DisableAllEvidenceInteractions()
+    {
+        if (evidenceInteractionDisabled)
+            return;
+
+        evidenceInteractionDisabled = true;
+
+        EvidencePoint[] points = FindObjectsByType<EvidencePoint>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None
+        );
+
+        for (int i = 0; i < points.Length; i++)
+        {
+            if (points[i] != null)
+                points[i].ServerDisableInteractionOnly();
+        }
+
+        Debug.Log($"[GameManager] 남은 증거 상호작용 비활성화 완료: {points.Length}개");
+    }
+
     [Server]
     private void ServerPlayUploadNoticeSound()
     {
@@ -498,7 +514,6 @@ public class GameManager : NetworkBehaviour
         );
     }
 
-    // 업로드 중인 생존자 수만큼 공유 진행도를 증가시킨다.
     public void AddUpload(int userCount)
     {
         if (!NetworkServer.active)
@@ -526,7 +541,6 @@ public class GameManager : NetworkBehaviour
         SyncUploadProgress();
     }
 
-    // 서버 progress를 모든 컴퓨터의 SyncVar UI progress로 전달한다.
     private void SyncUploadProgress()
     {
         float value = UploadProgress01;
@@ -538,7 +552,6 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    // 업로드 완료 시 컴퓨터를 멈추고 탈출문 개방 대기를 시작한다.
     private void FinishUpload()
     {
         if (!NetworkServer.active)
@@ -551,7 +564,6 @@ public class GameManager : NetworkBehaviour
         isWaitingGateOpen = true;
         gateRemainTime = gateOpenDelay;
 
-        // 업로드 완료 순간에도 업로드 컴퓨터 활성화 때와 같은 2D 알림음을 재생한다.
         ServerPlayUploadNoticeSound();
 
         Debug.Log("[GameManager] 업로드 완료. 탈출문 개방 대기 시작.");
@@ -565,7 +577,6 @@ public class GameManager : NetworkBehaviour
         SyncGateTimer();
     }
 
-    // 업로드 완료 후 탈출문이 열리기까지 남은 시간을 감소시킨다.
     private void TickGateOpenTimer()
     {
         if (!isWaitingGateOpen)
@@ -587,7 +598,6 @@ public class GameManager : NetworkBehaviour
         SyncGateTimer();
     }
 
-    // 문 개방 대기 시간을 모든 업로드 컴퓨터의 SyncVar로 전달한다.
     private void SyncGateTimer()
     {
         float remain01 = GateRemain01;
@@ -599,7 +609,6 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    // 대기 시간이 끝나면 모든 탈출문을 연다.
     private void OpenGates()
     {
         if (!NetworkServer.active)
@@ -626,7 +635,6 @@ public class GameManager : NetworkBehaviour
         }
     }
 
-    // needEvidenceCount가 0이면 등록된 EvidenceZone 개수를 목표로 사용한다.
     private int GetNeedCount()
     {
         if (needEvidenceCount > 0)
@@ -635,7 +643,6 @@ public class GameManager : NetworkBehaviour
         return zones.Count;
     }
 
-    // 생존자 결과창 위치를 생존자 인덱스에 맞게 반환한다.
     [Server]
     public Transform GetSurvivorResultPoint(SurvivorMove targetSurvivor)
     {
@@ -664,10 +671,68 @@ public class GameManager : NetworkBehaviour
         return survivorResultPoints[survivorIndex];
     }
 
-    // 살인마 결과창 위치를 반환한다.
     [Server]
     public Transform GetKillerResultPoint()
     {
         return killerResultPoint;
+    }
+
+    [Server]
+    private SurvivorResultData GetOrCreateSurvivorResult(NetworkIdentity survivorIdentity)
+    {
+        if (survivorIdentity == null)
+            return null;
+
+        uint netId = survivorIdentity.netId;
+
+        if (survivorResultMap.TryGetValue(netId, out SurvivorResultData data))
+            return data;
+
+        data = new SurvivorResultData();
+        data.netId = netId;
+        data.nickname = GetPlayerNickname(survivorIdentity);
+        data.killerRecordTime = 0f;
+        data.reachedResult = false;
+
+        survivorResultMap.Add(netId, data);
+        survivorResultList.Add(data);
+
+        Debug.Log($"[GameManager] 생존자 결과 데이터 생성: {data.nickname} / netId: {netId}");
+
+        return data;
+    }
+
+    private string GetPlayerNickname(NetworkIdentity identity)
+    {
+        if (identity == null)
+            return "NickName";
+
+        PlayerUIProfile profile = identity.GetComponent<PlayerUIProfile>();
+
+        if (profile == null)
+            profile = identity.GetComponentInChildren<PlayerUIProfile>();
+
+        if (profile == null)
+            return "NickName";
+
+        return profile.DisplayName;
+    }
+
+    [Server]
+    public void UpdateSurvivorResult(
+    NetworkIdentity survivorIdentity,
+    int evidenceIndex = -1,
+    bool reachedResult = false)
+    {
+        SurvivorResultData data = GetOrCreateSurvivorResult(survivorIdentity);
+
+        if (data == null)
+            return;
+
+        if (evidenceIndex >= 0 && !data.evidenceIndexes.Contains(evidenceIndex))
+            data.evidenceIndexes.Add(evidenceIndex);
+
+        if (reachedResult)
+            data.reachedResult = true;
     }
 }
