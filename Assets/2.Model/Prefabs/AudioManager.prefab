@@ -191,7 +191,33 @@ MonoBehaviour:
     volume: 0.5
     minDistance: 1
     maxDistance: 32
+  - key: 29
+    clip: {fileID: 8300000, guid: 134b24e27f3b0414d81b6741f8d4c2c3, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 30
+    clip: {fileID: 8300000, guid: b95c93a0de1cfda428a404bbf3ae1b8f, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 31
+    clip: {fileID: 8300000, guid: 83125354bfb13a042a9df91c6e5663e5, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 32
+    clip: {fileID: 8300000, guid: a46e0b02d738f4a40999db3dce8b298e, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 33
+    clip: {fileID: 8300000, guid: e90ed6a3176feee4dbd411fe690ea7fb, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
   audioSource2D: {fileID: 8766702895734314766}
+  bgmSource2D: {fileID: 0}
 --- !u!82 &8766702895734314766
 AudioSource:
   m_ObjectHideFlags: 0

@@ -5,6 +5,7 @@ using UnityEngine;
 // 실제로 소리를 재생하는 매니저
 // - 2D 재생
 // - 3D 재생
+// - BGM 루프 재생
 // - 킬러만 / 생존자만 / 모두 들을지 판정
 // - 루프 사운드는 ownerNetId 오브젝트를 따라다니게 처리
 public class AudioManager : MonoBehaviour
@@ -17,12 +18,18 @@ public class AudioManager : MonoBehaviour
     [Header("2D 사운드 재생용 AudioSource")]
     [SerializeField] private AudioSource audioSource2D;
 
+    [Header("BGM 재생용 AudioSource")]
+    [SerializeField] private AudioSource bgmSource2D;
+
     // 오디오를 빠르게 찾기 위한 Dictionary
     private Dictionary<AudioKey, AudioData> audioDataMap = new Dictionary<AudioKey, AudioData>();
 
     // 루프 사운드를 관리하기 위한 Dictionary
     // key는 네트워크 오브젝트 netId + AudioKey 조합으로 만든다.
     private Dictionary<string, GameObject> loopAudioMap = new Dictionary<string, GameObject>();
+
+    // 현재 재생 중인 BGM
+    private AudioKey currentBGMKey = AudioKey.None;
 
     private void Awake()
     {
@@ -35,7 +42,44 @@ public class AudioManager : MonoBehaviour
 
         Instance = this;
 
+        // AudioSource가 비어있어도 자동 생성되게 한다.
+        EnsureAudioSources();
+
         // 인스펙터에서 넣은 오디오들을 Dictionary에 저장
+        BuildAudioMap();
+    }
+
+    // 2D 효과음 / BGM AudioSource를 자동으로 준비한다.
+    private void EnsureAudioSources()
+    {
+        if (audioSource2D == null)
+        {
+            GameObject sourceObject = new GameObject("AudioSource_2D");
+            sourceObject.transform.SetParent(transform);
+            sourceObject.transform.localPosition = Vector3.zero;
+
+            audioSource2D = sourceObject.AddComponent<AudioSource>();
+            audioSource2D.playOnAwake = false;
+            audioSource2D.loop = false;
+            audioSource2D.spatialBlend = 0f;
+        }
+
+        if (bgmSource2D == null)
+        {
+            GameObject sourceObject = new GameObject("AudioSource_BGM");
+            sourceObject.transform.SetParent(transform);
+            sourceObject.transform.localPosition = Vector3.zero;
+
+            bgmSource2D = sourceObject.AddComponent<AudioSource>();
+            bgmSource2D.playOnAwake = false;
+            bgmSource2D.loop = true;
+            bgmSource2D.spatialBlend = 0f;
+        }
+    }
+
+    // AudioData 배열을 Dictionary로 변환한다.
+    private void BuildAudioMap()
+    {
         audioDataMap.Clear();
 
         if (audioDataList == null)
@@ -120,6 +164,55 @@ public class AudioManager : MonoBehaviour
 
         // 재생 끝나면 임시 오브젝트 삭제
         Destroy(tempAudioObject, data.clip.length + 0.1f);
+    }
+
+    // BGM을 2D 루프로 재생한다.
+    // 타이틀 / 로비처럼 씬 전체에 깔리는 배경음악에 사용한다.
+    public void PlayBGM(AudioKey key)
+    {
+        if (key == AudioKey.None)
+        {
+            StopBGM();
+            return;
+        }
+
+        if (bgmSource2D == null)
+            return;
+
+        if (!audioDataMap.TryGetValue(key, out AudioData data))
+            return;
+
+        if (data == null || data.clip == null)
+            return;
+
+        // 같은 BGM이 이미 재생 중이면 다시 시작하지 않는다.
+        if (currentBGMKey == key && bgmSource2D.isPlaying)
+        {
+            bgmSource2D.volume = data.volume;
+            return;
+        }
+
+        currentBGMKey = key;
+
+        bgmSource2D.Stop();
+        bgmSource2D.clip = data.clip;
+        bgmSource2D.volume = data.volume;
+        bgmSource2D.loop = true;
+        bgmSource2D.playOnAwake = false;
+        bgmSource2D.spatialBlend = 0f;
+        bgmSource2D.Play();
+    }
+
+    // 현재 BGM을 멈춘다.
+    public void StopBGM()
+    {
+        currentBGMKey = AudioKey.None;
+
+        if (bgmSource2D == null)
+            return;
+
+        bgmSource2D.Stop();
+        bgmSource2D.clip = null;
     }
 
     // 루프 사운드 시작
@@ -268,5 +361,23 @@ public class AudioManager : MonoBehaviour
             dimension,
             playPosition
         );
+    }
+
+    // 로컬 씬 BGM을 재생할 때 쓰는 편의 함수
+    public static void PlayLocalBGM(AudioKey key)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.PlayBGM(key);
+    }
+
+    // 로컬 씬 BGM을 멈출 때 쓰는 편의 함수
+    public static void StopLocalBGM()
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.StopBGM();
     }
 }

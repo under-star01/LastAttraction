@@ -69,5 +69,12 @@ public enum AudioKey
     KillerIncage,           // 살인마가 생존자를 감옥에 넣을 때 소리
 
     // 목표 / 업로드
-    UploadComputerReady     // 목표 완료 후 업로드 컴퓨터 활성화 경고음
+    UploadComputerReady,    // 목표 완료 후 업로드 컴퓨터 활성화 경고음
+
+    // 타이틀 / 로비 / UI
+    TitleBGM,                // 타이틀 씬 배경음악
+    LobbyBGM,                // 로비 씬 배경음악
+    UIButtonClick,           // UI 버튼 클릭음
+    UIButtonHover,           // UI 버튼 호버음
+    GameStart                // 게임 시작 확정 사운드
 }

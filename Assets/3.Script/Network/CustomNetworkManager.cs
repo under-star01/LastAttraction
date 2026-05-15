@@ -82,6 +82,9 @@ public struct ChangeSceneUIMessage : NetworkMessage
     public bool isShow;
 }
 
+// 서버 -> 클라 : 게임 시작 사운드 재생 요청
+public struct GameStartSoundMessage : NetworkMessage { }
+
 public class CustomNetworkManager : NetworkManager
 {
     public static CustomNetworkManager Instance { get; private set; }
@@ -498,6 +501,7 @@ public class CustomNetworkManager : NetworkManager
         NetworkClient.RegisterHandler<RoomProbeResponseMessage>(OnRoomProbeResponse, false);
         NetworkClient.RegisterHandler<LobbyStateMessage>(OnLobbyStateMessage, false);
         NetworkClient.RegisterHandler<ChangeSceneUIMessage>(OnChangeSceneUIMessage, false);
+        NetworkClient.RegisterHandler<GameStartSoundMessage>(OnGameStartSoundMessage, false);
     }
 
     public override void OnClientConnect()
@@ -627,6 +631,11 @@ public class CustomNetworkManager : NetworkManager
     private void OnChangeSceneUIMessage(ChangeSceneUIMessage msg)
     {
         ChangeSceneUI.Instance?.Show(msg.isShow);
+    }
+
+    private void OnGameStartSoundMessage(GameStartSoundMessage msg)
+    {
+        AudioManager.PlayLocalAudio(AudioKey.GameStart, AudioDimension.Sound2D);
     }
 
     #endregion
@@ -1091,6 +1100,9 @@ public class CustomNetworkManager : NetworkManager
 
     private IEnumerator MoveToGameSceneRoutine()
     {
+        // 게임 시작이 서버에서 승인된 순간 모든 클라이언트에게 시작 사운드를 재생시킨다.
+        BroadcastGameStartSound();
+
         // Fade In 시작
         BroadcastChangeSceneUI(true);
 
@@ -1139,6 +1151,25 @@ public class CustomNetworkManager : NetworkManager
         foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
         {
             if (conn == null)
+                continue;
+
+            conn.Send(msg);
+        }
+    }
+
+    private void BroadcastGameStartSound()
+    {
+        if (!NetworkServer.active)
+            return;
+
+        GameStartSoundMessage msg = new GameStartSoundMessage();
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null)
+                continue;
+
+            if (!conn.isReady)
                 continue;
 
             conn.Send(msg);
