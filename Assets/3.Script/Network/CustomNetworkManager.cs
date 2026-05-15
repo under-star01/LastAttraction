@@ -68,6 +68,8 @@ public struct LobbyStateMessage : NetworkMessage
     public int readySurvivorCount;
     public bool canStart;
 
+    public bool hasKiller;
+
     public bool ready1;
     public bool ready2;
     public bool ready3;
@@ -616,6 +618,8 @@ public class CustomNetworkManager : NetworkManager
             msg.ready4
         );
 
+        LobbyUIManager.Instance?.SetKillerLight(msg.hasKiller);
+
         if (localJoinRole == JoinRole.Killer)
             LobbyUIManager.Instance?.SetStartButtonInteractable(msg.canStart);
     }
@@ -766,6 +770,8 @@ public class CustomNetworkManager : NetworkManager
             survivorCount = survivorCount,
             readySurvivorCount = readyCount,
             canStart = HasKiller && survivorCount > 0 && survivorCount == readyCount,
+
+            hasKiller = HasKiller,
 
             ready1 = ready1,
             ready2 = ready2,

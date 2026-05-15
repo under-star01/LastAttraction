@@ -1594,6 +1594,7 @@ GameObject:
   - component: {fileID: 632616406}
   - component: {fileID: 632616405}
   - component: {fileID: 632616404}
+  - component: {fileID: 632616407}
   m_Layer: 0
   m_Name: Spot Light
   m_TagString: Untagged
@@ -1710,6 +1711,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 55, y: -35.9, z: 0}
+--- !u!114 &632616407
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 632616403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61e9eb43e5e22154887adb51f4524114, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LobbyKillerLight
+  targetLight: {fileID: 632616405}
+  onIntensity: 100
+  fadeTime: 0.5
 --- !u!1 &711047124
 GameObject:
   m_ObjectHideFlags: 0
@@ -2660,6 +2676,7 @@ MonoBehaviour:
   survivorReady3Pos: {x: 50, y: 120}
   survivorReady4Pos: {x: 400, y: 120}
   loadingPanel: {fileID: 250621163}
+  killerLight: {fileID: 632616407}
 --- !u!1 &1389064342
 GameObject:
   m_ObjectHideFlags: 0
