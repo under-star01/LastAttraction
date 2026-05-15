@@ -50,12 +50,11 @@ public class SurvivorIncageEffect : NetworkBehaviour
         // 1. 초기화 및 살인마 바라보기
         if (survivorInput != null) survivorInput.enabled = false;
 
-        // [분리 1] 실제 살인마를 바라보는 높이 설정 (initialLookAtHeight 사용)
-        Vector3 targetPos = killerObj.transform.position + Vector3.up * initialLookAtHeight;
+        Vector3 dirToKiller = (killerObj.transform.position - transform.position).normalized;
+        dirToKiller.y = 0;
 
-        Vector3 lookDir = (targetPos - transform.position).normalized;
-        lookDir.y = 0;
-        if (lookDir != Vector3.zero) transform.rotation = Quaternion.LookRotation(lookDir);
+        // 생존자가 살인마를 보게 회전 (이후 다른 스크립트에 의해 회전이 변해도 dirToKiller는 유지됨)
+        if (dirToKiller != Vector3.zero) transform.rotation = Quaternion.LookRotation(dirToKiller);
 
         yield return new WaitForSeconds(0.1f);
 
@@ -82,13 +81,13 @@ public class SurvivorIncageEffect : NetworkBehaviour
         // ======================================================================================
 
         // 생성 위치 계산
-        Vector3 startPos = transform.position + transform.forward * initialDistance;
+        Vector3 startPos = transform.position + dirToKiller * initialDistance;
 
         // 연출용 모델의 높이만 따로 설정
         startPos.y = transform.position.y + cinematicKillerYOffset;
 
         // 마주보는 회전값 계산
-        Quaternion moriRotation = Quaternion.LookRotation(-transform.forward);
+        Quaternion moriRotation = Quaternion.LookRotation(-dirToKiller);
 
         // 소환
         spawnedMori = Instantiate(partialMoriPrefab, startPos, moriRotation);
@@ -108,17 +107,15 @@ public class SurvivorIncageEffect : NetworkBehaviour
             float t = elapsed / effectDuration;
             float accelerationT = t * t * t;
 
-            // [중요] 이동 중에도 cinematicKillerYOffset 높이를 유지하며 다가옴
+            // [수정] 이동 시에도 dirToKiller를 기준으로 거리 조절
             float currentDist = Mathf.Lerp(initialDistance, targetDistance, accelerationT);
-            Vector3 nextPos = transform.position + transform.forward * currentDist;
+            Vector3 nextPos = transform.position + dirToKiller * currentDist;
             nextPos.y = transform.position.y + cinematicKillerYOffset;
 
             spawnedMori.transform.position = nextPos;
 
             if (incageCam != null)
-            {
                 incageCam.Lens.FieldOfView = Mathf.Lerp(initialFOV, targetFOV, accelerationT);
-            }
 
             yield return null;
         }

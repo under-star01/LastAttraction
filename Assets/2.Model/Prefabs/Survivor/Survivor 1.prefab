@@ -2731,6 +2731,8 @@ MonoBehaviour:
   initialFOV: 60
   targetFOV: 30
   effectDuration: 4
+  initialLookAtHeight: 1.6
+  cinematicKillerYOffset: -10
 --- !u!1 &4085576176758794836
 GameObject:
   m_ObjectHideFlags: 0
