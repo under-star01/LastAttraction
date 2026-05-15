@@ -15,7 +15,7 @@ public class SurvivorIncageEffect : NetworkBehaviour
     [SerializeField] private float targetDistance = 1.2f;    // 최종 도착 거리 (코앞)
     [SerializeField] private float initialFOV = 60f;         // 시작 시야각
     [SerializeField] private float targetFOV = 30f;          // 최종 시야각 (줌인)
-    [SerializeField] private float effectDuration = 4f;      // 연출 지속 시간
+    [SerializeField] private float effectDuration = 5f;      // 연출 지속 시간
 
     private SurvivorInput survivorInput;
     private SurvivorCameraSkill camSkill;
@@ -47,10 +47,11 @@ public class SurvivorIncageEffect : NetworkBehaviour
         // 1. 초기화 및 살인마 바라보기
         if (survivorInput != null) survivorInput.enabled = false;
 
-        Vector3 lookDir = (killerObj.transform.position - transform.position).normalized;
+        Vector3 targetPos = killerObj.transform.position + Vector3.up * 1.6f;
+
+        Vector3 lookDir = (targetPos - transform.position).normalized;
         lookDir.y = 0;
         if (lookDir != Vector3.zero) transform.rotation = Quaternion.LookRotation(lookDir);
-
         yield return new WaitForEndOfFrame();
 
         // 2. 카메라 및 레이어 설정

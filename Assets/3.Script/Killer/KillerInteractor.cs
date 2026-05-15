@@ -117,23 +117,40 @@ public class KillerInteractor : NetworkBehaviour
     [Server]
     private IEnumerator IncageRoutineServer(SurvivorState survivor, Prison prison)
     {
-        // 살인마의 인케이지 애니메이션(약 2.1초) 대기
+        // 1. 살인마의 인케이지 애니메이션(약 2.1초) 대기
         yield return new WaitForSeconds(2.1f);
 
-        if (state == null)
-            yield break;
-
-        if (survivor == null || prison == null)
+        if (state != null)
         {
+            // 2. 살인마는 2.1초 뒤에 다시 자유롭게 움직일 수 있도록 상태 해제 (먼저 풀어줌)
             state.ChangeState(KillerCondition.Idle);
-            yield break;
         }
 
+        if (survivor == null || prison == null)
+            yield break;
+
+        // 3. 생존자는 시네마틱 연출을 다 볼 때까지 기다렸다가 감옥에 집어넣도록 별도 코루틴 실행
+        // 연출 시간(4초) + 암전 대기 시간(약 1.5초) = 약 5.5초 뒤에 감옥으로 물리적 이동.
+        // 이미 2.1초가 지났으므로 3.4초만 더 대기하게 합니다.
+        StartCoroutine(DelayedSetPrisonerRoutine(survivor, prison, 3.4f));
+    }
+
+    [Server]
+    private IEnumerator DelayedSetPrisonerRoutine(SurvivorState survivor, Prison prison, float delay)
+    {
+        // 연출이 끝날 때까지 서버에서 대기
+        yield return new WaitForSeconds(delay);
+
+        if (survivor == null || prison == null)
+            yield break;
+
+        // 암전이 진행 중이거나 막 끝날 즈음에 사운드 재생 및 감옥 가두기 완료
         ServerPlayIncageSound(prison.transform.position);
 
-        // 여기서 생존자의 실제 서버 위치가 감옥으로 강제 이동됩니다.
+        // 여기서 생존자의 실제 서버 위치가 감옥으로 강제 이동되며 상태가 바뀜
         prison.SetPrisoner(survivor);
-        state.ChangeState(KillerCondition.Idle);
+
+        //Debug.Log($"<color=cyan>[KillerInteractor]</color> 생존자 연출 종료 타이밍에 맞춰 감옥 세팅 완료");
     }
 
     [Server]
