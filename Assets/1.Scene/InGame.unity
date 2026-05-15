@@ -14952,6 +14952,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Gate (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 4752440582008932659, guid: 7cb69559ce0b7a741bcd301008a84bfa, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6536543671469599151, guid: 7cb69559ce0b7a741bcd301008a84bfa, type: 3}
       propertyPath: sceneId
       value: 3498099701
