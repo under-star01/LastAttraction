@@ -17,6 +17,9 @@ public class SurvivorIncageEffect : NetworkBehaviour
     [SerializeField] private float targetFOV = 30f;          // 최종 시야각 (줌인)
     [SerializeField] private float effectDuration = 5f;      // 연출 지속 시간
 
+    [SerializeField] private float initialLookAtHeight = 1.6f;
+    [SerializeField] private float cinematicKillerYOffset = -1.0f;
+
     private SurvivorInput survivorInput;
     private SurvivorCameraSkill camSkill;
     private Camera mainCamera;
@@ -47,20 +50,20 @@ public class SurvivorIncageEffect : NetworkBehaviour
         // 1. 초기화 및 살인마 바라보기
         if (survivorInput != null) survivorInput.enabled = false;
 
-        Vector3 targetPos = killerObj.transform.position + Vector3.up * 1.6f;
+        // [분리 1] 실제 살인마를 바라보는 높이 설정 (initialLookAtHeight 사용)
+        Vector3 targetPos = killerObj.transform.position + Vector3.up * initialLookAtHeight;
 
         Vector3 lookDir = (targetPos - transform.position).normalized;
         lookDir.y = 0;
         if (lookDir != Vector3.zero) transform.rotation = Quaternion.LookRotation(lookDir);
-        yield return new WaitForEndOfFrame();
 
-        // 2. 카메라 및 레이어 설정
+        yield return new WaitForSeconds(0.1f);
+
+        // 2. 카메라 설정
         if (camSkill != null) camSkill.ApplyIncageView(true);
+        if (incageCam == null) incageCam = GetComponentInChildren<CinemachineCamera>();
 
-        // 인케이지 전용 카메라 컴포넌트 찾아오기 (줌 조절용)
-        // SurvivorCameraSkill에 선언된 incageCinemachine을 가져오거나 직접 할당받아야 합니다.
-        incageCam = GetComponentInChildren<CinemachineCamera>();
-
+        // 3. 레이어 설정
         int cinematicLayer = LayerMask.NameToLayer(cinematicLayerName);
         if (mainCamera != null)
         {
@@ -68,33 +71,50 @@ public class SurvivorIncageEffect : NetworkBehaviour
             mainCamera.cullingMask = 1 << cinematicLayer;
         }
 
-        // 3. 안개 및 살인마 생성
         if (fogParticles != null)
         {
             SetLayerRecursive(fogParticles.gameObject, cinematicLayer);
             fogParticles.Play();
         }
 
+        // ======================================================================================
+        // [분리 2] 연출용 살인마 배치 로직 (cinematicKillerYOffset 사용)
+        // ======================================================================================
+
+        // 생성 위치 계산
         Vector3 startPos = transform.position + transform.forward * initialDistance;
-        spawnedMori = Instantiate(partialMoriPrefab, startPos, transform.rotation);
+
+        // 연출용 모델의 높이만 따로 설정
+        startPos.y = transform.position.y + cinematicKillerYOffset;
+
+        // 마주보는 회전값 계산
+        Quaternion moriRotation = Quaternion.LookRotation(-transform.forward);
+
+        // 소환
+        spawnedMori = Instantiate(partialMoriPrefab, startPos, moriRotation);
         spawnedMori.transform.localScale = Vector3.one * 3f;
         SetLayerRecursive(spawnedMori, cinematicLayer);
 
-        // 4. [핵심] 가속 접근 및 줌인 연출
+        // 카메라가 돌진해오는 '연출용 살인마'를 추적하도록 설정
+        if (incageCam != null) incageCam.LookAt = spawnedMori.transform;
+
+        // ======================================================================================
+
+        // 4. 가속 접근 및 줌인
         float elapsed = 0f;
         while (elapsed < effectDuration)
         {
             elapsed += Time.deltaTime;
             float t = elapsed / effectDuration;
-
-            // 가속도 계산 (점점 빨라지게 - 쿼드라틱 이징)
             float accelerationT = t * t * t;
 
-            // 살인마 위치 업데이트
+            // [중요] 이동 중에도 cinematicKillerYOffset 높이를 유지하며 다가옴
             float currentDist = Mathf.Lerp(initialDistance, targetDistance, accelerationT);
-            spawnedMori.transform.position = transform.position + transform.forward * currentDist;
+            Vector3 nextPos = transform.position + transform.forward * currentDist;
+            nextPos.y = transform.position.y + cinematicKillerYOffset;
 
-            // 카메라 FOV 업데이트 (점점 줌인)
+            spawnedMori.transform.position = nextPos;
+
             if (incageCam != null)
             {
                 incageCam.Lens.FieldOfView = Mathf.Lerp(initialFOV, targetFOV, accelerationT);
@@ -103,25 +123,14 @@ public class SurvivorIncageEffect : NetworkBehaviour
             yield return null;
         }
 
-        // 5. 암전 연출 시작 (ChangeSceneUI 활용)
-        if (ChangeSceneUI.Instance != null)
-        {
-            ChangeSceneUI.Instance.Show(true);
-        }
-
-        // Fade 시간만큼 대기 (기본 1초)
+        // 5. 암전 및 이동
+        if (ChangeSceneUI.Instance != null) ChangeSceneUI.Instance.Show(true);
         yield return new WaitForSeconds(1.0f);
 
-        // 6. 위치 이동 및 복구
-        transform.position = cagePosition; // 서버로부터 전달받은 감옥 위치로 이동
-
+        transform.position = cagePosition;
         CleanupStep3();
 
-        // 7. 암전 해제
-        if (ChangeSceneUI.Instance != null)
-        {
-            ChangeSceneUI.Instance.Show(false);
-        }
+        if (ChangeSceneUI.Instance != null) ChangeSceneUI.Instance.Show(false);
     }
 
     private void CleanupStep3()
