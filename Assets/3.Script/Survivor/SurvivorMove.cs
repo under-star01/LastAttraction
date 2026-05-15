@@ -961,13 +961,7 @@ public class SurvivorMove : NetworkBehaviour
         escapeTarget = null;
 
         serverMoveInput = Vector2.zero;
-        serverWantsRun = false;
-        serverWantsCrouch = false;
-
         isMoveLocked = true;
-
-        if (moveState != null)
-            moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
 
         StartCoroutine(ResultRoutine());
 
@@ -988,6 +982,12 @@ public class SurvivorMove : NetworkBehaviour
         // 2. 서버 GameManager를 통해 ResultUI 갱신 요청
         if (GameManager.Instance != null)
             GameManager.Instance.EnterResultUI(connectionToClient);
+
+        serverWantsRun = false;
+        serverWantsCrouch = false;
+
+        if (moveState != null)
+            moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
 
         yield return new WaitForSeconds(2f);
 
