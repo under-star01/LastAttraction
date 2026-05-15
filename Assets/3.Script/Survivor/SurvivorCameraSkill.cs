@@ -25,6 +25,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
     [SerializeField] private CinemachineCamera normalCinemachine;
     [SerializeField] private CinemachineCamera skillCinemachine;
     [SerializeField] private CinemachineCamera resultCinemachine;
+    [SerializeField] private CinemachineCamera incageCinemachine;
 
     [Header("카메라 탐지")]
     [SerializeField] private Transform detectOrigin;            // Ray 시작 기준 위치
@@ -412,6 +413,21 @@ public class SurvivorCameraSkill : NetworkBehaviour
 
             frameImages[i].color = targetColor;
         }
+    }
+
+    public void ApplyIncageView(bool value)
+    {
+        if (!isLocalPlayer) return;
+
+        // 모든 카메라의 우선순위를 초기화하고, 필요한 카메라만 높입니다.
+        normalCinemachine.Priority = value ? 0 : 30;
+        incageCinemachine.Priority = value ? 31 : 0; // 연출 캠을 가장 높게 설정
+
+        // 스킬 캠이나 결과 캠은 0으로 고정
+        if (skillCinemachine != null) skillCinemachine.Priority = 0;
+        if (resultCinemachine != null) resultCinemachine.Priority = 0;
+
+        Debug.Log($"[SurvivorCameraSkill] 인케이지 뷰 상태: {value}");
     }
 
     private bool IsInLayerMask(int layer, LayerMask layerMask)
