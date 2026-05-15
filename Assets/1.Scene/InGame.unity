@@ -24930,13 +24930,41 @@ PrefabInstance:
       propertyPath: sceneId
       value: 1898159810
       objectReference: {fileID: 0}
+    - target: {fileID: 122387192048521396, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 24.58
+      objectReference: {fileID: 0}
+    - target: {fileID: 433813034101287709, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 78.840004
+      objectReference: {fileID: 0}
+    - target: {fileID: 746403636102751021, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -23.23
+      objectReference: {fileID: 0}
+    - target: {fileID: 933145858662561375, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 42.410004
+      objectReference: {fileID: 0}
     - target: {fileID: 1788458069730233281, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: sceneId
       value: 918023991
       objectReference: {fileID: 0}
+    - target: {fileID: 2414858479730267871, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 9.32
+      objectReference: {fileID: 0}
     - target: {fileID: 2437140602317811428, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: m_Name
       value: Map.v3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3834806385243810499, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -58.81
+      objectReference: {fileID: 0}
+    - target: {fileID: 4932166707484552883, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -41.030003
       objectReference: {fileID: 0}
     - target: {fileID: 5897652685213733639, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: sceneId
@@ -24985,6 +25013,14 @@ PrefabInstance:
     - target: {fileID: 6446675072919921176, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6638607654656697637, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 60.15
+      objectReference: {fileID: 0}
+    - target: {fileID: 7072437882456080551, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -5.3
       objectReference: {fileID: 0}
     - target: {fileID: 7744512490119297864, guid: 7ec877d3f8ef9e24f8ca354bc9be6189, type: 3}
       propertyPath: sceneId
