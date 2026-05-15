@@ -3291,7 +3291,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIButtonSound
   clickSoundKey: 31
-  hoverSoundKey: 32
   includeInactive: 1
 --- !u!1 &1812308569
 GameObject:

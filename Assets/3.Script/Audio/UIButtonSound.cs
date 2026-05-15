@@ -2,14 +2,11 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// Canvas나 UI 루트에 붙이면 자식 Button들에게 클릭음 / 호버음을 자동으로 붙인다.
+// Canvas나 UI 루트에 붙이면 자식 Button들에게 클릭음을 자동으로 붙인다.
 public class UIButtonSound : MonoBehaviour
 {
     [Header("버튼 클릭음")]
     [SerializeField] private AudioKey clickSoundKey = AudioKey.UIButtonClick;
-
-    [Header("버튼 호버음")]
-    [SerializeField] private AudioKey hoverSoundKey = AudioKey.UIButtonHover;
 
     [Header("비활성화된 버튼도 미리 등록")]
     [SerializeField] private bool includeInactive = true;
@@ -19,7 +16,7 @@ public class UIButtonSound : MonoBehaviour
         BindButtons();
     }
 
-    // 자식 Button들을 찾아서 사운드 컴포넌트를 붙인다.
+    // 자식 Button들을 찾아서 클릭음 컴포넌트를 붙인다.
     public void BindButtons()
     {
         Button[] buttons = GetComponentsInChildren<Button>(includeInactive);
@@ -31,21 +28,20 @@ public class UIButtonSound : MonoBehaviour
             if (button == null)
                 continue;
 
-            UIButtonSoundTarget target = button.GetComponent<UIButtonSoundTarget>();
+            UIButtonClickSoundTarget target = button.GetComponent<UIButtonClickSoundTarget>();
 
             if (target == null)
-                target = button.gameObject.AddComponent<UIButtonSoundTarget>();
+                target = button.gameObject.AddComponent<UIButtonClickSoundTarget>();
 
-            target.SetSounds(clickSoundKey, hoverSoundKey);
+            target.SetClickSound(clickSoundKey);
         }
     }
 }
 
-// 실제 버튼에 붙어서 클릭음 / 호버음을 재생하는 컴포넌트
-public class UIButtonSoundTarget : MonoBehaviour, IPointerDownHandler, IPointerEnterHandler
+// 실제 버튼에 붙어서 클릭음을 재생하는 컴포넌트
+public class UIButtonClickSoundTarget : MonoBehaviour, IPointerDownHandler
 {
     [SerializeField] private AudioKey clickSoundKey = AudioKey.UIButtonClick;
-    [SerializeField] private AudioKey hoverSoundKey = AudioKey.UIButtonHover;
 
     private Button button;
 
@@ -54,42 +50,23 @@ public class UIButtonSoundTarget : MonoBehaviour, IPointerDownHandler, IPointerE
         button = GetComponent<Button>();
     }
 
-    public void SetSounds(AudioKey clickKey, AudioKey hoverKey)
+    public void SetClickSound(AudioKey key)
     {
-        clickSoundKey = clickKey;
-        hoverSoundKey = hoverKey;
+        clickSoundKey = key;
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (!CanPlay())
-            return;
-
         if (clickSoundKey == AudioKey.None)
             return;
 
-        AudioManager.PlayLocalAudio(clickSoundKey, AudioDimension.Sound2D);
-    }
-
-    public void OnPointerEnter(PointerEventData eventData)
-    {
-        if (!CanPlay())
-            return;
-
-        if (hoverSoundKey == AudioKey.None)
-            return;
-
-        AudioManager.PlayLocalAudio(hoverSoundKey, AudioDimension.Sound2D);
-    }
-
-    private bool CanPlay()
-    {
         if (button == null)
             button = GetComponent<Button>();
 
+        // 비활성화되었거나 interactable이 꺼진 버튼은 소리도 안 나게 한다.
         if (button != null && !button.IsInteractable())
-            return false;
+            return;
 
-        return true;
+        AudioManager.PlayLocalAudio(clickSoundKey, AudioDimension.Sound2D);
     }
 }

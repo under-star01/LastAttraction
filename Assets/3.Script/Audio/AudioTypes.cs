@@ -75,6 +75,6 @@ public enum AudioKey
     TitleBGM,                // 타이틀 씬 배경음악
     LobbyBGM,                // 로비 씬 배경음악
     UIButtonClick,           // UI 버튼 클릭음
-    UIButtonHover,           // UI 버튼 호버음
-    GameStart                // 게임 시작 확정 사운드
+    GameStart,               // 게임 시작 확정 사운드
+    LobbySurvivorSpawn       // 로비에서 생존자 생성 / 입장 사운드
 }
