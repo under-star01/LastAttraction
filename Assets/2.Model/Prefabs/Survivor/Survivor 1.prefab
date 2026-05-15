@@ -2544,7 +2544,7 @@ MonoBehaviour:
   normalCinemachine: {fileID: 6907075847553500461}
   skillCinemachine: {fileID: 5365576005356907084}
   resultCinemachine: {fileID: 1234053843247495698}
-  incageCinemachine: {fileID: 0}
+  incageCinemachine: {fileID: 9053070482185097131}
   detectOrigin: {fileID: 8242838456614497304}
   killerLayerMask:
     serializedVersion: 2
