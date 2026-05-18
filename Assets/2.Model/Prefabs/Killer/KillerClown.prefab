@@ -70,7 +70,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::KillerAnimationEventReceiver
   killerMove: {fileID: 835159930052555109}
-  killerCombat: {fileID: 0}
+  killerCombat: {fileID: 7075201297679001473}
 --- !u!1 &17375818028257004
 GameObject:
   m_ObjectHideFlags: 0

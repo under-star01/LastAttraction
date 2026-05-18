@@ -3682,10 +3682,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: FarolaDe1.001 (4)
       objectReference: {fileID: 0}
-    - target: {fileID: 5302886619294244740, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6914397496380830534, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.67
@@ -3726,14 +3722,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -90
       objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 20540967640621737, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-    - {fileID: 2145859746903774330, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
@@ -4072,10 +4062,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: FarolaDe1.001 (8)
       objectReference: {fileID: 0}
-    - target: {fileID: 5302886619294244740, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6914397496380830534, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.67
@@ -4116,14 +4102,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -90
       objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 20540967640621737, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-    - {fileID: 2145859746903774330, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
@@ -7081,10 +7061,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: FarolaDe1.001 (7)
       objectReference: {fileID: 0}
-    - target: {fileID: 5302886619294244740, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6914397496380830534, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
       propertyPath: m_LocalPosition.x
       value: 11.51001
@@ -7125,22 +7101,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -90
       objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Range
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Intensity
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 2145859746903774330, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-    - {fileID: 20540967640621737, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
@@ -7681,10 +7643,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: FarolaDe1.001 (6)
       objectReference: {fileID: 0}
-    - target: {fileID: 5302886619294244740, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6914397496380830534, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
       propertyPath: m_LocalPosition.x
       value: 11.51001
@@ -7725,22 +7683,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -90
       objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Range
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Intensity
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 2145859746903774330, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-    - {fileID: 20540967640621737, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
@@ -8621,10 +8565,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: FarolaDe1.001 (3)
       objectReference: {fileID: 0}
-    - target: {fileID: 5302886619294244740, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6914397496380830534, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.67
@@ -8665,22 +8605,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -90
       objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Range
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Intensity
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 2145859746903774330, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-    - {fileID: 20540967640621737, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
@@ -9764,10 +9690,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: FarolaDe1.001 (1)
       objectReference: {fileID: 0}
-    - target: {fileID: 5302886619294244740, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6914397496380830534, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.67
@@ -9808,22 +9730,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -90
       objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Range
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Intensity
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 2145859746903774330, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-    - {fileID: 20540967640621737, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
@@ -10695,10 +10603,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: FarolaDe1.001 (2)
       objectReference: {fileID: 0}
-    - target: {fileID: 5302886619294244740, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6914397496380830534, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
       propertyPath: m_LocalPosition.x
       value: 11.51
@@ -10739,22 +10643,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -90
       objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Range
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Intensity
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 2145859746903774330, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-    - {fileID: 20540967640621737, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
@@ -12593,10 +12483,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: FarolaDe1.001 (5)
       objectReference: {fileID: 0}
-    - target: {fileID: 5302886619294244740, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 6914397496380830534, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
       propertyPath: m_LocalPosition.x
       value: 11.51
@@ -12637,22 +12523,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -90
       objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Range
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Intensity
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 9197889861535090671, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-      propertyPath: m_Shadows.m_Type
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 2145859746903774330, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
-    - {fileID: 20540967640621737, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 00288d46b50a14b4090a92558429fb03, type: 3}
