@@ -200,14 +200,6 @@ public class KillerCombat : NetworkBehaviour
         if (state == null)
             return;
 
-        // 현재 공격 애니메이션은 Recovering 상태에서 재생된다.
-        // 혹시 Lunging 클립에 이벤트를 넣어도 동작하도록 Lunging도 허용한다.
-        if (state.CurrentCondition != KillerCondition.Recovering &&
-            state.CurrentCondition != KillerCondition.Lunging)
-        {
-            return;
-        }
-
         CmdPlayKillerWeaponSwingByAnimationEvent();
     }
 
@@ -241,12 +233,6 @@ public class KillerCombat : NetworkBehaviour
         // 같은 애니메이션 이벤트가 너무 짧은 시간에 중복 호출되는 것을 방지한다.
         if (Time.time - lastWeaponSwingServerTime < weaponSwingMinInterval)
             return false;
-
-        if (state.CurrentCondition != KillerCondition.Recovering &&
-            state.CurrentCondition != KillerCondition.Lunging)
-        {
-            return false;
-        }
 
         return true;
     }
