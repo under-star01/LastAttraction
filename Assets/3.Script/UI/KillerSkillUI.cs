@@ -14,7 +14,7 @@ public class KillerSkillUI : MonoBehaviour
 
     [Header("Fill Alpha")]
     [SerializeField] private float normalAlpha = 0.2f;
-    [SerializeField] private float usingAlpha = 0.1f;
+    [SerializeField] private float usingAlpha = 0.05f;
 
     private Coroutine attackRoutine;
     private Coroutine trapRoutine;

@@ -1116,7 +1116,7 @@ MonoBehaviour:
   trapSlider: {fileID: 200133390}
   trapFillImage: {fileID: 2070403309}
   normalAlpha: 0.2
-  usingAlpha: 0.1
+  usingAlpha: 0.05
 --- !u!1 &153499935
 GameObject:
   m_ObjectHideFlags: 0
