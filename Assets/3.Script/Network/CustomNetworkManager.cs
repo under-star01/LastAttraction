@@ -88,6 +88,9 @@ public struct LobbySurvivorSpawnSoundMessage : NetworkMessage { }
 // 서버 -> 클라 : 게임 시작 사운드 재생 요청
 public struct GameStartSoundMessage : NetworkMessage { }
 
+// 서버 -> 클라 : 로비에서 살인마 생성 사운드 재생 요청
+public struct LobbyKillerSpawnSoundMessage : NetworkMessage { }
+
 public class CustomNetworkManager : NetworkManager
 {
     public static CustomNetworkManager Instance { get; private set; }
@@ -427,6 +430,7 @@ public class CustomNetworkManager : NetworkManager
         NetworkServer.RegisterHandler<RoomProbeRequestMessage>(OnReceiveRoomProbeRequest, false);
         NetworkServer.RegisterHandler<SurvivorReadyRequestMessage>(OnReceiveSurvivorReadyRequest, false);
         NetworkServer.RegisterHandler<StartGameRequestMessage>(OnReceiveStartGameRequest, false);
+        NetworkClient.RegisterHandler<LobbyKillerSpawnSoundMessage>(OnLobbyKillerSpawnSoundMessage, false);
     }
 
     public override void OnStopServer()
@@ -728,6 +732,11 @@ public class CustomNetworkManager : NetworkManager
         MoveToGameScene();
     }
 
+    private void OnLobbyKillerSpawnSoundMessage(LobbyKillerSpawnSoundMessage msg)
+    {
+        AudioManager.PlayLocalAudio(AudioKey.LobbyKillerSpawn, AudioDimension.Sound2D);
+    }
+
     #endregion
 
     #region Lobby State
@@ -909,6 +918,11 @@ public class CustomNetworkManager : NetworkManager
         else
         {
             Debug.LogWarning($"[CustomNetworkManager] {playerObj.name}에 PlayerUIProfile이 없습니다.");
+        }
+
+        if (role == JoinRole.Killer)
+        {
+            BroadcastLobbyKillerSpawnSound();
         }
 
         if (role == JoinRole.Survivor)
@@ -1196,6 +1210,25 @@ public class CustomNetworkManager : NetworkManager
             return;
 
         LobbySurvivorSpawnSoundMessage msg = new LobbySurvivorSpawnSoundMessage();
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null)
+                continue;
+
+            if (!conn.isReady)
+                continue;
+
+            conn.Send(msg);
+        }
+    }
+
+    private void BroadcastLobbyKillerSpawnSound()
+    {
+        if (!NetworkServer.active)
+            return;
+
+        LobbyKillerSpawnSoundMessage msg = new LobbyKillerSpawnSoundMessage();
 
         foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
         {

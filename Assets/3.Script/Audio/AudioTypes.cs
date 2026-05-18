@@ -76,5 +76,7 @@ public enum AudioKey
     LobbyBGM,                // 로비 씬 배경음악
     UIButtonClick,           // UI 버튼 클릭음
     GameStart,               // 게임 시작 확정 사운드
-    LobbySurvivorSpawn       // 로비에서 생존자 생성 / 입장 사운드
+    LobbySurvivorSpawn,      // 로비에서 생존자 생성 / 입장 사운드
+
+    LobbyKillerSpawn         // 로비에서 살인마 생성 / 입장 사운드
 }
