@@ -1,5 +1,6 @@
 using UnityEngine;
 using Mirror;
+using System.Collections;
 
 public class KillerCombat : NetworkBehaviour
 {
@@ -19,10 +20,11 @@ public class KillerCombat : NetworkBehaviour
     public float baseAttackAnimationLength = 2.666f;
 
     [Header("오디오")]
-    [SerializeField] private AudioKey weaponSwingSoundKey = AudioKey.KillerWeaponSwing; // 무기 휘두르는 소리
-    [SerializeField] private AudioKey attackHitSoundKey = AudioKey.KillerAttackHit;     // 타격 성공 소리
+    [SerializeField] private AudioKey weaponSwingSoundKey = AudioKey.KillerWeaponSwing;
+    [SerializeField] private AudioKey attackHitSoundKey = AudioKey.KillerAttackHit;
     [SerializeField] private Vector3 weaponSwingSoundOffset = new Vector3(0f, 1.2f, 0f);
     [SerializeField] private Vector3 attackHitSoundOffset = new Vector3(0f, 1.0f, 0f);
+    [SerializeField] private float weaponSwingMinInterval = 0.08f;
 
     private KillerInput input;
     private KillerState state;
@@ -32,11 +34,13 @@ public class KillerCombat : NetworkBehaviour
 
     private float currentLungeTime;
     private float currentPenaltyTime;
+    private bool hasRecoveryPenalty;
     private bool hasHitTarget;
     private uint hitSurvivorNetId;
     private bool isEndingAttack;
 
     private float lastWeaponSwingServerTime;
+    private Coroutine serverRecoveryCoroutine;
 
     private void Awake()
     {
@@ -49,10 +53,7 @@ public class KillerCombat : NetworkBehaviour
     private void Update()
     {
         if (animator != null && state != null)
-        {
-            // 모든 클라이언트에서 현재 상태가 Lunging이면 Run 애니메이션을 튼다.
             animator.SetBool("isLunging", state.CurrentCondition == KillerCondition.Lunging);
-        }
 
         if (!isLocalPlayer)
             return;
@@ -60,13 +61,12 @@ public class KillerCombat : NetworkBehaviour
         if (state == null || input == null)
             return;
 
-        // 트랩 설치 모드 중에는 공격 입력을 막는다.
         if ((trapHandler != null && trapHandler.IsBuildMode) || state.CurrentCondition == KillerCondition.Planting)
             return;
 
         if (state.CurrentCondition == KillerCondition.Recovering)
         {
-            HandleRecovery();
+            HandleRecoveryUIOnly();
             return;
         }
 
@@ -83,14 +83,20 @@ public class KillerCombat : NetworkBehaviour
             killerSkillUI = InGameUIManager.Instance.GetKillerSkillUI();
     }
 
-    private void HandleRecovery()
+    // 클라이언트에서는 Recovering 상태를 Idle로 바꾸지 않는다.
+    // 서버가 정확한 패널티 시간 뒤에 Idle로 바꾼다.
+    private void HandleRecoveryUIOnly()
     {
+        if (!hasRecoveryPenalty)
+            return;
+
         currentPenaltyTime -= Time.deltaTime;
 
         if (currentPenaltyTime <= 0f)
         {
+            currentPenaltyTime = 0f;
+            hasRecoveryPenalty = false;
             isEndingAttack = false;
-            CmdResetToIdle();
         }
     }
 
@@ -102,7 +108,6 @@ public class KillerCombat : NetworkBehaviour
         if (input == null || state == null)
             return;
 
-        // 트랩 설치 모드에서는 공격 입력을 무시한다.
         if (trapHandler != null && trapHandler.IsBuildMode)
             return;
 
@@ -110,15 +115,14 @@ public class KillerCombat : NetworkBehaviour
         {
             if (state.CurrentCondition != KillerCondition.Lunging)
             {
-                // 현재 공격 가능한 상태가 아니면 입력을 무시한다.
                 if (!state.CanAttack)
                     return;
 
-                // 공격 시작 값 초기화
                 hasHitTarget = false;
                 currentLungeTime = 0f;
                 hitSurvivorNetId = 0;
                 isEndingAttack = false;
+                hasRecoveryPenalty = false;
 
                 BindUI();
 
@@ -157,7 +161,6 @@ public class KillerCombat : NetworkBehaviour
         if (hasHitTarget || attackPoint == null)
             return;
 
-        // 벽 / 장애물에 먼저 닿으면 벽 타격으로 판정한다.
         if (Physics.CheckSphere(attackPoint.position, attackRadius * 0.5f, obstacleLayer))
         {
             hasHitTarget = true;
@@ -187,13 +190,10 @@ public class KillerCombat : NetworkBehaviour
         }
     }
 
-    // 자식 Animator의 Animation Event에서 호출된다.
-    // 킬러 본인은 이벤트 프레임에 즉시 2D로 듣고,
-    // 생존자들은 서버를 통해 같은 타이밍에 3D로 듣는다.
+    // Animation Event에서만 호출된다.
+    // 킬러 본인은 2D로 즉시 듣고, 생존자들은 서버를 통해 3D로 듣는다.
     public void PlayKillerWeaponSwingByAnimationEvent()
     {
-        // Animation Event는 모든 클라이언트의 Animator에서 호출될 수 있으므로
-        // 실제 살인마를 조종하는 로컬 플레이어만 처리한다.
         if (!isLocalPlayer)
             return;
 
@@ -203,11 +203,8 @@ public class KillerCombat : NetworkBehaviour
         if (weaponSwingSoundKey == AudioKey.None)
             return;
 
-        // 킬러 본인은 정확한 애니메이션 이벤트 프레임에 바로 듣는다.
-        // 1인칭/로컬 공격음은 3D 거리 감쇠보다 2D가 안정적이다.
         AudioManager.PlayLocalAudio(weaponSwingSoundKey, AudioDimension.Sound2D);
 
-        // 생존자들에게는 같은 이벤트 타이밍에 3D 월드 사운드로 보낸다.
         CmdPlayKillerWeaponSwingByAnimationEvent();
     }
 
@@ -238,6 +235,9 @@ public class KillerCombat : NetworkBehaviour
         if (state == null)
             return false;
 
+        if (Time.time - lastWeaponSwingServerTime < weaponSwingMinInterval)
+            return false;
+
         return true;
     }
 
@@ -249,6 +249,12 @@ public class KillerCombat : NetworkBehaviour
 
         if (state.CurrentCondition != KillerCondition.Idle)
             return;
+
+        if (serverRecoveryCoroutine != null)
+        {
+            StopCoroutine(serverRecoveryCoroutine);
+            serverRecoveryCoroutine = null;
+        }
 
         state.ChangeState(KillerCondition.Lunging);
     }
@@ -262,20 +268,20 @@ public class KillerCombat : NetworkBehaviour
         if (state.CurrentCondition != KillerCondition.Lunging)
             return;
 
-        state.ChangeState(KillerCondition.Recovering);
-
         float finalPenalty;
 
         if (isHit)
-        {
-            // survivorNetId가 있으면 생존자 타격, 없으면 벽 타격
             finalPenalty = survivorNetId != 0 ? hitSuccessPenalty : wallHitPenalty;
-        }
         else
-        {
-            // 헛스윙 패널티 계산
             finalPenalty = Mathf.Max(1.2f, lungeTime * hitFailPenalty);
-        }
+
+        float animSpeed = baseAttackAnimationLength / finalPenalty;
+
+        // Attack 트리거가 실행되기 전에 클라이언트에 패널티 시간과 애니메이션 속도를 먼저 준비시킨다.
+        RpcSyncAttackResult(animSpeed, finalPenalty);
+
+        // Recovering으로 바뀌면 KillerState에서 Attack 트리거가 실행된다.
+        state.ChangeState(KillerCondition.Recovering);
 
         if (isHit && survivorNetId != 0)
         {
@@ -285,8 +291,6 @@ public class KillerCombat : NetworkBehaviour
 
                 if (sState != null)
                 {
-                    // 실제로 Healthy / Injured 상태인 생존자를 맞췄을 때만 성공 타격음을 낸다.
-                    // Downed, Dead, Imprisoned 상태를 다시 건드렸을 때는 성공음이 중복으로 나지 않는다.
                     bool canDamage = sState.IsHealthy || sState.IsInjured;
 
                     if (canDamage)
@@ -302,11 +306,23 @@ public class KillerCombat : NetworkBehaviour
         else
             Debug.Log("헛스윙 또는 장애물에 막힘");
 
-        float animSpeed = baseAttackAnimationLength / finalPenalty;
-        RpcSyncAttackResult(animSpeed, finalPenalty);
+        if (serverRecoveryCoroutine != null)
+            StopCoroutine(serverRecoveryCoroutine);
+
+        serverRecoveryCoroutine = StartCoroutine(ServerRecoveryRoutine(finalPenalty));
     }
 
-    // 서버에서 실제 생존자 타격 성공 순간에만 재생한다.
+    [Server]
+    private IEnumerator ServerRecoveryRoutine(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        serverRecoveryCoroutine = null;
+
+        if (state != null && state.CurrentCondition == KillerCondition.Recovering)
+            state.ChangeState(KillerCondition.Idle);
+    }
+
     [Server]
     private void ServerPlayAttackHitSound(Vector3 hitPosition)
     {
@@ -323,16 +339,6 @@ public class KillerCombat : NetworkBehaviour
         );
     }
 
-    [Command]
-    private void CmdResetToIdle()
-    {
-        if (state == null)
-            return;
-
-        if (state.CurrentCondition == KillerCondition.Recovering)
-            state.ChangeState(KillerCondition.Idle);
-    }
-
     [ClientRpc]
     private void RpcSyncAttackResult(float speed, float penalty)
     {
@@ -342,6 +348,7 @@ public class KillerCombat : NetworkBehaviour
         if (isLocalPlayer)
         {
             currentPenaltyTime = penalty;
+            hasRecoveryPenalty = true;
 
             BindUI();
 
