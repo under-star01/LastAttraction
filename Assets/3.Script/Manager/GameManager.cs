@@ -23,6 +23,14 @@ public class KillerResultData
     public bool reachedResult;
 }
 
+public enum MatchObjectiveState
+{
+    CollectEvidence,   // 증거 수집 / 살인마 촬영 단계
+    UploadEvidence,    // 업로드 컴퓨터 활성화 단계
+    GateOpening,       // 업로드 완료 후 출구 개방 대기 단계
+    GateOpened         // 출구 개방 완료 단계
+}
+
 public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -59,6 +67,15 @@ public class GameManager : NetworkBehaviour
 
     // 클라이언트 UI 표시용 촬영 배율이다.
     [SyncVar] private float syncedKillerDetectMultiplier;
+
+    public static event Action<MatchObjectiveState> OnObjectiveStateChanged;
+
+    [Header("현재 목표 상태")]
+    [SerializeField]
+    [SyncVar(hook = nameof(OnObjectiveStateChangedHook))]
+    private MatchObjectiveState objectiveState = MatchObjectiveState.CollectEvidence;
+
+    public MatchObjectiveState ObjectiveState => objectiveState;
 
     [Header("업로드")]
     [SerializeField] private float uploadTime = 60f;
@@ -254,7 +271,10 @@ public class GameManager : NetworkBehaviour
     private void Start()
     {
         if (NetworkServer.active)
+        {
             SetAllSurvivorInput(false);
+            SetObjectiveState(MatchObjectiveState.CollectEvidence);
+        }
     }
 
     private void Update()
@@ -465,6 +485,22 @@ public class GameManager : NetworkBehaviour
         syncedKillerDetectMultiplier = currentKillerDetectMultiplier;
     }
 
+    [Server]
+    private void SetObjectiveState(MatchObjectiveState state)
+    {
+        if (objectiveState == state)
+            return;
+
+        objectiveState = state;
+    }
+
+    private void OnObjectiveStateChangedHook(
+        MatchObjectiveState oldState,
+        MatchObjectiveState newState)
+    {
+        OnObjectiveStateChanged?.Invoke(newState);
+    }
+
     private void CheckUpload()
     {
         if (!NetworkServer.active)
@@ -477,6 +513,7 @@ public class GameManager : NetworkBehaviour
             return;
 
         canUpload = true;
+        SetObjectiveState(MatchObjectiveState.UploadEvidence);
 
         // 카메라 촬영으로 목표가 먼저 완료된 경우에도 남은 증거 상호작용을 막는다.
         DisableAllEvidenceInteractions();
@@ -580,6 +617,7 @@ public class GameManager : NetworkBehaviour
         isWaitingGateOpen = true;
         gateRemainTime = gateOpenDelay;
 
+        SetObjectiveState(MatchObjectiveState.GateOpening);
         ServerPlayUploadNoticeSound();
 
         Debug.Log("[GameManager] 업로드 완료. 탈출문 개방 대기 시작.");
@@ -635,6 +673,7 @@ public class GameManager : NetworkBehaviour
 
         gateOpened = true;
         isWaitingGateOpen = false;
+        SetObjectiveState(MatchObjectiveState.GateOpened);
 
         Debug.Log("[GameManager] 대기 시간 종료. 탈출문 자동 개방.");
 

@@ -12,17 +12,88 @@ public class KillerSkillUI : MonoBehaviour
     [SerializeField] private Slider trapSlider;
     [SerializeField] private Image trapFillImage;
 
+    [Header("Objective Text")]
+    [SerializeField] private Text objectiveText;
+
+    [TextArea]
+    [SerializeField]
+    private string collectEvidenceText =
+        "관객들이 진실에 접근하지 못하도록 감옥에 가두세요.";
+
+    [TextArea]
+    [SerializeField]
+    private string gateOpeningText =
+        "증거 업로드가 완료되었습니다. 곧 출구가 개방됩니다.";
+
+    [TextArea]
+    [SerializeField]
+    private string gateOpenedText =
+        "출구가 개방되었습니다. 관객들이 탈출하지 못하도록 막으세요.";
+
     [Header("Fill Alpha")]
     [SerializeField] private float normalAlpha = 0.2f;
     [SerializeField] private float usingAlpha = 0.05f;
 
     private Coroutine attackRoutine;
     private Coroutine trapRoutine;
+    private MatchObjectiveState currentObjectiveState = (MatchObjectiveState)(-1);
 
     private void Awake()
     {
         InitSlider(attackSlider, attackFillImage);
         InitSlider(trapSlider, trapFillImage);
+
+        SetObjectiveText(MatchObjectiveState.CollectEvidence);
+    }
+
+    private void OnEnable()
+    {
+        GameManager.OnObjectiveStateChanged += HandleObjectiveStateChanged;
+    }
+
+    private void OnDisable()
+    {
+        GameManager.OnObjectiveStateChanged -= HandleObjectiveStateChanged;
+    }
+
+    private void Start()
+    {
+        if (GameManager.Instance != null)
+            HandleObjectiveStateChanged(GameManager.Instance.ObjectiveState);
+    }
+
+    private void HandleObjectiveStateChanged(MatchObjectiveState state)
+    {
+        if (state == MatchObjectiveState.UploadEvidence)
+            return;
+
+        SetObjectiveText(state);
+    }
+
+    private void SetObjectiveText(MatchObjectiveState state)
+    {
+        if (currentObjectiveState == state)
+            return;
+
+        currentObjectiveState = state;
+
+        if (objectiveText == null)
+            return;
+
+        switch (state)
+        {
+            case MatchObjectiveState.CollectEvidence:
+                objectiveText.text = collectEvidenceText;
+                break;
+
+            case MatchObjectiveState.GateOpening:
+                objectiveText.text = gateOpeningText;
+                break;
+
+            case MatchObjectiveState.GateOpened:
+                objectiveText.text = gateOpenedText;
+                break;
+        }
     }
 
     private void InitSlider(Slider slider, Image fillImage)
