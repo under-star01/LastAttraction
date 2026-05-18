@@ -9701,9 +9701,10 @@ MonoBehaviour:
   objectiveSlider: {fileID: 1305761451}
   objectiveText: {fileID: 1477011221}
   targetComputer: {fileID: 0}
-  objectiveTextValue: "\uBAA9\uD45C \uC9C4\uD589\uB3C4"
-  uploadGoalText: "\uCEF4\uD4E8\uD130\uC5D0 \uC99D\uAC70\uB97C \uC5C5\uB85C\uB4DC"
-  gateTimerText: "\uD0C8\uCD9C\uBB38 \uAC1C\uBC29\uAE4C\uC9C0 \uB0A8\uC740\uC2DC\uAC04"
+  objectiveTextValue: "\uC0B4\uC778\uB9C8 \uCD2C\uC601 \uB610\uB294 \uC99D\uAC70
+    \uC218\uC9D1 : \uBAA9\uD45C\uCE58 "
+  uploadGoalText: "\uCEF4\uD4E8\uD130\uC5D0 \uC99D\uAC70 \uC5C5\uB85C\uB4DC : \uC9C4\uD589\uB3C4"
+  gateTimerText: "\uD0C8\uCD9C\uBB38 \uAC1C\uBC29 \uB300\uAE30 : \uB0A8\uC740 \uC2DC\uAC04"
 --- !u!1 &1297884726
 GameObject:
   m_ObjectHideFlags: 0
