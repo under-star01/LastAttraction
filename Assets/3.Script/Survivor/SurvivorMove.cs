@@ -1062,4 +1062,29 @@ public class SurvivorMove : NetworkBehaviour
 
         Debug.Log("[SurvivorMove] Dead result routine started.");
     }
+
+    [Server]
+    public void SetPrisonSequenceLock(bool value)
+    {
+        isMoveLocked = value;
+
+        serverMoveInput = Vector2.zero;
+        serverWantsRun = false;
+        serverWantsCrouch = false;
+
+        if (value)
+        {
+            escapeTarget = null;
+
+            if (moveState != null)
+                moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
+
+            SetCamAnim(false);
+            SetSearching(false);
+            SetVaulting(false);
+            SetStunned(false);
+        }
+
+        TargetSetSurvivorInput(connectionToClient, !value);
+    }
 }

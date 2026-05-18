@@ -59,14 +59,14 @@ public class SurvivorPrisonEffect : NetworkBehaviour
 
     [Server]
     private IEnumerator PrisonSequenceServer(
-        Prison prison,
-        AudioKey incageSoundKey,
-        Vector3 incageSoundOffset
-    )
+    Prison prison,
+    AudioKey incageSoundKey,
+    Vector3 incageSoundOffset
+)
     {
-        // 1. 생존자 입력 제한
+        // 1. 생존자 입력 / 이동 제한
         if (move != null)
-            move.SetInputFromServer(false);
+            move.SetPrisonSequenceLock(true);
 
         // 2. 잡힌 생존자 클라이언트에게만 공포 연출 실행
         if (connectionToClient != null)
@@ -88,10 +88,11 @@ public class SurvivorPrisonEffect : NetworkBehaviour
             afterBlackoutDelay +
             (eyeOpenDuration + eyeOpenHoldTime + eyeCloseDuration + eyeCloseHoldTime) * blinkCount +
             1f;
+
         yield return new WaitForSeconds(restoreDelay);
 
         if (move != null && state != null && !state.IsDead)
-            move.SetInputFromServer(true);
+            move.SetPrisonSequenceLock(false);
     }
 
     [Server]
@@ -135,7 +136,7 @@ public class SurvivorPrisonEffect : NetworkBehaviour
     {
         if (camSkill != null)
             camSkill.ApplyPrisonView(true);
-        yield return null;
+        yield return new WaitForSeconds(0.1f);
 
         mainCamera = Camera.main;
 
@@ -195,15 +196,20 @@ public class SurvivorPrisonEffect : NetworkBehaviour
 
     private void SpawnTerrorEffect()
     {
-        if (terrorPos == null || terrorEffectPrefab == null)
+        if (terrorEffectPrefab == null)
             return;
 
         if (spawnedEffect != null)
             Destroy(spawnedEffect);
 
+        Vector3 spawnPos = transform.position;
+
+        if (terrorPos != null)
+            spawnPos.y = terrorPos.position.y;
+
         spawnedEffect = Instantiate(
             terrorEffectPrefab,
-            terrorPos.position,
+            spawnPos,
             Quaternion.identity
         );
 
@@ -212,7 +218,7 @@ public class SurvivorPrisonEffect : NetworkBehaviour
             Vector3 dir = mainCamera.transform.position - spawnedEffect.transform.position;
             dir.y = 0f;
 
-            if (dir != Vector3.zero)
+            if (dir.sqrMagnitude > 0.001f)
                 spawnedEffect.transform.rotation = Quaternion.LookRotation(dir);
         }
 
