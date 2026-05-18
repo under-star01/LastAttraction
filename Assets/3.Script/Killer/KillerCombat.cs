@@ -23,7 +23,6 @@ public class KillerCombat : NetworkBehaviour
     [SerializeField] private AudioKey attackHitSoundKey = AudioKey.KillerAttackHit;     // 타격 성공 소리
     [SerializeField] private Vector3 weaponSwingSoundOffset = new Vector3(0f, 1.2f, 0f);
     [SerializeField] private Vector3 attackHitSoundOffset = new Vector3(0f, 1.0f, 0f);
-    [SerializeField] private float weaponSwingMinInterval = 0.08f; // 애니메이션 이벤트 중복 방지
 
     private KillerInput input;
     private KillerState state;
@@ -189,17 +188,26 @@ public class KillerCombat : NetworkBehaviour
     }
 
     // 자식 Animator의 Animation Event에서 호출된다.
-    // 실제 소리는 서버를 거쳐 모든 클라이언트에게 3D로 재생한다.
+    // 킬러 본인은 이벤트 프레임에 즉시 2D로 듣고,
+    // 생존자들은 서버를 통해 같은 타이밍에 3D로 듣는다.
     public void PlayKillerWeaponSwingByAnimationEvent()
     {
         // Animation Event는 모든 클라이언트의 Animator에서 호출될 수 있으므로
-        // 실제 살인마를 조종하는 로컬 플레이어만 서버에 요청한다.
+        // 실제 살인마를 조종하는 로컬 플레이어만 처리한다.
         if (!isLocalPlayer)
             return;
 
         if (state == null)
             return;
 
+        if (weaponSwingSoundKey == AudioKey.None)
+            return;
+
+        // 킬러 본인은 정확한 애니메이션 이벤트 프레임에 바로 듣는다.
+        // 1인칭/로컬 공격음은 3D 거리 감쇠보다 2D가 안정적이다.
+        AudioManager.PlayLocalAudio(weaponSwingSoundKey, AudioDimension.Sound2D);
+
+        // 생존자들에게는 같은 이벤트 타이밍에 3D 월드 사운드로 보낸다.
         CmdPlayKillerWeaponSwingByAnimationEvent();
     }
 
@@ -211,7 +219,7 @@ public class KillerCombat : NetworkBehaviour
 
         lastWeaponSwingServerTime = Time.time;
 
-        NetworkAudioManager.PlayAudioForEveryone(
+        NetworkAudioManager.PlayAudioForSurvivors(
             weaponSwingSoundKey,
             AudioDimension.Sound3D,
             transform.position + weaponSwingSoundOffset
@@ -228,10 +236,6 @@ public class KillerCombat : NetworkBehaviour
             return false;
 
         if (state == null)
-            return false;
-
-        // 같은 애니메이션 이벤트가 너무 짧은 시간에 중복 호출되는 것을 방지한다.
-        if (Time.time - lastWeaponSwingServerTime < weaponSwingMinInterval)
             return false;
 
         return true;
