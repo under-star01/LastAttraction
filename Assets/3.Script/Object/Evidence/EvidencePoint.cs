@@ -334,8 +334,10 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
         // 완료한 증거는 서버에서도 즉시 안 보이게 처리한다.
         HideEvidenceLocal();
 
-        // 모든 클라이언트에서도 완료한 증거를 안 보이게 처리한다.
-        RpcCompleteEvidence();
+        int evidenceIndex = (int)evidenceType - 1;
+
+        // 모든 클라이언트에서도 완료한 증거를 안 보이게 처리하고, 획득한 증거 UI를 갱신한다.
+        RpcCompleteEvidence(evidenceIndex);
     }
 
     // 목표 완료 후 이 증거를 숨기지 않고 상호작용만 막는다.
@@ -415,10 +417,13 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
     }
 
     [ClientRpc]
-    private void RpcCompleteEvidence()
+    private void RpcCompleteEvidence(int evidenceIndex)
     {
         StopLocalUse(true, true);
         HideEvidenceLocal();
+
+        if (InGameUIManager.Instance != null)
+            InGameUIManager.Instance.ShowAcquiredEvidence(evidenceIndex);
     }
 
     private void OnCompletedChanged(bool oldValue, bool newValue)
@@ -428,6 +433,16 @@ public class EvidencePoint : NetworkBehaviour, IInteractable
 
         StopLocalUse(true, true);
         HideEvidenceLocal();
+
+        ShowEvidenceUIByType();
+    }
+
+    private void ShowEvidenceUIByType()
+    {
+        int evidenceIndex = (int)evidenceType - 1;
+
+        if (InGameUIManager.Instance != null)
+            InGameUIManager.Instance.ShowAcquiredEvidence(evidenceIndex);
     }
 
     private void OnInteractionDisabledChanged(bool oldValue, bool newValue)

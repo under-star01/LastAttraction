@@ -224,7 +224,13 @@ public class KillerMove : NetworkBehaviour
 
         MoveToKillerResultPoint();
 
-        TargetShowKillerResultViewAndUI(connectionToClient);
+        // 1. 살인마 로컬 카메라만 ResultCam으로 전환
+        TargetShowKillerResultView(connectionToClient);
+
+        // 2. 서버 GameManager를 통해 ResultUI 갱신 요청
+        if (GameManager.Instance != null)
+            GameManager.Instance.EnterResultUI(connectionToClient);
+
         yield return new WaitForSeconds(2f);
 
         TargetSetBlackout(connectionToClient, false);
@@ -389,7 +395,7 @@ public class KillerMove : NetworkBehaviour
     }
 
     [TargetRpc]
-    private void TargetShowKillerResultViewAndUI(NetworkConnectionToClient target)
+    private void TargetShowKillerResultView(NetworkConnectionToClient target)
     {
         isResultPlaying = true;
 
@@ -400,10 +406,7 @@ public class KillerMove : NetworkBehaviour
         SetCameraPriority(normalCam, false);
         SetCameraPriority(resultCam, true);
 
-        if (InGameUIManager.Instance != null)
-            InGameUIManager.Instance.ShowResultUI();
-
-        Debug.Log("[KillerMove] ResultCam 전환 및 ResultUI 활성화");
+        Debug.Log("[KillerMove] ResultCam 전환");
     }
 
     [TargetRpc]

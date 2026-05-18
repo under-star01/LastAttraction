@@ -840,7 +840,7 @@ public class SurvivorMove : NetworkBehaviour
         escapeTarget = target;
 
         RpcApplyEscapeView();
-        TargetDisableSurvivorInput(connectionToClient);
+        TargetSetSurvivorInput(connectionToClient, false);
 
         // 기존 이동 잠금 변수 재사용
         isMoveLocked = true;
@@ -885,13 +885,26 @@ public class SurvivorMove : NetworkBehaviour
             camSkill.ApplyEscapeView();
     }
 
+    [Server]
+    public void SetInputFromServer(bool value)
+    {
+        if (!value)
+        {
+            serverMoveInput = Vector2.zero;
+            serverWantsRun = false;
+            serverWantsCrouch = false;
+        }
+
+        TargetSetSurvivorInput(connectionToClient, value);
+    }
+
     [TargetRpc]
-    private void TargetDisableSurvivorInput(NetworkConnectionToClient target)
+    private void TargetSetSurvivorInput(NetworkConnectionToClient target, bool value)
     {
         if (input != null)
-            input.enabled = false;
+            input.enabled = value;
 
-        Debug.Log("[SurvivorMove] 탈출 플레이어 SurvivorInput 비활성화");
+        Debug.Log($"[SurvivorMove] SurvivorInput 상태 변경: {value}");
     }
 
     [Server]
@@ -961,13 +974,7 @@ public class SurvivorMove : NetworkBehaviour
         escapeTarget = null;
 
         serverMoveInput = Vector2.zero;
-        serverWantsRun = false;
-        serverWantsCrouch = false;
-
         isMoveLocked = true;
-
-        if (moveState != null)
-            moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
 
         StartCoroutine(ResultRoutine());
 
@@ -981,7 +988,20 @@ public class SurvivorMove : NetworkBehaviour
         yield return new WaitForSeconds(1f);
 
         MoveToResultPoint();
-        TargetShowResultViewAndUI();
+
+        // 1. 로컬 카메라만 결과 시점으로 전환
+        TargetShowResultView();
+
+        // 2. 서버 GameManager를 통해 ResultUI 갱신 요청
+        if (GameManager.Instance != null)
+            GameManager.Instance.EnterResultUI(connectionToClient);
+
+        serverWantsRun = false;
+        serverWantsCrouch = false;
+
+        if (moveState != null)
+            moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
+
         yield return new WaitForSeconds(2f);
 
         TargetSetBlackout(false);
@@ -997,15 +1017,12 @@ public class SurvivorMove : NetworkBehaviour
     }
 
     [TargetRpc]
-    private void TargetShowResultViewAndUI()
+    private void TargetShowResultView()
     {
         if (camSkill != null)
             camSkill.ApplyResultView();
 
-        if (InGameUIManager.Instance != null)
-            InGameUIManager.Instance.ShowResultUI();
-
-        Debug.Log("[SurvivorMove] ResultCam 전환 및 ResultUI 활성화");
+        Debug.Log("[SurvivorMove] ResultCam 전환");
     }
 
     [Server]
@@ -1026,7 +1043,7 @@ public class SurvivorMove : NetworkBehaviour
         isMoveLocked = true;
 
         // 사망 후 로컬 입력 비활성화
-        TargetDisableSurvivorInput(connectionToClient);
+        TargetSetSurvivorInput(connectionToClient, false);
 
         // 스킬 / 상호작용 계열 애니메이션 정리
         SetCamAnim(false);
@@ -1044,5 +1061,30 @@ public class SurvivorMove : NetworkBehaviour
         StartCoroutine(ResultRoutine());
 
         Debug.Log("[SurvivorMove] Dead result routine started.");
+    }
+
+    [Server]
+    public void SetPrisonSequenceLock(bool value)
+    {
+        isMoveLocked = value;
+
+        serverMoveInput = Vector2.zero;
+        serverWantsRun = false;
+        serverWantsCrouch = false;
+
+        if (value)
+        {
+            escapeTarget = null;
+
+            if (moveState != null)
+                moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
+
+            SetCamAnim(false);
+            SetSearching(false);
+            SetVaulting(false);
+            SetStunned(false);
+        }
+
+        TargetSetSurvivorInput(connectionToClient, !value);
     }
 }

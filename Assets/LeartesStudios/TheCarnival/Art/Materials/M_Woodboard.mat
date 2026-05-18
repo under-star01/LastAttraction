@@ -105,7 +105,7 @@ Material:
     - _Emissive_Power: 1
     - _EnableBlendModePreserveSpecularLighting: 1
     - _EnableFogOnTransparent: 1
-    - _Flatness: -0.24
+    - _Flatness: 0.5
     - _Metallic: 1
     - _NormalStrength: 1
     - _OpacityMap: 0
@@ -119,7 +119,7 @@ Material:
     - _RefractionModel: 0
     - _RenderQueueType: 1
     - _RequireSplitLighting: 0
-    - _Roughness: 9
+    - _Roughness: 1
     - _Saturation: 1
     - _Speed: 0.7
     - _SrcBlend: 1

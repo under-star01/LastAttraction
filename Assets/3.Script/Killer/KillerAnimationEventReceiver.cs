@@ -10,7 +10,6 @@ public class KillerAnimationEventReceiver : MonoBehaviour
 
     private void Awake()
     {
-        // 인스펙터에 직접 넣지 않아도 부모에서 자동으로 찾는다.
         if (killerMove == null)
             killerMove = GetComponentInParent<KillerMove>();
 
@@ -18,7 +17,6 @@ public class KillerAnimationEventReceiver : MonoBehaviour
             killerCombat = GetComponentInParent<KillerCombat>();
     }
 
-    // Animation Event 함수
     // 걷기 / 달리기 클립의 발이 닿는 프레임에 넣는다.
     public void KillerFootstep()
     {
@@ -31,7 +29,6 @@ public class KillerAnimationEventReceiver : MonoBehaviour
         killerMove.PlayKillerFootstepByAnimationEvent();
     }
 
-    // Animation Event 함수
     // 공격 애니메이션에서 무기가 공기를 가르는 프레임에 넣는다.
     public void KillerWeaponSwing()
     {
@@ -39,7 +36,9 @@ public class KillerAnimationEventReceiver : MonoBehaviour
             killerCombat = GetComponentInParent<KillerCombat>();
 
         if (killerCombat == null)
+        {
             return;
+        }
 
         killerCombat.PlayKillerWeaponSwingByAnimationEvent();
     }

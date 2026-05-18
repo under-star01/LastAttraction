@@ -138,17 +138,17 @@ MonoBehaviour:
     maxDistance: 150
   - key: 18
     clip: {fileID: 8300000, guid: d7cd0f0f23eb26c46b37dea0cc93bfd4, type: 3}
-    volume: 1
+    volume: 0.5
     minDistance: 1
-    maxDistance: 24
+    maxDistance: 32
   - key: 19
     clip: {fileID: 8300000, guid: 6d5008842b5a2634a8526d15d158e9ec, type: 3}
-    volume: 1
+    volume: 0.3
     minDistance: 1
     maxDistance: 24
   - key: 20
     clip: {fileID: 8300000, guid: 5e5e5c0ce8ee01c4c9cf7f4e707e39c4, type: 3}
-    volume: 1
+    volume: 0.3
     minDistance: 1
     maxDistance: 24
   - key: 21
@@ -191,7 +191,38 @@ MonoBehaviour:
     volume: 0.5
     minDistance: 1
     maxDistance: 32
+  - key: 29
+    clip: {fileID: 8300000, guid: bf4e6c49e1be5f6459d6a88ce60a0359, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 30
+    clip: {fileID: 8300000, guid: b95c93a0de1cfda428a404bbf3ae1b8f, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 31
+    clip: {fileID: 8300000, guid: 83125354bfb13a042a9df91c6e5663e5, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 32
+    clip: {fileID: 8300000, guid: e90ed6a3176feee4dbd411fe690ea7fb, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 33
+    clip: {fileID: 8300000, guid: 17f5391438195914a993b911b713b5d9, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 34
+    clip: {fileID: 8300000, guid: d3510d781ea17c34e9e1cbfa1a7e32a9, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
   audioSource2D: {fileID: 8766702895734314766}
+  bgmSource2D: {fileID: 0}
 --- !u!82 &8766702895734314766
 AudioSource:
   m_ObjectHideFlags: 0

@@ -68,6 +68,8 @@ public struct LobbyStateMessage : NetworkMessage
     public int readySurvivorCount;
     public bool canStart;
 
+    public bool hasKiller;
+
     public bool ready1;
     public bool ready2;
     public bool ready3;
@@ -79,6 +81,15 @@ public struct ChangeSceneUIMessage : NetworkMessage
 {
     public bool isShow;
 }
+
+// 서버 -> 클라 : 로비에서 생존자 생성 사운드 재생 요청
+public struct LobbySurvivorSpawnSoundMessage : NetworkMessage { }
+
+// 서버 -> 클라 : 게임 시작 사운드 재생 요청
+public struct GameStartSoundMessage : NetworkMessage { }
+
+// 서버 -> 클라 : 로비에서 살인마 생성 사운드 재생 요청
+public struct LobbyKillerSpawnSoundMessage : NetworkMessage { }
 
 public class CustomNetworkManager : NetworkManager
 {
@@ -496,6 +507,9 @@ public class CustomNetworkManager : NetworkManager
         NetworkClient.RegisterHandler<RoomProbeResponseMessage>(OnRoomProbeResponse, false);
         NetworkClient.RegisterHandler<LobbyStateMessage>(OnLobbyStateMessage, false);
         NetworkClient.RegisterHandler<ChangeSceneUIMessage>(OnChangeSceneUIMessage, false);
+        NetworkClient.RegisterHandler<GameStartSoundMessage>(OnGameStartSoundMessage, false);
+        NetworkClient.RegisterHandler<LobbySurvivorSpawnSoundMessage>(OnLobbySurvivorSpawnSoundMessage, false);
+        NetworkClient.RegisterHandler<LobbyKillerSpawnSoundMessage>(OnLobbyKillerSpawnSoundMessage, false);
     }
 
     public override void OnClientConnect()
@@ -616,6 +630,8 @@ public class CustomNetworkManager : NetworkManager
             msg.ready4
         );
 
+        LobbyUIManager.Instance?.SetKillerLight(msg.hasKiller);
+
         if (localJoinRole == JoinRole.Killer)
             LobbyUIManager.Instance?.SetStartButtonInteractable(msg.canStart);
     }
@@ -623,6 +639,16 @@ public class CustomNetworkManager : NetworkManager
     private void OnChangeSceneUIMessage(ChangeSceneUIMessage msg)
     {
         ChangeSceneUI.Instance?.Show(msg.isShow);
+    }
+
+    private void OnGameStartSoundMessage(GameStartSoundMessage msg)
+    {
+        AudioManager.PlayLocalAudio(AudioKey.GameStart, AudioDimension.Sound2D);
+    }
+
+    private void OnLobbySurvivorSpawnSoundMessage(LobbySurvivorSpawnSoundMessage msg)
+    {
+        AudioManager.PlayLocalAudio(AudioKey.LobbySurvivorSpawn, AudioDimension.Sound2D);
     }
 
     #endregion
@@ -706,6 +732,11 @@ public class CustomNetworkManager : NetworkManager
         MoveToGameScene();
     }
 
+    private void OnLobbyKillerSpawnSoundMessage(LobbyKillerSpawnSoundMessage msg)
+    {
+        AudioManager.PlayLocalAudio(AudioKey.LobbyKillerSpawn, AudioDimension.Sound2D);
+    }
+
     #endregion
 
     #region Lobby State
@@ -766,6 +797,8 @@ public class CustomNetworkManager : NetworkManager
             survivorCount = survivorCount,
             readySurvivorCount = readyCount,
             canStart = HasKiller && survivorCount > 0 && survivorCount == readyCount,
+
+            hasKiller = HasKiller,
 
             ready1 = ready1,
             ready2 = ready2,
@@ -887,8 +920,18 @@ public class CustomNetworkManager : NetworkManager
             Debug.LogWarning($"[CustomNetworkManager] {playerObj.name}에 PlayerUIProfile이 없습니다.");
         }
 
+        if (role == JoinRole.Killer)
+        {
+            BroadcastLobbyKillerSpawnSound();
+        }
+
         if (role == JoinRole.Survivor)
+        {
             survivorPrefabIndexByConnection[conn.connectionId] = survivorIndex;
+
+            // 로비에서 생존자가 생성되었을 때 모든 로비 인원에게 2D 사운드를 재생시킨다.
+            BroadcastLobbySurvivorSpawnSound();
+        }
 
         return true;
     }
@@ -1085,6 +1128,9 @@ public class CustomNetworkManager : NetworkManager
 
     private IEnumerator MoveToGameSceneRoutine()
     {
+        // 게임 시작이 서버에서 승인된 순간 모든 클라이언트에게 시작 사운드를 재생시킨다.
+        BroadcastGameStartSound();
+
         // Fade In 시작
         BroadcastChangeSceneUI(true);
 
@@ -1133,6 +1179,63 @@ public class CustomNetworkManager : NetworkManager
         foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
         {
             if (conn == null)
+                continue;
+
+            conn.Send(msg);
+        }
+    }
+
+    private void BroadcastGameStartSound()
+    {
+        if (!NetworkServer.active)
+            return;
+
+        GameStartSoundMessage msg = new GameStartSoundMessage();
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null)
+                continue;
+
+            if (!conn.isReady)
+                continue;
+
+            conn.Send(msg);
+        }
+    }
+
+    private void BroadcastLobbySurvivorSpawnSound()
+    {
+        if (!NetworkServer.active)
+            return;
+
+        LobbySurvivorSpawnSoundMessage msg = new LobbySurvivorSpawnSoundMessage();
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null)
+                continue;
+
+            if (!conn.isReady)
+                continue;
+
+            conn.Send(msg);
+        }
+    }
+
+    private void BroadcastLobbyKillerSpawnSound()
+    {
+        if (!NetworkServer.active)
+            return;
+
+        LobbyKillerSpawnSoundMessage msg = new LobbyKillerSpawnSoundMessage();
+
+        foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
+        {
+            if (conn == null)
+                continue;
+
+            if (!conn.isReady)
                 continue;
 
             conn.Send(msg);

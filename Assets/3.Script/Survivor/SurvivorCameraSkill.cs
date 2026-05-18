@@ -25,6 +25,7 @@ public class SurvivorCameraSkill : NetworkBehaviour
     [SerializeField] private CinemachineCamera normalCinemachine;
     [SerializeField] private CinemachineCamera skillCinemachine;
     [SerializeField] private CinemachineCamera resultCinemachine;
+    [SerializeField] private CinemachineCamera prisonCinemachine;
 
     [Header("카메라 탐지")]
     [SerializeField] private Transform detectOrigin;            // Ray 시작 기준 위치
@@ -619,6 +620,27 @@ public class SurvivorCameraSkill : NetworkBehaviour
             localCameraModel.SetActive(false);
 
         SetFrameDetected(false, true);
+    }
+
+    public void ApplyPrisonView(bool value)
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (value)
+        {
+            normalCinemachine.Priority = 0;
+            skillCinemachine.Priority = 0;
+            resultCinemachine.Priority = 0;
+            prisonCinemachine.Priority = 30;
+        }
+        else
+        {
+            normalCinemachine.Priority = 30;
+            skillCinemachine.Priority = 0;
+            resultCinemachine.Priority = 0;
+            prisonCinemachine.Priority = 0;
+        }
     }
 
     [Command]

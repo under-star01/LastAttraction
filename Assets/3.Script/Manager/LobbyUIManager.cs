@@ -40,6 +40,9 @@ public class LobbyUIManager : MonoBehaviour
     [Header("Loading UI")]
     [SerializeField] private GameObject loadingPanel;
 
+    [Header("Killer Lobby Light")]
+    [SerializeField] private LobbyKillerLight killerLight;
+
     private bool isReady;
 
     private void Awake()
@@ -158,6 +161,8 @@ public class LobbyUIManager : MonoBehaviour
 
         SetStartButtonInteractable(false);
 
+        SetKillerLight(false);
+
         isReady = false;
         UpdateReadyButtonView();
         SetLobbyReadyCount(0, 0);
@@ -236,6 +241,12 @@ public class LobbyUIManager : MonoBehaviour
     {
         if (readyCountText != null)
             readyCountText.gameObject.SetActive(isActive);
+    }
+
+    public void SetKillerLight(bool value)
+    {
+        if (killerLight != null)
+            killerLight.SetLight(value);
     }
 
     private void UpdateReadyButtonView()

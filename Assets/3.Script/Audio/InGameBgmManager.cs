@@ -1,27 +1,37 @@
 using Mirror;
 using UnityEngine;
 
-public class TerrorRadius : MonoBehaviour
+// 인게임 전체 BGM 관리 매니저
+// - 생존자 공포 반경 BGM
+// - 생존자 32m 밖 ambient BGM
+// - 살인마 기본 ambient BGM
+// - 살인마 Rage 상태 BGM
+// - 생존자 심장소리
+public class InGameBgmManager : MonoBehaviour
 {
-    [Header("AudioSource")]
-    [SerializeField] private AudioSource ambientSource; // 32m 밖 배경음 / 바람소리
-    [SerializeField] private AudioSource range1Source;  // 32m 단계 음악
-    [SerializeField] private AudioSource range2Source;  // 16m 단계 음악
-    [SerializeField] private AudioSource range3Source;  // 8m 단계 음악
+    [Header("공통 / 생존자 공포 반경 AudioSource")]
+    [SerializeField] private AudioSource ambientSource; // 생존자 32m 밖 배경음 / 살인마 기본 배경음
+    [SerializeField] private AudioSource range1Source;  // 생존자 32m 단계 음악
+    [SerializeField] private AudioSource range2Source;  // 생존자 16m 단계 음악
+    [SerializeField] private AudioSource range3Source;  // 생존자 8m 단계 음악
+
+    [Header("살인마 전용 AudioSource")]
+    [SerializeField] private AudioSource killerRageSource; // 살인마 Rage 상태 BGM
 
     [Header("음악 최대 볼륨")]
-    [SerializeField] private float ambientMaxVolume = 0.15f; // 32m 밖 배경음 최대 볼륨
-    [SerializeField] private float range1MaxVolume = 0.2f;   // 32m 음악 최대 볼륨
-    [SerializeField] private float range2MaxVolume = 0.3f;   // 16m 음악 최대 볼륨
-    [SerializeField] private float range3MaxVolume = 0.4f;   // 8m 음악 최대 볼륨
+    [SerializeField] private float ambientMaxVolume = 0.15f;    // 32m 밖 ambient / 살인마 기본 배경음 최대 볼륨
+    [SerializeField] private float range1MaxVolume = 0.2f;      // 32m 음악 최대 볼륨
+    [SerializeField] private float range2MaxVolume = 0.3f;      // 16m 음악 최대 볼륨
+    [SerializeField] private float range3MaxVolume = 0.4f;      // 8m 음악 최대 볼륨
+    [SerializeField] private float killerRageMaxVolume = 0.55f; // 살인마 Rage BGM 최대 볼륨
 
     [Header("심장소리")]
-    [SerializeField] private AudioSource heartbeatSource; // 두근 소리 재생용
+    [SerializeField] private AudioSource heartbeatSource; // 생존자 심장소리 재생용
     [SerializeField] private AudioClip heartbeatClip;     // 두근 1번짜리 클립
     [SerializeField] private float heartbeatVolume = 0.5f;
 
     [Header("거리 단계")]
-    [SerializeField] private float range1 = 32f; // 바깥 단계
+    [SerializeField] private float range1 = 32f; // 공포 반경 바깥 기준
     [SerializeField] private float range2 = 16f; // 중간 단계
     [SerializeField] private float range3 = 8f;  // 가까운 단계
 
@@ -38,6 +48,7 @@ public class TerrorRadius : MonoBehaviour
 
     private Transform localPlayer;
     private Transform killer;
+    private KillerState killerState;
 
     private float nextFindTime;
     private float heartbeatTimer;
@@ -50,6 +61,7 @@ public class TerrorRadius : MonoBehaviour
     private float range1Target;
     private float range2Target;
     private float range3Target;
+    private float killerRageTarget;
 
     private void Awake()
     {
@@ -65,6 +77,7 @@ public class TerrorRadius : MonoBehaviour
         StartMusicLoop(range1Source);
         StartMusicLoop(range2Source);
         StartMusicLoop(range3Source);
+        StartMusicLoop(killerRageSource);
 
         SetupHeartbeatSource();
     }
@@ -74,42 +87,49 @@ public class TerrorRadius : MonoBehaviour
         if (localPlayer == null)
             FindLocalPlayer();
 
-        if (killer == null && Time.time >= nextFindTime)
+        if ((killer == null || killerState == null) && Time.time >= nextFindTime)
         {
             nextFindTime = Time.time + findInterval;
             FindKiller();
         }
 
-        // 로컬 플레이어 또는 킬러를 못 찾으면 모든 사운드를 천천히 줄인다.
-        if (localPlayer == null || killer == null)
+        if (localPlayer == null || killer == null || killerState == null)
         {
-            SetMusicTargets(0f, 0f, 0f, 0f);
+            StopAllTargets();
             UpdateMusicVolumes();
             heartbeatTimer = 0f;
             return;
         }
 
-        // 생존자 로컬 플레이어에게만 Terror Radius 음악을 들려준다.
-        if (!localPlayer.CompareTag("Survivor"))
+        if (localPlayer.CompareTag("Killer"))
         {
-            SetMusicTargets(0f, 0f, 0f, 0f);
+            UpdateKillerBgm();
             UpdateMusicVolumes();
             heartbeatTimer = 0f;
             return;
         }
 
-        float sqrDistance = (localPlayer.position - killer.position).sqrMagnitude;
+        if (localPlayer.CompareTag("Survivor"))
+        {
+            float sqrDistance = (localPlayer.position - killer.position).sqrMagnitude;
 
-        UpdateMusic(sqrDistance);
+            UpdateSurvivorBgm(sqrDistance);
+            UpdateMusicVolumes();
+            UpdateHeartbeat(sqrDistance);
+            return;
+        }
+
+        StopAllTargets();
         UpdateMusicVolumes();
-
-        UpdateHeartbeat(sqrDistance);
+        heartbeatTimer = 0f;
     }
 
     private void FindLocalPlayer()
     {
-        if (NetworkClient.localPlayer != null)
-            localPlayer = NetworkClient.localPlayer.transform;
+        if (NetworkClient.localPlayer == null)
+            return;
+
+        localPlayer = NetworkClient.localPlayer.transform;
     }
 
     private void FindKiller()
@@ -121,9 +141,13 @@ public class TerrorRadius : MonoBehaviour
             if (killers[i] == null)
                 continue;
 
+            killerState = killers[i];
             killer = killers[i].transform;
             return;
         }
+
+        killerState = null;
+        killer = null;
     }
 
     private void StartMusicLoop(AudioSource source)
@@ -150,15 +174,37 @@ public class TerrorRadius : MonoBehaviour
         heartbeatSource.spatialBlend = 0f;
     }
 
-    // 32m 밖 : 배경음 / 바람소리
-    // 32~16 : 1단계 음악만 점점 커짐
-    // 16~8  : 2단계 음악만 점점 커짐
-    // 8 이내 : 3단계 음악 최대
-    private void UpdateMusic(float sqrDistance)
+    // 살인마가 듣는 BGM
+    // - 평상시: 생존자가 32m 밖에서 듣는 ambientSource와 같은 소리
+    // - Rage: ambientSource를 끄고 killerRageSource만 재생
+    // - Lobby: 전부 꺼짐
+    private void UpdateKillerBgm()
     {
-        SetMusicTargets(0f, 0f, 0f, 0f);
+        StopAllTargets();
 
-        // 32m 밖이면 긴장 음악은 꺼지고 배경음만 켜진다.
+        if (killerState == null)
+            return;
+
+        if (killerState.CurrentCondition == KillerCondition.Lobby)
+            return;
+
+        if (killerState.IsRaging)
+        {
+            killerRageTarget = 1f;
+            return;
+        }
+
+        ambientTarget = 1f;
+    }
+
+    // 생존자가 듣는 BGM
+    // - 32m 밖: ambientSource
+    // - 32m 안: range1 / range2 / range3 단계 음악
+    // - Rage BGM은 살인마 전용이므로 생존자에게는 재생하지 않음
+    private void UpdateSurvivorBgm(float sqrDistance)
+    {
+        StopAllTargets();
+
         if (sqrDistance > range1Sqr)
         {
             ambientTarget = 1f;
@@ -184,12 +230,13 @@ public class TerrorRadius : MonoBehaviour
         range1Target = 1f - Mathf.InverseLerp(range1, range2, distance);
     }
 
-    private void SetMusicTargets(float ambient, float value1, float value2, float value3)
+    private void StopAllTargets()
     {
-        ambientTarget = ambient;
-        range1Target = value1;
-        range2Target = value2;
-        range3Target = value3;
+        ambientTarget = 0f;
+        range1Target = 0f;
+        range2Target = 0f;
+        range3Target = 0f;
+        killerRageTarget = 0f;
     }
 
     private void UpdateMusicVolumes()
@@ -198,6 +245,7 @@ public class TerrorRadius : MonoBehaviour
         FadeMusic(range1Source, range1Target * range1MaxVolume);
         FadeMusic(range2Source, range2Target * range2MaxVolume);
         FadeMusic(range3Source, range3Target * range3MaxVolume);
+        FadeMusic(killerRageSource, killerRageTarget * killerRageMaxVolume);
     }
 
     private void FadeMusic(AudioSource source, float targetVolume)
@@ -272,6 +320,7 @@ public class TerrorRadius : MonoBehaviour
         if (range1MaxVolume < 0f) range1MaxVolume = 0f;
         if (range2MaxVolume < 0f) range2MaxVolume = 0f;
         if (range3MaxVolume < 0f) range3MaxVolume = 0f;
+        if (killerRageMaxVolume < 0f) killerRageMaxVolume = 0f;
         if (heartbeatVolume < 0f) heartbeatVolume = 0f;
 
         UpdateRangeSqr();

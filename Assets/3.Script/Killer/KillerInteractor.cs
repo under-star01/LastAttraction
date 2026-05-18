@@ -115,35 +115,34 @@ public class KillerInteractor : NetworkBehaviour
         if (state == null)
             yield break;
 
-        // 대기 시간 중 대상이나 감옥이 사라졌을 수 있으므로 방어 처리
         if (survivor == null || prison == null)
         {
             state.ChangeState(KillerCondition.Idle);
             yield break;
         }
 
-        // 감옥에 넣는 처리가 실제로 확정되는 순간 3D 사운드 재생
-        ServerPlayIncageSound(prison.transform.position);
+        if (!survivor.IsDowned)
+        {
+            state.ChangeState(KillerCondition.Idle);
+            yield break;
+        }
 
-        prison.SetPrisoner(survivor);
-        state.ChangeState(KillerCondition.Idle);
-    }
+        SurvivorPrisonEffect prisonEffect = survivor.GetComponent<SurvivorPrisonEffect>();
 
-    // 서버에서 감옥 넣기 성공 사운드를 모든 클라이언트에게 3D로 재생한다.
-    [Server]
-    private void ServerPlayIncageSound(Vector3 prisonPosition)
-    {
-        if (NetworkAudioManager.Instance == null)
-            return;
+        if (prisonEffect == null)
+        {
+            Debug.LogWarning("[KillerInteractor] SurvivorPrisonEffect가 없어 감옥 연출을 실행할 수 없습니다.");
+            state.ChangeState(KillerCondition.Idle);
+            yield break;
+        }
 
-        if (incageSoundKey == AudioKey.None)
-            return;
-
-        NetworkAudioManager.PlayAudioForEveryone(
+        prisonEffect.BeginPrisonSequenceServer(
+            prison,
             incageSoundKey,
-            AudioDimension.Sound3D,
-            prisonPosition + incageSoundOffset
+            incageSoundOffset
         );
+
+        state.ChangeState(KillerCondition.Idle);
     }
 
     [Command]
