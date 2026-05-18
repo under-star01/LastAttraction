@@ -430,7 +430,6 @@ public class CustomNetworkManager : NetworkManager
         NetworkServer.RegisterHandler<RoomProbeRequestMessage>(OnReceiveRoomProbeRequest, false);
         NetworkServer.RegisterHandler<SurvivorReadyRequestMessage>(OnReceiveSurvivorReadyRequest, false);
         NetworkServer.RegisterHandler<StartGameRequestMessage>(OnReceiveStartGameRequest, false);
-        NetworkClient.RegisterHandler<LobbyKillerSpawnSoundMessage>(OnLobbyKillerSpawnSoundMessage, false);
     }
 
     public override void OnStopServer()
@@ -510,6 +509,7 @@ public class CustomNetworkManager : NetworkManager
         NetworkClient.RegisterHandler<ChangeSceneUIMessage>(OnChangeSceneUIMessage, false);
         NetworkClient.RegisterHandler<GameStartSoundMessage>(OnGameStartSoundMessage, false);
         NetworkClient.RegisterHandler<LobbySurvivorSpawnSoundMessage>(OnLobbySurvivorSpawnSoundMessage, false);
+        NetworkClient.RegisterHandler<LobbyKillerSpawnSoundMessage>(OnLobbyKillerSpawnSoundMessage, false);
     }
 
     public override void OnClientConnect()
