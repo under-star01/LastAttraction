@@ -2891,6 +2891,7 @@ GameObject:
   - component: {fileID: 1615434061}
   - component: {fileID: 1615434060}
   - component: {fileID: 1615434059}
+  - component: {fileID: 1615434062}
   m_Layer: 5
   m_Name: Back
   m_TagString: Untagged
@@ -3013,6 +3014,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1615434057}
   m_CullTransparentMesh: 1
+--- !u!114 &1615434062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1615434057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 901afe817c559cc4d967c395d08e2955, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonHover
+  targetPanelImage: {fileID: 1615434060}
+  normalColor: {r: 0, g: 0, b: 0, a: 0.7}
+  hoverColor: {r: 1, g: 1, b: 1, a: 0.7}
 --- !u!1 &1618526665
 GameObject:
   m_ObjectHideFlags: 0
@@ -3429,6 +3445,7 @@ GameObject:
   - component: {fileID: 1643257451}
   - component: {fileID: 1643257450}
   - component: {fileID: 1643257449}
+  - component: {fileID: 1643257452}
   m_Layer: 5
   m_Name: Login
   m_TagString: Untagged
@@ -3551,6 +3568,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1643257447}
   m_CullTransparentMesh: 1
+--- !u!114 &1643257452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1643257447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 901afe817c559cc4d967c395d08e2955, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonHover
+  targetPanelImage: {fileID: 1643257450}
+  normalColor: {r: 0, g: 0, b: 0, a: 0.7}
+  hoverColor: {r: 1, g: 1, b: 1, a: 0.7}
 --- !u!1 &1669122971
 GameObject:
   m_ObjectHideFlags: 0
@@ -4182,7 +4214,7 @@ RectTransform:
   m_GameObject: {fileID: 1878260353}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.14285715, z: 1}
+  m_LocalScale: {x: 0.49999997, y: 0.14285713, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 225922664}
@@ -4190,7 +4222,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -456, y: 118.19909}
+  m_AnchoredPosition: {x: -431.00006, y: 126.000015}
   m_SizeDelta: {x: 1355.093, y: 1127.5444}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1878260355
@@ -4213,7 +4245,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: f5b6d1f7ccf21f941b3fd41294410c96, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 54a1ebb0bcfd20f4eaba40b16cb9c7fd, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -4452,6 +4484,7 @@ GameObject:
   - component: {fileID: 2009025464}
   - component: {fileID: 2009025463}
   - component: {fileID: 2009025462}
+  - component: {fileID: 2009025465}
   m_Layer: 5
   m_Name: Create
   m_TagString: Untagged
@@ -4574,6 +4607,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2009025460}
   m_CullTransparentMesh: 1
+--- !u!114 &2009025465
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2009025460}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 901afe817c559cc4d967c395d08e2955, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonHover
+  targetPanelImage: {fileID: 2009025463}
+  normalColor: {r: 0, g: 0, b: 0, a: 0.7}
+  hoverColor: {r: 1, g: 1, b: 1, a: 0.7}
 --- !u!1 &2051644575
 GameObject:
   m_ObjectHideFlags: 0
@@ -4929,6 +4977,7 @@ GameObject:
   - component: {fileID: 2121946141}
   - component: {fileID: 2121946140}
   - component: {fileID: 2121946139}
+  - component: {fileID: 2121946142}
   m_Layer: 5
   m_Name: Register
   m_TagString: Untagged
@@ -5051,6 +5100,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2121946137}
   m_CullTransparentMesh: 1
+--- !u!114 &2121946142
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2121946137}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 901afe817c559cc4d967c395d08e2955, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ButtonHover
+  targetPanelImage: {fileID: 2121946140}
+  normalColor: {r: 0, g: 0, b: 0, a: 0.7}
+  hoverColor: {r: 1, g: 1, b: 1, a: 0.7}
 --- !u!1 &2132260260
 GameObject:
   m_ObjectHideFlags: 0

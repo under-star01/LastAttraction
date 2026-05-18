@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class ButtonHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class ButtonHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [Header("Hover 대상 Panel Image")]
     [SerializeField] private Image targetPanelImage;
@@ -13,13 +13,44 @@ public class ButtonHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private void Awake()
     {
-        if (targetPanelImage != null)
-        {
-            targetPanelImage.color = normalColor;
-        }
+        SetNormal();
+    }
+
+    private void OnEnable()
+    {
+        // UI가 다시 켜질 때 hover 상태가 남지 않게 초기화
+        SetNormal();
+    }
+
+    private void OnDisable()
+    {
+        // UI가 꺼질 때도 초기화
+        SetNormal();
     }
 
     public void OnPointerEnter(PointerEventData eventData)
+    {
+        SetHover();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        SetNormal();
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        // 클릭 직후 hover 상태가 남는 문제 방지
+        SetNormal();
+
+        // 버튼 선택 상태도 해제해서 Unity Button의 Highlight 상태가 남는 것도 방지
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+    }
+
+    private void SetHover()
     {
         if (targetPanelImage == null)
             return;
@@ -27,7 +58,7 @@ public class ButtonHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         targetPanelImage.color = hoverColor;
     }
 
-    public void OnPointerExit(PointerEventData eventData)
+    private void SetNormal()
     {
         if (targetPanelImage == null)
             return;
