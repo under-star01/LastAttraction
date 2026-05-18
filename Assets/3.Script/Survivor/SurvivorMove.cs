@@ -840,7 +840,7 @@ public class SurvivorMove : NetworkBehaviour
         escapeTarget = target;
 
         RpcApplyEscapeView();
-        TargetDisableSurvivorInput(connectionToClient);
+        TargetSetSurvivorInput(connectionToClient, false);
 
         // 기존 이동 잠금 변수 재사용
         isMoveLocked = true;
@@ -885,13 +885,26 @@ public class SurvivorMove : NetworkBehaviour
             camSkill.ApplyEscapeView();
     }
 
+    [Server]
+    public void SetInputFromServer(bool value)
+    {
+        if (!value)
+        {
+            serverMoveInput = Vector2.zero;
+            serverWantsRun = false;
+            serverWantsCrouch = false;
+        }
+
+        TargetSetSurvivorInput(connectionToClient, value);
+    }
+
     [TargetRpc]
-    private void TargetDisableSurvivorInput(NetworkConnectionToClient target)
+    private void TargetSetSurvivorInput(NetworkConnectionToClient target, bool value)
     {
         if (input != null)
-            input.enabled = false;
+            input.enabled = value;
 
-        Debug.Log("[SurvivorMove] 탈출 플레이어 SurvivorInput 비활성화");
+        Debug.Log($"[SurvivorMove] SurvivorInput 상태 변경: {value}");
     }
 
     [Server]
@@ -1030,7 +1043,7 @@ public class SurvivorMove : NetworkBehaviour
         isMoveLocked = true;
 
         // 사망 후 로컬 입력 비활성화
-        TargetDisableSurvivorInput(connectionToClient);
+        TargetSetSurvivorInput(connectionToClient, false);
 
         // 스킬 / 상호작용 계열 애니메이션 정리
         SetCamAnim(false);

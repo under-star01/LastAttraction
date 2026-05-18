@@ -90,4 +90,59 @@ public class ChangeSceneUI : MonoBehaviour
 
         fadeImage.gameObject.SetActive(value);
     }
+
+    public void ShowInstant(bool value)
+    {
+        if (fadeRoutine != null)
+        {
+            StopCoroutine(fadeRoutine);
+            fadeRoutine = null;
+        }
+
+        SetActive(value);
+        SetAlpha(value ? 1f : 0f);
+    }
+
+    public void ShowWithDuration(bool value, float duration)
+    {
+        if (fadeRoutine != null)
+        {
+            StopCoroutine(fadeRoutine);
+            fadeRoutine = null;
+        }
+
+        fadeRoutine = StartCoroutine(FadeWithDuration(value, duration));
+    }
+
+    private IEnumerator FadeWithDuration(bool show, float duration)
+    {
+        if (fadeImage == null)
+            yield break;
+
+        if (show)
+            SetActive(true);
+
+        float startAlpha = fadeImage.color.a;
+        float targetAlpha = show ? 1f : 0f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+
+            float t = elapsed / duration;
+            float alpha = Mathf.Lerp(startAlpha, targetAlpha, t);
+
+            SetAlpha(alpha);
+
+            yield return null;
+        }
+
+        SetAlpha(targetAlpha);
+
+        if (!show)
+            SetActive(false);
+
+        fadeRoutine = null;
+    }
 }

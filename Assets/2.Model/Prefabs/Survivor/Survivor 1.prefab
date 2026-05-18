@@ -658,6 +658,81 @@ Transform:
   - {fileID: 5658983997989701684}
   m_Father: {fileID: 5282391170945962037}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &874387460723812226
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3717745685695343408}
+  - component: {fileID: 7977963713049231961}
+  m_Layer: 6
+  m_Name: PrisonCam
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3717745685695343408
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 874387460723812226}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.5, z: -0.1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5586677685503652947}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7977963713049231961
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 874387460723812226}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9dfa5b682dcd46bda6128250e975f58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineCamera
+  Priority:
+    Enabled: 1
+    m_Value: 0
+  OutputChannel: 1
+  StandbyUpdate: 2
+  m_StreamingVersion: 20241001
+  m_LegacyPriority: 0
+  Target:
+    TrackingTarget: {fileID: 2859212466978346225}
+    LookAtTarget: {fileID: 0}
+    CustomLookAtTarget: 0
+  Lens:
+    FieldOfView: 40
+    OrthographicSize: 10
+    NearClipPlane: 0.1
+    FarClipPlane: 5000
+    Dutch: 0
+    ModeOverride: 0
+    PhysicalProperties:
+      GateFit: 2
+      SensorSize: {x: 21.946, y: 16.002}
+      LensShift: {x: 0, y: 0}
+      FocusDistance: 10
+      Iso: 200
+      ShutterSpeed: 0.005
+      Aperture: 16
+      BladeCount: 5
+      Curvature: {x: 2, y: 11}
+      BarrelClipping: 0.25
+      Anamorphism: 0
+  BlendHint: 0
 --- !u!1 &884935363054889146
 GameObject:
   m_ObjectHideFlags: 0
@@ -1277,6 +1352,38 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5424905673876519817}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2447990304111509598
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9044161254559042887}
+  m_Layer: 6
+  m_Name: PrisonEffect
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9044161254559042887
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2447990304111509598}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1380001942791783394}
+  m_Father: {fileID: 7059863242562477750}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2458870675417667234
 GameObject:
   m_ObjectHideFlags: 0
@@ -1410,6 +1517,37 @@ Transform:
   m_Children:
   - {fileID: 1440404964256771654}
   m_Father: {fileID: 9045100406576063440}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2833996620614251482
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1380001942791783394}
+  m_Layer: 6
+  m_Name: TerrorPos
+  m_TagString: Untagged
+  m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1380001942791783394
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2833996620614251482}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -3.6, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 9044161254559042887}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2979580471086757504
 GameObject:
@@ -2319,6 +2457,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7059863242562477750}
   - component: {fileID: 2147077015295458698}
+  - component: {fileID: 7436738972924962348}
   - component: {fileID: 6204537575143600446}
   - component: {fileID: 8330642673507539603}
   - component: {fileID: 8912751445133143526}
@@ -2326,13 +2465,13 @@ GameObject:
   - component: {fileID: 9042901668219853417}
   - component: {fileID: 5606561105763548437}
   - component: {fileID: 4145043514256990560}
-  - component: {fileID: 7436738972924962348}
-  - component: {fileID: 9165850540253019217}
-  - component: {fileID: 7660049669671203594}
   - component: {fileID: 2350847541290646852}
-  - component: {fileID: 2069850198979918394}
   - component: {fileID: 3868678666708811015}
   - component: {fileID: 4931628508955564765}
+  - component: {fileID: 5443161128393467957}
+  - component: {fileID: 9165850540253019217}
+  - component: {fileID: 2069850198979918394}
+  - component: {fileID: 7660049669671203594}
   m_Layer: 6
   m_Name: Survivor 1
   m_TagString: Survivor
@@ -2356,6 +2495,7 @@ Transform:
   - {fileID: 8174374209964335500}
   - {fileID: 8308895304835925812}
   - {fileID: 8488072216295189698}
+  - {fileID: 9044161254559042887}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!143 &2147077015295458698
@@ -2383,6 +2523,28 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!95 &7436738972924962348
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: 6ddc9ecd478661b4d930fa89f4eb3e8a, type: 3}
+  m_Controller: {fileID: 9100000, guid: cc8511c188664924aa5235ac488ae038, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!114 &6204537575143600446
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2542,6 +2704,7 @@ MonoBehaviour:
   normalCinemachine: {fileID: 6907075847553500461}
   skillCinemachine: {fileID: 5365576005356907084}
   resultCinemachine: {fileID: 1234053843247495698}
+  prisonCinemachine: {fileID: 7977963713049231961}
   detectOrigin: {fileID: 8242838456614497304}
   killerLayerMask:
     serializedVersion: 2
@@ -2561,79 +2724,6 @@ MonoBehaviour:
   skillReuseDelay: 0.5
   cameraSkillSoundOffset: {x: 0, y: 1.2, z: 0}
   isRecordingKiller: 0
---- !u!95 &7436738972924962348
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4072989509792940907}
-  m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 6ddc9ecd478661b4d930fa89f4eb3e8a, type: 3}
-  m_Controller: {fileID: 9100000, guid: cc8511c188664924aa5235ac488ae038, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
---- !u!114 &9165850540253019217
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4072989509792940907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
-  sceneId: 0
-  _assetId: 2858402991
-  serverOnly: 0
-  visibility: 0
-  hasSpawned: 0
---- !u!114 &7660049669671203594
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4072989509792940907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkTransformReliable
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
-  target: {fileID: 7059863242562477750}
-  syncPosition: 1
-  syncRotation: 1
-  syncScale: 0
-  onlySyncOnChange: 1
-  compressRotation: 1
-  interpolatePosition: 1
-  interpolateRotation: 1
-  interpolateScale: 1
-  coordinateSpace: 0
-  timelineOffset: 1
-  showGizmos: 0
-  showOverlay: 0
-  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
-  onlySyncOnChangeCorrectionMultiplier: 2
-  useFixedUpdate: 0
-  rotationSensitivity: 0.01
-  positionPrecision: 0.01
-  scalePrecision: 0.01
 --- !u!114 &2350847541290646852
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2648,23 +2738,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SurvivorVisualEffect
   defaultLayer: Survivor
   silhouetteLayer: SurvivorSilhouette
---- !u!114 &2069850198979918394
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4072989509792940907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f6f3bf89aa97405989c802ba270f815, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkAnimator
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
-  clientAuthority: 0
-  animator: {fileID: 7436738972924962348}
 --- !u!114 &3868678666708811015
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2705,6 +2778,100 @@ MonoBehaviour:
   circleIconImage: {fileID: 0}
   targetCamera: {fileID: 0}
   screenOffset: {x: 0, y: 0}
+--- !u!114 &5443161128393467957
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e86e62877b9166b48aac0c4188189df4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivorPrisonEffect
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  terrorPos: {fileID: 1380001942791783394}
+  terrorEffectPrefab: {fileID: 4813572145922567135, guid: ac4a33b7827601d4b98ed2169c1856e0, type: 3}
+  effectLayerName: Effect
+  blinkCount: 2
+  beforeBlackoutDelay: 1
+  blackoutTime: 1.2
+  afterBlackoutDelay: 0.4
+  eyeOpenDuration: 0.5
+  eyeCloseDuration: 0.6
+  eyeOpenHoldTime: 0.25
+  eyeCloseHoldTime: 0.25
+--- !u!114 &9165850540253019217
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mirror::Mirror.NetworkIdentity
+  sceneId: 0
+  _assetId: 2858402991
+  serverOnly: 0
+  visibility: 0
+  hasSpawned: 0
+--- !u!114 &2069850198979918394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f6f3bf89aa97405989c802ba270f815, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkAnimator
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  clientAuthority: 0
+  animator: {fileID: 7436738972924962348}
+--- !u!114 &7660049669671203594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ff3ba0becae47b8b9381191598957c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mirror.Components::Mirror.NetworkTransformReliable
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  target: {fileID: 7059863242562477750}
+  syncPosition: 1
+  syncRotation: 1
+  syncScale: 0
+  onlySyncOnChange: 1
+  compressRotation: 1
+  interpolatePosition: 1
+  interpolateRotation: 1
+  interpolateScale: 1
+  coordinateSpace: 0
+  timelineOffset: 1
+  showGizmos: 0
+  showOverlay: 0
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
+  onlySyncOnChangeCorrectionMultiplier: 2
+  useFixedUpdate: 0
+  rotationSensitivity: 0.01
+  positionPrecision: 0.01
+  scalePrecision: 0.01
 --- !u!1 &4085576176758794836
 GameObject:
   m_ObjectHideFlags: 0
@@ -4261,7 +4428,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &5586677685503652947
 Transform:
   m_ObjectHideFlags: 0
@@ -4278,6 +4445,7 @@ Transform:
   - {fileID: 5330205222421736794}
   - {fileID: 8220968550766265854}
   - {fileID: 4589266244160923940}
+  - {fileID: 3717745685695343408}
   m_Father: {fileID: 2859212466978346225}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6198483868362251667
