@@ -51,15 +51,15 @@ public class KillerState : NetworkBehaviour
     public bool CanMove =>
         currentCondition == KillerCondition.Idle ||
         currentCondition == KillerCondition.Lunging ||
-        currentCondition == KillerCondition.Recovering ||
-        currentCondition == KillerCondition.Planting;
+        currentCondition == KillerCondition.Recovering;
 
     public bool CanLook =>
         currentCondition != KillerCondition.Hit &&
         currentCondition != KillerCondition.Vaulting &&
         currentCondition != KillerCondition.Breaking &&
         currentCondition != KillerCondition.Incage &&
-        currentCondition != KillerCondition.Lobby;
+        currentCondition != KillerCondition.Lobby &&
+        currentCondition != KillerCondition.Planting;
 
     public bool CanAttack => currentCondition == KillerCondition.Idle;
 
