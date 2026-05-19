@@ -145,6 +145,17 @@ public class KillerSkillUI : MonoBehaviour
         SetFillAlpha(trapFillImage, usingAlpha);
     }
 
+    public void CancelTrapUsing()
+    {
+        if (trapRoutine != null)
+            return;
+
+        if (trapSlider != null)
+            trapSlider.value = 1f;
+
+        SetFillAlpha(trapFillImage, normalAlpha);
+    }
+
     public void StartTrapCooldown(float duration)
     {
         if (trapRoutine != null)

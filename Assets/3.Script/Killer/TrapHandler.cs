@@ -136,8 +136,13 @@ public class TrapHandler : NetworkBehaviour
     {
         isBuildMode = !isBuildMode;
 
+        BindUI();
+
         if (isBuildMode)
         {
+            if (killerSkillUI != null)
+                killerSkillUI.SetTrapUsing();
+
             if (ghostInstance == null)
             {
                 ghostInstance = Instantiate(trapPrefab);
@@ -152,7 +157,11 @@ public class TrapHandler : NetworkBehaviour
         }
         else
         {
-            CleanupGhost();
+            ExitBuildMode();
+
+            if (killerSkillUI != null)
+                killerSkillUI.CancelTrapUsing();
+
             state.CmdChangeKillerState(KillerCondition.Idle);
         }
     }
@@ -167,11 +176,6 @@ public class TrapHandler : NetworkBehaviour
 
         if (!CanPlace(out Vector3 installPos))
             return;
-
-        BindUI();
-
-        if (killerSkillUI != null)
-            killerSkillUI.SetTrapUsing();
 
         CmdStartPlanting(installPos, ghostInstance.transform.rotation);
 
@@ -327,14 +331,6 @@ public class TrapHandler : NetworkBehaviour
         {
             Destroy(ghostInstance);
             ghostInstance = null;
-        }
-    }
-
-    public void ForceCancelTrapMode()
-    {
-        if (isBuildMode)
-        {
-            ExitBuildMode();
         }
     }
 }
