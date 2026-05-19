@@ -118,7 +118,7 @@ public class TrapHandler : NetworkBehaviour
         // 함정 모드 토글
         if (killerInput.IsTrapModePressed)
         {
-            if (!isTrapCooldown)
+            if (!isTrapCooldown && CanToggleTrapMode())
                 ToggleTrapMode();
         }
 
@@ -135,12 +135,26 @@ public class TrapHandler : NetworkBehaviour
         }
     }
 
+    private bool CanToggleTrapMode()
+    {
+        if (state == null)
+            return false;
+
+        return state.CurrentCondition == KillerCondition.Idle ||
+               state.CurrentCondition == KillerCondition.Planting;
+    }
+
     private void ToggleTrapMode()
     {
         isBuildMode = !isBuildMode;
 
+        BindUI();
+
         if (isBuildMode)
         {
+            if (killerSkillUI != null)
+                killerSkillUI.SetTrapUsing();
+
             if (ghostInstance == null)
             {
                 ghostInstance = Instantiate(trapPrefab);
@@ -155,7 +169,11 @@ public class TrapHandler : NetworkBehaviour
         }
         else
         {
-            CleanupGhost();
+            ExitBuildMode();
+
+            if (killerSkillUI != null)
+                killerSkillUI.CancelTrapUsing();
+
             state.CmdChangeKillerState(KillerCondition.Idle);
         }
     }
@@ -170,11 +188,6 @@ public class TrapHandler : NetworkBehaviour
 
         if (!CanPlace(out Vector3 installPos))
             return;
-
-        BindUI();
-
-        if (killerSkillUI != null)
-            killerSkillUI.SetTrapUsing();
 
         CmdStartPlanting(installPos, ghostInstance.transform.rotation);
 
@@ -209,7 +222,11 @@ public class TrapHandler : NetworkBehaviour
     [Command]
     private void CmdStartPlanting(Vector3 pos, Quaternion rot)
     {
-        state.ChangeState(KillerCondition.Planting);
+        if (state == null)
+            return;
+
+        if (state.CurrentCondition != KillerCondition.Planting)
+            return;
 
         while (spawnedTraps.Count >= 5)
         {
@@ -226,6 +243,7 @@ public class TrapHandler : NetworkBehaviour
         NetworkServer.Spawn(trap);
         spawnedTraps.Add(trap);
 
+        state.ChangeState(KillerCondition.Recovering);
         Invoke(nameof(BackToIdle), 1.2f);
     }
 
@@ -238,7 +256,10 @@ public class TrapHandler : NetworkBehaviour
 
     private void BackToIdle()
     {
-        if (isServer)
+        if (!isServer)
+            return;
+
+        if (state != null && state.CurrentCondition == KillerCondition.Recovering)
             state.ChangeState(KillerCondition.Idle);
     }
 
@@ -337,14 +358,6 @@ public class TrapHandler : NetworkBehaviour
         {
             Destroy(ghostInstance);
             ghostInstance = null;
-        }
-    }
-
-    public void ForceCancelTrapMode()
-    {
-        if (isBuildMode)
-        {
-            ExitBuildMode();
         }
     }
 }

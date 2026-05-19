@@ -128,7 +128,7 @@ public class KillerSkillUI : MonoBehaviour
         if (attackRoutine != null)
             StopCoroutine(attackRoutine);
 
-        attackRoutine = StartCoroutine(CooldownRoutine(attackSlider, attackFillImage, duration));
+        attackRoutine = StartCoroutine(AttackCooldownRoutine(duration));
     }
 
     public void SetTrapUsing()
@@ -161,7 +161,19 @@ public class KillerSkillUI : MonoBehaviour
         if (trapRoutine != null)
             StopCoroutine(trapRoutine);
 
-        trapRoutine = StartCoroutine(CooldownRoutine(trapSlider, trapFillImage, duration));
+        trapRoutine = StartCoroutine(TrapCooldownRoutine(duration));
+    }
+
+    private IEnumerator AttackCooldownRoutine(float duration)
+    {
+        yield return CooldownRoutine(attackSlider, attackFillImage, duration);
+        attackRoutine = null;
+    }
+
+    private IEnumerator TrapCooldownRoutine(float duration)
+    {
+        yield return CooldownRoutine(trapSlider, trapFillImage, duration);
+        trapRoutine = null;
     }
 
     private IEnumerator CooldownRoutine(Slider slider, Image fillImage, float duration)
