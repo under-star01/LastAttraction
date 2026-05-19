@@ -18,6 +18,11 @@ public class TrapHandler : NetworkBehaviour
     [Header("Ghost Settings")]
     public Material ghostBaseMaterial;
 
+    [Header("오디오")]
+    [SerializeField] private AudioKey trapReadySoundKey = AudioKey.KillerTrapReady;
+    [SerializeField] private AudioKey trapInstallSoundKey = AudioKey.KillerTrapInstall;
+    [SerializeField] private Vector3 trapInstallSoundOffset = new Vector3(0f, 0.15f, 0f);
+
     public bool IsBuildMode => isBuildMode;
 
     private KillerSkillUI killerSkillUI;
@@ -146,12 +151,22 @@ public class TrapHandler : NetworkBehaviour
 
     private void ToggleTrapMode()
     {
+        // 설치대기로 들어가려는데 프리팹이 없으면 막음
+        if (!isBuildMode && trapPrefab == null)
+        {
+            Debug.LogWarning("[TrapHandler] trapPrefab이 비어있어서 설치대기 모드에 들어갈 수 없습니다.", this);
+            return;
+        }
+
         isBuildMode = !isBuildMode;
 
         BindUI();
 
         if (isBuildMode)
         {
+            // 우클릭으로 설치대기 단계에 들어간 순간 살인마 본인에게만 2D 소리 재생
+            PlayTrapReadySoundLocal();
+
             if (killerSkillUI != null)
                 killerSkillUI.SetTrapUsing();
 
@@ -178,6 +193,15 @@ public class TrapHandler : NetworkBehaviour
         }
     }
 
+    private void PlayTrapReadySoundLocal()
+    {
+        if (trapReadySoundKey == AudioKey.None)
+            return;
+
+        // 설치대기 진입음은 조작 피드백이라 살인마 본인에게만 바로 들리게 처리
+        AudioManager.PlayLocalAudio(trapReadySoundKey, AudioDimension.Sound2D);
+    }
+
     private void ConfirmInstallation()
     {
         if (isTrapCooldown)
@@ -189,6 +213,8 @@ public class TrapHandler : NetworkBehaviour
         if (!CanPlace(out Vector3 installPos))
             return;
 
+        // 실제 설치는 서버에서 처리
+        // 설치 사운드도 서버에서 한 번만 재생해야 중복 재생이 생기지 않음
         CmdStartPlanting(installPos, ghostInstance.transform.rotation);
 
         ExitBuildMode();
@@ -239,12 +265,31 @@ public class TrapHandler : NetworkBehaviour
 
         RpcPlayPlantingEffect();
 
+        // 실제 트랩이 설치되는 서버 순간에 모든 클라이언트에게 3D 설치 소리 재생
+        ServerPlayTrapInstallSound(pos);
+
         GameObject trap = Instantiate(trapPrefab, pos, rot);
         NetworkServer.Spawn(trap);
         spawnedTraps.Add(trap);
 
         state.ChangeState(KillerCondition.Recovering);
         Invoke(nameof(BackToIdle), 1.2f);
+    }
+
+    [Server]
+    private void ServerPlayTrapInstallSound(Vector3 installPos)
+    {
+        if (NetworkAudioManager.Instance == null)
+            return;
+
+        if (trapInstallSoundKey == AudioKey.None)
+            return;
+
+        NetworkAudioManager.PlayAudioForEveryone(
+            trapInstallSoundKey,
+            AudioDimension.Sound3D,
+            installPos + trapInstallSoundOffset
+        );
     }
 
     [ClientRpc]
