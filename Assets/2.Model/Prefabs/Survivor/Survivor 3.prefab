@@ -1883,6 +1883,38 @@ Transform:
   - {fileID: 5223104141579322023}
   m_Father: {fileID: 2340637376157171765}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3003112431773682379
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 729220509283628427}
+  m_Layer: 6
+  m_Name: PrisonEffect
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &729220509283628427
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3003112431773682379}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3589543594468056765}
+  m_Father: {fileID: 7059863242562477750}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3038459065305523212
 GameObject:
   m_ObjectHideFlags: 0
@@ -2750,6 +2782,7 @@ GameObject:
   - component: {fileID: 2069850198979918394}
   - component: {fileID: 2241930871020932771}
   - component: {fileID: 1288275574786856438}
+  - component: {fileID: 9154977750404912931}
   m_Layer: 6
   m_Name: Survivor 3
   m_TagString: Survivor
@@ -2773,6 +2806,7 @@ Transform:
   - {fileID: 8174374209964335500}
   - {fileID: 8308895304835925812}
   - {fileID: 8488072216295189698}
+  - {fileID: 729220509283628427}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!143 &2147077015295458698
@@ -2959,6 +2993,7 @@ MonoBehaviour:
   normalCinemachine: {fileID: 6907075847553500461}
   skillCinemachine: {fileID: 5365576005356907084}
   resultCinemachine: {fileID: 6496071845942203215}
+  prisonCinemachine: {fileID: 0}
   detectOrigin: {fileID: 2558030967389349797}
   killerLayerMask:
     serializedVersion: 2
@@ -3122,6 +3157,32 @@ MonoBehaviour:
   circleIconImage: {fileID: 0}
   targetCamera: {fileID: 0}
   screenOffset: {x: 0, y: 0}
+--- !u!114 &9154977750404912931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4072989509792940907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e86e62877b9166b48aac0c4188189df4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SurvivorPrisonEffect
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  terrorPos: {fileID: 3589543594468056765}
+  terrorEffectPrefab: {fileID: 4813572145922567135, guid: ac4a33b7827601d4b98ed2169c1856e0, type: 3}
+  effectLayerName: Effect
+  blinkCount: 2
+  beforeBlackoutDelay: 1
+  blackoutTime: 1.2
+  afterBlackoutDelay: 0.4
+  eyeOpenDuration: 0.5
+  eyeCloseDuration: 0.6
+  eyeOpenHoldTime: 0.25
+  eyeCloseHoldTime: 0.25
 --- !u!1 &4113257929306123816
 GameObject:
   m_ObjectHideFlags: 0
@@ -4171,6 +4232,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5127800907155549214}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5349271374932217383
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3589543594468056765}
+  m_Layer: 6
+  m_Name: TerrorPos
+  m_TagString: Untagged
+  m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3589543594468056765
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5349271374932217383}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -3.5, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 729220509283628427}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5410152551049535375
 GameObject:

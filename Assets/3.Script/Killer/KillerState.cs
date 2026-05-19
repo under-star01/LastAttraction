@@ -51,15 +51,15 @@ public class KillerState : NetworkBehaviour
     public bool CanMove =>
         currentCondition == KillerCondition.Idle ||
         currentCondition == KillerCondition.Lunging ||
-        currentCondition == KillerCondition.Recovering;
+        currentCondition == KillerCondition.Recovering ||
+        currentCondition == KillerCondition.Planting;
 
     public bool CanLook =>
         currentCondition != KillerCondition.Hit &&
         currentCondition != KillerCondition.Vaulting &&
         currentCondition != KillerCondition.Breaking &&
         currentCondition != KillerCondition.Incage &&
-        currentCondition != KillerCondition.Lobby &&
-        currentCondition != KillerCondition.Planting;
+        currentCondition != KillerCondition.Lobby;
 
     public bool CanAttack => currentCondition == KillerCondition.Idle;
 
@@ -160,11 +160,6 @@ public class KillerState : NetworkBehaviour
         switch (condition)
         {
             // Lunging은 bool 값에 의한 Run 애니메이션이므로 트리거를 쓰지 않는다.
-            case KillerCondition.Recovering:
-                // 공격 후딜레이 상태가 될 때 실제 공격 휘두르기 애니메이션이 나온다.
-                animator.SetTrigger("Attack");
-                break;
-
             case KillerCondition.Hit:
                 animator.SetTrigger("Hit");
                 break;
