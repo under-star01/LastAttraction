@@ -72,11 +72,14 @@ public enum AudioKey
     UploadComputerReady,    // 목표 완료 후 업로드 컴퓨터 활성화 경고음
 
     // 타이틀 / 로비 / UI
-    TitleBGM,                // 타이틀 씬 배경음악
-    LobbyBGM,                // 로비 씬 배경음악
-    UIButtonClick,           // UI 버튼 클릭음
-    GameStart,               // 게임 시작 확정 사운드
-    LobbySurvivorSpawn,      // 로비에서 생존자 생성 / 입장 사운드
+    TitleBGM,               // 타이틀 씬 배경음악
+    LobbyBGM,               // 로비 씬 배경음악
+    UIButtonClick,          // UI 버튼 클릭음
+    GameStart,              // 게임 시작 확정 사운드
+    LobbySurvivorSpawn,     // 로비에서 생존자 생성 / 입장 사운드
+    LobbyKillerSpawn,       // 로비에서 살인마 생성 / 입장 사운드
 
-    LobbyKillerSpawn         // 로비에서 살인마 생성 / 입장 사운드
+    // 살인마 트랩 설치
+    KillerTrapReady,        // 살인마가 우클릭으로 트랩 설치대기 단계에 들어갈 때 소리
+    KillerTrapInstall       // 살인마가 트랩을 실제 설치할 때 소리
 }
