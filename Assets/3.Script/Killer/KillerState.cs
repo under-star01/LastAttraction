@@ -8,6 +8,7 @@ public enum KillerCondition
 {
     Idle,
     Lunging,
+    Attack,
     Recovering,
     Hit,
     Vaulting,
@@ -51,6 +52,7 @@ public class KillerState : NetworkBehaviour
     public bool CanMove =>
         currentCondition == KillerCondition.Idle ||
         currentCondition == KillerCondition.Lunging ||
+        currentCondition == KillerCondition.Attack ||
         currentCondition == KillerCondition.Recovering ||
         currentCondition == KillerCondition.Planting;
 
@@ -139,7 +141,7 @@ public class KillerState : NetworkBehaviour
         {
             // 서버가 상태를 바꿨을 때 실행되어야 하는 트리거들
             if (newState == KillerCondition.Hit ||
-                newState == KillerCondition.Recovering ||
+                newState == KillerCondition.Attack ||
                 newState == KillerCondition.Incage)
             {
                 PlayTrigger(newState);
@@ -160,6 +162,10 @@ public class KillerState : NetworkBehaviour
         switch (condition)
         {
             // Lunging은 bool 값에 의한 Run 애니메이션이므로 트리거를 쓰지 않는다.
+            case KillerCondition.Attack:
+                animator.SetTrigger("Attack");
+                break;
+
             case KillerCondition.Hit:
                 animator.SetTrigger("Hit");
                 break;
