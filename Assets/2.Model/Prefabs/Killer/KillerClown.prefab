@@ -26199,6 +26199,7 @@ GameObject:
   - component: {fileID: 835159930052555109}
   - component: {fileID: 8367404895667104180}
   - component: {fileID: 3390365132958246041}
+  - component: {fileID: 5445644876790404773}
   - component: {fileID: 8329270682292632505}
   - component: {fileID: 1429254782650784602}
   - component: {fileID: 4930780877601674375}
@@ -26435,6 +26436,22 @@ MonoBehaviour:
   boxDefaultLayer: Interactable
   boxSilhouetteLayer: BoxOutline
   boxTag: Evidence
+--- !u!114 &5445644876790404773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9199881581034011608}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46a4b202efa503c468b0ca7c1b817d63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerUIProfile
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  portrait: {fileID: 0}
 --- !u!114 &8329270682292632505
 MonoBehaviour:
   m_ObjectHideFlags: 0
