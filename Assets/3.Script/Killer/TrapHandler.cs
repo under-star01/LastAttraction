@@ -245,8 +245,6 @@ public class TrapHandler : NetworkBehaviour
         if (state == null)
             return;
 
-        state.ChangeState(KillerCondition.Planting);
-
         while (spawnedTraps.Count >= 5)
         {
             GameObject oldest = spawnedTraps[0];
@@ -266,6 +264,7 @@ public class TrapHandler : NetworkBehaviour
         NetworkServer.Spawn(trap);
         spawnedTraps.Add(trap);
 
+        state.ChangeState(KillerCondition.Recovering);
         Invoke(nameof(BackToIdle), 1.2f);
     }
 
