@@ -23220,21 +23220,9 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
-      propertyPath: uploadTime
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
-      propertyPath: gateOpenDelay
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
       propertyPath: killerResultPoint
       value: 
       objectReference: {fileID: 1460622186}
-    - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
-      propertyPath: needKillerDetectTime
-      value: 30
-      objectReference: {fileID: 0}
     - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
       propertyPath: 'escapeGates.Array.data[0]'
       value: 
@@ -23247,10 +23235,6 @@ PrefabInstance:
       propertyPath: 'uploadComputers.Array.data[1]'
       value: 
       objectReference: {fileID: 1209398263}
-    - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
-      propertyPath: survivorResultPoints.Array.size
-      value: 4
-      objectReference: {fileID: 0}
     - target: {fileID: 5882707813317575901, guid: 4c82b32668a05134682696e790d7408d, type: 3}
       propertyPath: 'survivorResultPoints.Array.data[0]'
       value: 
