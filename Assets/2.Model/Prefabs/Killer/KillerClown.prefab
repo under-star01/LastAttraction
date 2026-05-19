@@ -26278,6 +26278,9 @@ MonoBehaviour:
     m_Bits: 7496
   trapInstallCooldown: 5
   ghostBaseMaterial: {fileID: 2100000, guid: 6b8b44f98934c1e4a91980620fc81eb1, type: 2}
+  trapReadySoundKey: 35
+  trapInstallSoundKey: 36
+  trapInstallSoundOffset: {x: 0, y: 0.15, z: 0}
 --- !u!114 &7075201297679001473
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26397,11 +26400,12 @@ MonoBehaviour:
   syncInterval: 0
   isRaging: 0
   rageBuildThreshold: 1
-  rageDuration: 10
+  rageDuration: 3
   detectRange: 15
   survivorLayer:
     serializedVersion: 2
     m_Bits: 393280
+  rageRefreshRequestInterval: 0.2
   rageParticle: {fileID: 4594057907136750115}
   rageStartSoundKey: 26
   rageStartSoundOffset: {x: 0, y: 1.2, z: 0}
