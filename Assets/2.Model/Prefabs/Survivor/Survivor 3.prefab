@@ -6829,7 +6829,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  healTime: 5
+  healTime: 16
   targetState: {fileID: 2491799505081291953}
   targetActionState: {fileID: 0}
   targetMove: {fileID: 0}
