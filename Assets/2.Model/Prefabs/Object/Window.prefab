@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 7429210435836427537}
   - component: {fileID: 1173089845819824826}
   - component: {fileID: -498410663248104038}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Window
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -105,7 +105,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8438051215184147755}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: RightPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -136,7 +136,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8749130615233499885}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: LeftPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
