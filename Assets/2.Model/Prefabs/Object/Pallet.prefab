@@ -148,7 +148,7 @@ MonoBehaviour:
   rightPoint: {fileID: 8087643541499887786}
   moveToPointSpeed: 5
   dropActionTime: 0.5
-  survivorVaultSpeed: 4
+  survivorVaultSpeed: 2.5
   breakActionTime: 2
   useDistance: 2
   occupationRadius: 1

@@ -26347,7 +26347,7 @@ MonoBehaviour:
   interactRange: 2
   interactLayer:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 1024
   survivorLayer:
     serializedVersion: 2
     m_Bits: 2112
