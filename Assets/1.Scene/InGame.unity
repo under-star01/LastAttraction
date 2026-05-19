@@ -94,7 +94,7 @@ LightmapSettings:
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
   m_LightingDataAsset: {fileID: 20201, guid: 0000000000000000f000000000000000, type: 0}
-  m_LightingSettings: {fileID: 4890085278179872738, guid: dcb9e0e0de0c6184886d514b9d4db2ae, type: 2}
+  m_LightingSettings: {fileID: 0}
 --- !u!196 &4
 NavMeshSettings:
   serializedVersion: 2
@@ -2005,20 +2005,20 @@ MonoBehaviour:
   range3Source: {fileID: 201833049}
   killerRageSource: {fileID: 201833055}
   ambientMaxVolume: 1
-  range1MaxVolume: 0.3
-  range2MaxVolume: 0.3
-  range3MaxVolume: 0.3
-  killerRageMaxVolume: 0.55
+  range1MaxVolume: 0.2
+  range2MaxVolume: 0.2
+  range3MaxVolume: 0.2
+  killerRageMaxVolume: 0.3
   heartbeatSource: {fileID: 201833048}
   heartbeatClip: {fileID: 8300000, guid: 7e0c3a5a46578724f8ec3cfb92923399, type: 3}
-  heartbeatVolume: 1
+  heartbeatVolume: 0.5
   range1: 32
   range2: 16
   range3: 8
   musicFadeSpeed: 3
-  heartbeatInterval1: 1.2
-  heartbeatInterval2: 0.9
-  heartbeatInterval3: 0.6
+  heartbeatInterval1: 1.5
+  heartbeatInterval2: 1.2
+  heartbeatInterval3: 0.9
   findInterval: 0.5
 --- !u!4 &201833053
 Transform:
