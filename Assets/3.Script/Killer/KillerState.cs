@@ -36,6 +36,7 @@ public class KillerState : NetworkBehaviour
     [SerializeField] private float rageDuration = 10.0f;       // 10초간 유지
     [SerializeField] private float detectRange = 15f;          // 감지 거리
     [SerializeField] private LayerMask survivorLayer;          // 생존자 레이어
+    [SerializeField] private float rageRefreshRequestInterval = 0.2f;
 
     [Header("Rage Effect")]
     [SerializeField] private ParticleSystem rageParticle;
@@ -45,8 +46,8 @@ public class KillerState : NetworkBehaviour
     [SerializeField] private Vector3 rageStartSoundOffset = new Vector3(0f, 1.2f, 0f);
 
     private float currentRageBuildTime = 0f;
+    private float nextRageRefreshRequestTime;
     private Coroutine rageTimerCoroutine;
-
     private ScriptableRendererFeature rageEffectFeature; // URP 전용 피처
 
     public bool CanMove =>
@@ -83,7 +84,9 @@ public class KillerState : NetworkBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha1))
             CmdTestActivateRage();
 
-        if (!isRaging)
+        if (isRaging)
+            CheckRageRefresh();
+        else
             CheckRageBuild();
     }
 
@@ -207,6 +210,35 @@ public class KillerState : NetworkBehaviour
         }
 
         currentRageBuildTime = 0f;
+    }
+
+    private void CheckRageRefresh()
+    {
+        if (Time.time < nextRageRefreshRequestTime)
+            return;
+
+        Ray ray = new Ray(transform.position + Vector3.up * 1.5f, transform.forward);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, detectRange, survivorLayer))
+        {
+            // Rage가 이미 켜진 상태에서는 카메라 촬영 여부를 보지 않는다.
+            SurvivorState survivorState = hit.collider.GetComponentInParent<SurvivorState>();
+
+            if (survivorState != null && !survivorState.IsDead)
+            {
+                nextRageRefreshRequestTime = Time.time + rageRefreshRequestInterval;
+                CmdRefreshRageTimer();
+            }
+        }
+    }
+
+    [Command]
+    private void CmdRefreshRageTimer()
+    {
+        if (!isRaging)
+            return;
+
+        StartRageTimerServer();
     }
 
     [Command]
