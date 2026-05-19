@@ -170,11 +170,21 @@ public class SurvivorPrisonEffect : NetworkBehaviour
         // 4. 검은 화면 상태에서 공포 이펙트 제거
         CleanupEffect();
 
-        // 5. 깜빡임은 감옥 화면 전체가 보여야 하므로 CullingMask만 먼저 복구
+        // 5. CullingMask 복구
         if (mainCamera != null)
         {
             mainCamera.cullingMask = originalCullingMask;
             mainCamera.clearFlags = CameraClearFlags.Skybox;
+        }
+
+        // 사망했다면 깜빡임 연출은 생략하고 ResultCam 흐름에 맡김
+        if (state != null && state.IsDead)
+        {
+            if (camSkill != null)
+                camSkill.ReleasePrisonViewOnly();
+
+            routine = null;
+            yield break;
         }
 
         // 6. PrisonCam 상태는 유지한 채 감옥에서 깨어나기 전 잠깐 검은 화면 유지

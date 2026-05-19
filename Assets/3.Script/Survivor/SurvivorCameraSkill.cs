@@ -648,4 +648,13 @@ public class SurvivorCameraSkill : NetworkBehaviour
     {
         isRecordingKiller = value;
     }
+
+    public void ReleasePrisonViewOnly()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (prisonCinemachine != null)
+            prisonCinemachine.Priority = 0;
+    }
 }
