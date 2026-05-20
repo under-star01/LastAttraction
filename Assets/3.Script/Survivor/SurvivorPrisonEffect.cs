@@ -156,6 +156,7 @@ public class SurvivorPrisonEffect : NetworkBehaviour
         }
 
         SpawnTerrorEffect();
+        AudioManager.PlayLocalAudio(AudioKey.PrisonEffect, AudioDimension.Sound2D);
 
         // 1. PrisonCam 상태에서 공포 이펙트를 잠깐 보여줌
         yield return new WaitForSeconds(beforeBlackoutDelay);

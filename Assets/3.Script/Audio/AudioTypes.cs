@@ -65,7 +65,7 @@ public enum AudioKey
     KillerAttackHit,        // 살인마 공격 성공 타격 소리
     KillerRageStart,        // 살인마 Rage 상태 진입 소리
 
-    // 감옥
+    // 감옥 (살인마)
     KillerIncage,           // 살인마가 생존자를 감옥에 넣을 때 소리
 
     // 목표 / 업로드
@@ -81,5 +81,8 @@ public enum AudioKey
 
     // 살인마 트랩 설치
     KillerTrapReady,        // 살인마가 우클릭으로 트랩 설치대기 단계에 들어갈 때 소리
-    KillerTrapInstall       // 살인마가 트랩을 실제 설치할 때 소리
+    KillerTrapInstall,      // 살인마가 트랩을 실제 설치할 때 소리
+
+    // 감옥 (생존자)
+    PrisonEffect,           // 생존자 감옥 들어갈때 소리
 }
