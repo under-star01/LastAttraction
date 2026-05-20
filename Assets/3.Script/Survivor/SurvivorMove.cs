@@ -827,42 +827,6 @@ public class SurvivorMove : NetworkBehaviour
         }
     }
 
-    [Server]
-    public void ForceDownHitPoseServer()
-    {
-        serverMoveInput = Vector2.zero;
-        serverWantsRun = false;
-        serverWantsCrouch = false;
-
-        SetSize(standHeight, standCenter);
-
-        if (moveState != null)
-            moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
-
-        SetCamAnim(false);
-        SetSearching(false);
-        SetVaulting(false);
-        SetStunned(false);
-    }
-
-    public void ResetAnimatorForDownHit()
-    {
-        if (animator == null)
-            return;
-
-        animator.SetFloat("MoveSpeed", 0f);
-        animator.SetBool("IsCrouching", false);
-        animator.SetBool("IsDowned", false);
-        animator.SetBool("IsCameraSkill", false);
-        animator.SetBool("IsSearching", false);
-        animator.SetBool("IsVaulting", false);
-        animator.SetBool("IsStunned", false);
-
-        animator.ResetTrigger("Hit");
-        animator.ResetTrigger("Stun");
-        animator.ResetTrigger("DownHit");
-    }
-
     [Command]
     private void CmdStopAnim()
     {
