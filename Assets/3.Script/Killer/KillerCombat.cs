@@ -135,12 +135,6 @@ public class KillerCombat : NetworkBehaviour
             if (isEndingAttack)
                 return;
 
-            if (currentLungeTime < maxLungeDuration * 0.5f &&
-                currentLungeTime + Time.deltaTime >= maxLungeDuration * 0.3f)
-            {
-                CmdPlayLungeSound();
-            }
-
             currentLungeTime += Time.deltaTime;
             currentLungeTime = Mathf.Clamp(currentLungeTime, 0.1f, maxLungeDuration);
 
@@ -263,6 +257,8 @@ public class KillerCombat : NetworkBehaviour
         }
 
         state.ChangeState(KillerCondition.Lunging);
+
+        StartCoroutine(ServerLungeSoundRoutine());
     }
 
     [Command]
@@ -363,14 +359,16 @@ public class KillerCombat : NetworkBehaviour
         }
     }
 
-    [Command]
-    private void CmdPlayLungeSound()
+    [Server]
+    private IEnumerator ServerLungeSoundRoutine()
     {
+        yield return new WaitForSeconds(maxLungeDuration * 0.3f);
+
         if (state == null)
-            return;
+            yield break;
 
         if (state.CurrentCondition != KillerCondition.Lunging)
-            return;
+            yield break;
 
         PlayLungeSound();
     }
