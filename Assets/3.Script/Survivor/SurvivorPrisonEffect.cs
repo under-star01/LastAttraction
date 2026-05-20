@@ -136,6 +136,9 @@ public class SurvivorPrisonEffect : NetworkBehaviour
     {
         if (camSkill != null)
             camSkill.ApplyPrisonView(true);
+        
+        AudioManager.PlayLocalAudio(AudioKey.PrisonEffect, AudioDimension.Sound2D);
+
         yield return new WaitForSeconds(0.1f);
 
         mainCamera = Camera.main;
@@ -156,8 +159,7 @@ public class SurvivorPrisonEffect : NetworkBehaviour
         }
 
         SpawnTerrorEffect();
-        AudioManager.PlayLocalAudio(AudioKey.PrisonEffect, AudioDimension.Sound2D);
-
+        
         // 1. PrisonCam 상태에서 공포 이펙트를 잠깐 보여줌
         yield return new WaitForSeconds(beforeBlackoutDelay);
 
