@@ -184,6 +184,9 @@ public class TrapHandler : NetworkBehaviour
         }
         else
         {
+            // 우클릭으로 설치대기 단계에 들어간 순간 살인마 본인에게만 2D 소리 재생
+            PlayTrapReadySoundLocal();
+
             ExitBuildMode();
 
             if (killerSkillUI != null)
