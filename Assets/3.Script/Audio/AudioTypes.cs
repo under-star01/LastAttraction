@@ -85,4 +85,7 @@ public enum AudioKey
 
     // 감옥 (생존자)
     PrisonEffect,           // 생존자 감옥 들어갈때 소리
+    
+    // 살인마 런지 
+    KillerLunge,           // 살인마 런지 소리
 }

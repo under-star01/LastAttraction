@@ -135,6 +135,12 @@ public class KillerCombat : NetworkBehaviour
             if (isEndingAttack)
                 return;
 
+            if (currentLungeTime < maxLungeDuration * 0.5f &&
+                currentLungeTime + Time.deltaTime >= maxLungeDuration * 0.5f)
+            {
+                CmdPlayLungeSound();
+            }
+
             currentLungeTime += Time.deltaTime;
             currentLungeTime = Mathf.Clamp(currentLungeTime, 0.1f, maxLungeDuration);
 
@@ -355,5 +361,30 @@ public class KillerCombat : NetworkBehaviour
             if (killerSkillUI != null)
                 killerSkillUI.StartAttackCooldown(penalty);
         }
+    }
+
+    [Command]
+    private void CmdPlayLungeSound()
+    {
+        if (state == null)
+            return;
+
+        if (state.CurrentCondition != KillerCondition.Lunging)
+            return;
+
+        PlayLungeSound();
+    }
+
+    [Server]
+    private void PlayLungeSound()
+    {
+        if (NetworkAudioManager.Instance == null)
+            return;
+
+        NetworkAudioManager.PlayAudioForEveryone(
+            AudioKey.KillerLunge,
+            AudioDimension.Sound3D,
+            transform.position
+        );
     }
 }
