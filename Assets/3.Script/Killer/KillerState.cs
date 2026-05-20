@@ -8,6 +8,7 @@ public enum KillerCondition
 {
     Idle,
     Lunging,
+    Attack,
     Recovering,
     Hit,
     Vaulting,
@@ -35,6 +36,7 @@ public class KillerState : NetworkBehaviour
     [SerializeField] private float rageDuration = 10.0f;       // 10초간 유지
     [SerializeField] private float detectRange = 15f;          // 감지 거리
     [SerializeField] private LayerMask survivorLayer;          // 생존자 레이어
+    [SerializeField] private float rageRefreshRequestInterval = 0.2f;
 
     [Header("Rage Effect")]
     [SerializeField] private ParticleSystem rageParticle;
@@ -44,13 +46,14 @@ public class KillerState : NetworkBehaviour
     [SerializeField] private Vector3 rageStartSoundOffset = new Vector3(0f, 1.2f, 0f);
 
     private float currentRageBuildTime = 0f;
+    private float nextRageRefreshRequestTime;
     private Coroutine rageTimerCoroutine;
-
     private ScriptableRendererFeature rageEffectFeature; // URP 전용 피처
 
     public bool CanMove =>
         currentCondition == KillerCondition.Idle ||
         currentCondition == KillerCondition.Lunging ||
+        currentCondition == KillerCondition.Attack ||
         currentCondition == KillerCondition.Recovering ||
         currentCondition == KillerCondition.Planting;
 
@@ -81,7 +84,9 @@ public class KillerState : NetworkBehaviour
         if (Input.GetKeyDown(KeyCode.Alpha1))
             CmdTestActivateRage();
 
-        if (!isRaging)
+        if (isRaging)
+            CheckRageRefresh();
+        else
             CheckRageBuild();
     }
 
@@ -139,7 +144,7 @@ public class KillerState : NetworkBehaviour
         {
             // 서버가 상태를 바꿨을 때 실행되어야 하는 트리거들
             if (newState == KillerCondition.Hit ||
-                newState == KillerCondition.Recovering ||
+                newState == KillerCondition.Attack ||
                 newState == KillerCondition.Incage)
             {
                 PlayTrigger(newState);
@@ -160,8 +165,7 @@ public class KillerState : NetworkBehaviour
         switch (condition)
         {
             // Lunging은 bool 값에 의한 Run 애니메이션이므로 트리거를 쓰지 않는다.
-            case KillerCondition.Recovering:
-                // 공격 후딜레이 상태가 될 때 실제 공격 휘두르기 애니메이션이 나온다.
+            case KillerCondition.Attack:
                 animator.SetTrigger("Attack");
                 break;
 
@@ -206,6 +210,35 @@ public class KillerState : NetworkBehaviour
         }
 
         currentRageBuildTime = 0f;
+    }
+
+    private void CheckRageRefresh()
+    {
+        if (Time.time < nextRageRefreshRequestTime)
+            return;
+
+        Ray ray = new Ray(transform.position + Vector3.up * 1.5f, transform.forward);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, detectRange, survivorLayer))
+        {
+            // Rage가 이미 켜진 상태에서는 카메라 촬영 여부를 보지 않는다.
+            SurvivorState survivorState = hit.collider.GetComponentInParent<SurvivorState>();
+
+            if (survivorState != null && !survivorState.IsDead)
+            {
+                nextRageRefreshRequestTime = Time.time + rageRefreshRequestInterval;
+                CmdRefreshRageTimer();
+            }
+        }
+    }
+
+    [Command]
+    private void CmdRefreshRageTimer()
+    {
+        if (!isRaging)
+            return;
+
+        StartRageTimerServer();
     }
 
     [Command]

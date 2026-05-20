@@ -136,6 +136,9 @@ public class SurvivorPrisonEffect : NetworkBehaviour
     {
         if (camSkill != null)
             camSkill.ApplyPrisonView(true);
+        
+        AudioManager.PlayLocalAudio(AudioKey.PrisonEffect, AudioDimension.Sound2D);
+
         yield return new WaitForSeconds(0.1f);
 
         mainCamera = Camera.main;
@@ -156,7 +159,7 @@ public class SurvivorPrisonEffect : NetworkBehaviour
         }
 
         SpawnTerrorEffect();
-
+        
         // 1. PrisonCam 상태에서 공포 이펙트를 잠깐 보여줌
         yield return new WaitForSeconds(beforeBlackoutDelay);
 
@@ -170,11 +173,21 @@ public class SurvivorPrisonEffect : NetworkBehaviour
         // 4. 검은 화면 상태에서 공포 이펙트 제거
         CleanupEffect();
 
-        // 5. 깜빡임은 감옥 화면 전체가 보여야 하므로 CullingMask만 먼저 복구
+        // 5. CullingMask 복구
         if (mainCamera != null)
         {
             mainCamera.cullingMask = originalCullingMask;
             mainCamera.clearFlags = CameraClearFlags.Skybox;
+        }
+
+        // 사망했다면 깜빡임 연출은 생략하고 ResultCam 흐름에 맡김
+        if (state != null && state.IsDead)
+        {
+            if (camSkill != null)
+                camSkill.ReleasePrisonViewOnly();
+
+            routine = null;
+            yield break;
         }
 
         // 6. PrisonCam 상태는 유지한 채 감옥에서 깨어나기 전 잠깐 검은 화면 유지

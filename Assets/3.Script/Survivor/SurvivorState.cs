@@ -185,6 +185,10 @@ public class SurvivorState : NetworkBehaviour
             currentCondition = SurvivorCondition.Injured;
             ApplyAllStateServer();
 
+            // 건강 상태에서 부상 상태로 바뀐 피격일 때만 3초 이동 속도 보너스를 준다.
+            if (move != null)
+                move.StartInjuredSpeedBoostServer();
+
             // 맞아서 다칠 때는 성별에 맞는 일반 피격 소리를 재생한다.
             // AudioManager의 Max Distance를 짧게 잡으면 가까운 사람만 듣는다.
             PlayWorld3DSound(GetHitSoundKey());

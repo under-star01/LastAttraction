@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7732830601528815931}
   - component: {fileID: 9197889861535090671}
   - component: {fileID: 6344299049762845836}
-  m_Layer: 19
+  m_Layer: 10
   m_Name: Spot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -139,7 +139,7 @@ GameObject:
   - component: {fileID: 9128877205000094347}
   - component: {fileID: 235244814273018308}
   - component: {fileID: 1421439088312023797}
-  m_Layer: 19
+  m_Layer: 10
   m_Name: FarolaDe1.001
   m_TagString: Untagged
   m_Icon: {fileID: 0}

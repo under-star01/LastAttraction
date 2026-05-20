@@ -40,7 +40,7 @@ public class KillerCombat : NetworkBehaviour
     private bool isEndingAttack;
 
     private float lastWeaponSwingServerTime;
-    private Coroutine serverRecoveryCoroutine;
+    private Coroutine serverAttackCoroutine;
 
     private void Awake()
     {
@@ -64,9 +64,9 @@ public class KillerCombat : NetworkBehaviour
         if ((trapHandler != null && trapHandler.IsBuildMode) || state.CurrentCondition == KillerCondition.Planting)
             return;
 
-        if (state.CurrentCondition == KillerCondition.Recovering)
+        if (state.CurrentCondition == KillerCondition.Attack)
         {
-            HandleRecoveryUIOnly();
+            HandleAttackCooldownUIOnly();
             return;
         }
 
@@ -83,9 +83,9 @@ public class KillerCombat : NetworkBehaviour
             killerSkillUI = InGameUIManager.Instance.GetKillerSkillUI();
     }
 
-    // 클라이언트에서는 Recovering 상태를 Idle로 바꾸지 않는다.
+    // 클라이언트에서는 Attack 상태를 Idle로 바꾸지 않는다.
     // 서버가 정확한 패널티 시간 뒤에 Idle로 바꾼다.
-    private void HandleRecoveryUIOnly()
+    private void HandleAttackCooldownUIOnly()
     {
         if (!hasRecoveryPenalty)
             return;
@@ -250,13 +250,15 @@ public class KillerCombat : NetworkBehaviour
         if (state.CurrentCondition != KillerCondition.Idle)
             return;
 
-        if (serverRecoveryCoroutine != null)
+        if (serverAttackCoroutine != null)
         {
-            StopCoroutine(serverRecoveryCoroutine);
-            serverRecoveryCoroutine = null;
+            StopCoroutine(serverAttackCoroutine);
+            serverAttackCoroutine = null;
         }
 
         state.ChangeState(KillerCondition.Lunging);
+
+        StartCoroutine(ServerLungeSoundRoutine());
     }
 
     [Command]
@@ -280,8 +282,8 @@ public class KillerCombat : NetworkBehaviour
         // Attack 트리거가 실행되기 전에 클라이언트에 패널티 시간과 애니메이션 속도를 먼저 준비시킨다.
         RpcSyncAttackResult(animSpeed, finalPenalty);
 
-        // Recovering으로 바뀌면 KillerState에서 Attack 트리거가 실행된다.
-        state.ChangeState(KillerCondition.Recovering);
+        // Attack으로 바뀌면 KillerState에서 Attack 트리거가 실행된다.
+        state.ChangeState(KillerCondition.Attack);
 
         if (isHit && survivorNetId != 0)
         {
@@ -306,20 +308,20 @@ public class KillerCombat : NetworkBehaviour
         else
             Debug.Log("헛스윙 또는 장애물에 막힘");
 
-        if (serverRecoveryCoroutine != null)
-            StopCoroutine(serverRecoveryCoroutine);
+        if (serverAttackCoroutine != null)
+            StopCoroutine(serverAttackCoroutine);
 
-        serverRecoveryCoroutine = StartCoroutine(ServerRecoveryRoutine(finalPenalty));
+        serverAttackCoroutine = StartCoroutine(ServerAttackRoutine(finalPenalty));
     }
 
     [Server]
-    private IEnumerator ServerRecoveryRoutine(float delay)
+    private IEnumerator ServerAttackRoutine(float delay)
     {
         yield return new WaitForSeconds(delay);
 
-        serverRecoveryCoroutine = null;
+        serverAttackCoroutine = null;
 
-        if (state != null && state.CurrentCondition == KillerCondition.Recovering)
+        if (state != null && state.CurrentCondition == KillerCondition.Attack)
             state.ChangeState(KillerCondition.Idle);
     }
 
@@ -355,5 +357,32 @@ public class KillerCombat : NetworkBehaviour
             if (killerSkillUI != null)
                 killerSkillUI.StartAttackCooldown(penalty);
         }
+    }
+
+    [Server]
+    private IEnumerator ServerLungeSoundRoutine()
+    {
+        yield return new WaitForSeconds(maxLungeDuration * 0.1f);
+
+        if (state == null)
+            yield break;
+
+        if (state.CurrentCondition != KillerCondition.Lunging)
+            yield break;
+
+        PlayLungeSound();
+    }
+
+    [Server]
+    private void PlayLungeSound()
+    {
+        if (NetworkAudioManager.Instance == null)
+            return;
+
+        NetworkAudioManager.PlayAudioForEveryone(
+            AudioKey.KillerLunge,
+            AudioDimension.Sound3D,
+            transform.position
+        );
     }
 }

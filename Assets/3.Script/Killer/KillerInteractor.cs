@@ -9,13 +9,17 @@ public class KillerInteractor : NetworkBehaviour
     public LayerMask interactLayer;
     public LayerMask survivorLayer;
 
+    [Header("키 안내 UI")]
+    [SerializeField] private InteractionPromptUI interactionPromptUI;
+
     [Header("오디오")]
-    [SerializeField] private AudioKey incageSoundKey = AudioKey.KillerIncage; // 생존자를 감옥에 넣을 때 소리
+    [SerializeField] private AudioKey incageSoundKey = AudioKey.KillerIncage;
     [SerializeField] private Vector3 incageSoundOffset = new Vector3(0f, 1.0f, 0f);
 
     private KillerInput input;
     private KillerState state;
     private IInteractable currentTarget;
+    private SurvivorState currentDownedSurvivor;
 
     private void Awake()
     {
@@ -23,65 +27,229 @@ public class KillerInteractor : NetworkBehaviour
         state = GetComponent<KillerState>();
     }
 
+    public override void OnStartLocalPlayer()
+    {
+        base.OnStartLocalPlayer();
+
+        BindUI();
+        HideInteractionPromptUI();
+    }
+
     private void Update()
     {
         if (!isLocalPlayer)
             return;
 
-        SearchTarget();
+        if (input == null || state == null)
+            return;
 
-        if (state.CurrentCondition == KillerCondition.Idle && input.IsInteractPressed)
+        SearchTarget();
+        currentDownedSurvivor = SearchDownedSurvivorForPrompt();
+
+        UpdateInteractionPromptUI();
+
+        if (state.CurrentCondition != KillerCondition.Idle)
+            return;
+
+        if (input.IsInteractPressed)
         {
             if (currentTarget != null)
             {
+                HideInteractionPromptUI();
+
                 GameObject targetObj = ((MonoBehaviour)currentTarget).gameObject;
                 CmdInteract(targetObj);
             }
         }
 
-        if (state.CurrentCondition == KillerCondition.Idle && input.IsPickUpPressed)
+        if (input.IsPickUpPressed)
         {
             SearchAndIncageSurvivor();
         }
     }
 
-    // 정면 상호작용 대상 찾기
+    private void OnDisable()
+    {
+        HideInteractionPromptUI();
+    }
+
+    private void BindUI()
+    {
+        if (InGameUIManager.Instance != null)
+            interactionPromptUI = InGameUIManager.Instance.GetInteractionPromptUI();
+
+        if (interactionPromptUI == null)
+            interactionPromptUI = FindFirstObjectByType<InteractionPromptUI>(FindObjectsInactive.Include);
+    }
+
+    private void UpdateInteractionPromptUI()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (interactionPromptUI == null)
+            BindUI();
+
+        if (interactionPromptUI == null)
+            return;
+
+        if (state == null || state.CurrentCondition != KillerCondition.Idle)
+        {
+            interactionPromptUI.Hide();
+            return;
+        }
+
+        if (InGameUIManager.Instance == null)
+        {
+            interactionPromptUI.Hide();
+            return;
+        }
+
+        if (currentDownedSurvivor != null)
+        {
+            interactionPromptUI.Show(
+                InGameUIManager.Instance.GetKillerPickUpIcon(),
+                "생존자 감옥에 넣기"
+            );
+            return;
+        }
+
+        if (currentTarget != null)
+        {
+            string action = GetKillerActionText(currentTarget);
+
+            if (!string.IsNullOrWhiteSpace(action))
+            {
+                interactionPromptUI.Show(
+                    InGameUIManager.Instance.GetPressInputIcon(),
+                    action
+                );
+                return;
+            }
+        }
+
+        interactionPromptUI.Hide();
+    }
+
+    private string GetKillerActionText(IInteractable interactable)
+    {
+        if (interactable is Window)
+            return "창틀 넘기";
+
+        if (interactable is Pallet)
+            return "판자 부수기";
+
+        return string.Empty;
+    }
+
+    private void HideInteractionPromptUI()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (interactionPromptUI != null)
+            interactionPromptUI.Hide();
+    }
+
     private void SearchTarget()
     {
+        currentTarget = null;
+
         Vector3 rayOrigin = transform.position + Vector3.up * 0.5f;
 
         Debug.DrawRay(rayOrigin, transform.forward * interactRange, Color.red);
 
-        if (Physics.Raycast(rayOrigin, transform.forward, out RaycastHit hit, interactRange, interactLayer, QueryTriggerInteraction.Collide))
+        if (!Physics.Raycast(
+                rayOrigin,
+                transform.forward,
+                out RaycastHit hit,
+                interactRange,
+                interactLayer,
+                QueryTriggerInteraction.Collide))
         {
-            currentTarget = hit.collider.GetComponentInParent<IInteractable>();
+            return;
         }
-        else
-        {
-            currentTarget = null;
-        }
+
+        IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+
+        if (interactable == null)
+            return;
+
+        if (!CanKillerUseTarget(interactable))
+            return;
+
+        currentTarget = interactable;
     }
 
-    // 주변 다운 생존자 찾아 감옥 보내기
-    private void SearchAndIncageSurvivor()
+    private bool CanKillerUseTarget(IInteractable interactable)
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, interactRange, survivorLayer);
+        if (interactable == null)
+            return false;
 
-        foreach (var hit in hits)
+        if (interactable is Window)
+            return true;
+
+        if (interactable is Pallet pallet)
+            return pallet.IsDropped;
+
+        return false;
+    }
+
+    private SurvivorState SearchDownedSurvivorForPrompt()
+    {
+        Collider[] hits = Physics.OverlapSphere(
+            transform.position,
+            interactRange,
+            survivorLayer
+        );
+
+        SurvivorState best = null;
+        float bestDistance = float.MaxValue;
+
+        for (int i = 0; i < hits.Length; i++)
         {
+            Collider hit = hits[i];
+
+            if (hit == null)
+                continue;
+
             SurvivorState survivor = hit.GetComponentInParent<SurvivorState>();
             SurvivorActionState actionState = hit.GetComponentInParent<SurvivorActionState>();
 
-            // 다운 상태이고, 다운 연출/스턴 같은 강한 행동 제한 중이 아닐 때만 가능
             bool isBusy = actionState != null && actionState.IsBusy;
 
-            if (survivor != null && survivor.IsDowned && !isBusy)
+            if (survivor == null)
+                continue;
+
+            if (!survivor.IsDowned)
+                continue;
+
+            if (isBusy)
+                continue;
+
+            float sqrDistance = (survivor.transform.position - transform.position).sqrMagnitude;
+
+            if (best == null || sqrDistance < bestDistance)
             {
-                state.PlayTrigger(KillerCondition.Incage);
-                CmdIncageSurvivor(survivor.gameObject);
-                break;
+                best = survivor;
+                bestDistance = sqrDistance;
             }
         }
+
+        return best;
+    }
+
+    private void SearchAndIncageSurvivor()
+    {
+        SurvivorState survivor = SearchDownedSurvivorForPrompt();
+
+        if (survivor == null)
+            return;
+
+        HideInteractionPromptUI();
+
+        state.PlayTrigger(KillerCondition.Incage);
+        CmdIncageSurvivor(survivor.gameObject);
     }
 
     [Command]
@@ -165,7 +333,6 @@ public class KillerInteractor : NetworkBehaviour
         interactable.BeginInteract(gameObject);
     }
 
-    // 판자 스턴 적용
     public void ApplyHitStun(float duration)
     {
         if (!isServer)

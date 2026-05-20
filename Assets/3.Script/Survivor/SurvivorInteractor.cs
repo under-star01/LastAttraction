@@ -9,6 +9,9 @@ public class SurvivorInteractor : NetworkBehaviour
     [SerializeField] private ProgressUI progressUI;   // Hold 상호작용 진행도 UI
     [SerializeField] private QTEUI qteUI;             // 증거 조사 QTE UI
 
+    [Header("키 안내 UI")]
+    [SerializeField] private InteractionPromptUI interactionPromptUI;
+
     // 생존자 입력 컴포넌트
     private SurvivorInput input;
 
@@ -169,26 +172,29 @@ public class SurvivorInteractor : NetworkBehaviour
         // 주변 상호작용 대상 중 현재 가장 적절한 대상을 고른다.
         RefreshCurrentInteractable();
 
+        UpdateInteractionPromptUI();
+
         // 현재 대상 타입에 맞게 Hold/Press 상호작용을 처리한다.
         HandleInteract();
     }
 
     private void BindUI()
     {
-        // SceneBinder가 있으면 씬에 배치된 UI를 우선 연결한다.
         if (InGameUIManager.Instance != null)
         {
             progressUI = InGameUIManager.Instance.GetProgressUI();
             qteUI = InGameUIManager.Instance.GetQTEUI();
+            interactionPromptUI = InGameUIManager.Instance.GetInteractionPromptUI();
         }
 
-        // ProgressUI가 없으면 씬 전체에서 찾는다.
         if (progressUI == null)
             progressUI = FindFirstObjectByType<ProgressUI>(FindObjectsInactive.Include);
 
-        // QTEUI가 없으면 씬 전체에서 찾는다.
         if (qteUI == null)
             qteUI = FindFirstObjectByType<QTEUI>(FindObjectsInactive.Include);
+
+        if (interactionPromptUI == null)
+            interactionPromptUI = FindFirstObjectByType<InteractionPromptUI>(FindObjectsInactive.Include);
     }
 
     public void ShowProgress(object owner, float value)
@@ -409,6 +415,8 @@ public class SurvivorInteractor : NetworkBehaviour
 
                 SetInteractionState(true);
 
+                HideInteractionPromptUI();
+
                 activeInteractable.BeginInteract(gameObject);
             }
         }
@@ -447,7 +455,10 @@ public class SurvivorInteractor : NetworkBehaviour
         }
 
         if (input.IsInteracting2)
+        {
+            HideInteractionPromptUI();
             currentInteractable.BeginInteract(gameObject);
+        }
     }
 
     public void SetInteractable(IInteractable interactable)
@@ -503,6 +514,8 @@ public class SurvivorInteractor : NetworkBehaviour
 
         if (currentInteractable == interactable)
             currentInteractable = null;
+
+        HideInteractionPromptUI();
     }
 
     private void OnDisable()
@@ -533,6 +546,8 @@ public class SurvivorInteractor : NetworkBehaviour
 
         if (qteUI != null)
             qteUI.ForceClose(false);
+
+        HideInteractionPromptUI();
     }
 
     // 서버에 Hold 상호작용 중인지 저장한다.
@@ -602,6 +617,8 @@ public class SurvivorInteractor : NetworkBehaviour
 
         if (qteUI != null)
             qteUI.ForceClose(false);
+
+        HideInteractionPromptUI();
     }
 
     [Command]
@@ -614,5 +631,107 @@ public class SurvivorInteractor : NetworkBehaviour
 
         if (value)
             actionState.SetCam(false);
+    }
+
+    private void UpdateInteractionPromptUI()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (interactionPromptUI == null)
+            BindUI();
+
+        if (interactionPromptUI == null)
+            return;
+
+        if (currentInteractable == null)
+        {
+            interactionPromptUI.Hide();
+            return;
+        }
+
+        if (isInteracting)
+        {
+            interactionPromptUI.Hide();
+            return;
+        }
+
+        if (waitRelease)
+        {
+            interactionPromptUI.Hide();
+            return;
+        }
+
+        if (input != null && input.IsCrouching)
+        {
+            interactionPromptUI.Hide();
+            return;
+        }
+
+        Sprite icon = null;
+
+        if (InGameUIManager.Instance != null)
+        {
+            if (currentInteractable.InteractType == InteractType.Hold)
+                icon = InGameUIManager.Instance.GetHoldInputIcon();
+            else
+                icon = InGameUIManager.Instance.GetPressInputIcon();
+        }
+
+        string action = GetSurvivorActionText(currentInteractable);
+
+        if (string.IsNullOrWhiteSpace(action))
+        {
+            interactionPromptUI.Hide();
+            return;
+        }
+
+        interactionPromptUI.Show(icon, action);
+    }
+
+    private string GetSurvivorActionText(IInteractable interactable)
+    {
+        if (interactable is EvidencePoint evidence)
+        {
+            return "증거 조사";
+        }
+
+        if (interactable is UploadComputer)
+            return "증거 업로드";
+
+        if (interactable is Prison prison)
+        {
+            if (state != null && state.IsImprisoned && prison.PrisonerId == state.netId)
+                return "감옥 탈출 시도";
+
+            return "생존자 구출";
+        }
+
+        if (interactable is SurvivorHeal)
+            return "생존자 치료";
+
+        if (interactable is Pallet pallet)
+        {
+            if (pallet.IsDropped)
+                return "판자 넘기";
+
+            return "판자 내리기";
+        }
+
+        if (interactable is Window)
+            return "창틀 넘기";
+
+        return "상호작용";
+    }
+
+    private void HideInteractionPromptUI()
+    {
+        if (!isLocalPlayer)
+            return;
+
+        if (interactionPromptUI == null)
+            return;
+
+        interactionPromptUI.Hide();
     }
 }

@@ -123,12 +123,12 @@ MonoBehaviour:
     maxDistance: 16
   - key: 15
     clip: {fileID: 8300000, guid: 536b4189adb196045870c575ba3195c7, type: 3}
-    volume: 1
+    volume: 0.5
     minDistance: 1
     maxDistance: 8
   - key: 16
     clip: {fileID: 8300000, guid: 3944029c7bb0f8d4987b784fae342062, type: 3}
-    volume: 1
+    volume: 0.5
     minDistance: 1
     maxDistance: 8
   - key: 17
@@ -138,7 +138,7 @@ MonoBehaviour:
     maxDistance: 150
   - key: 18
     clip: {fileID: 8300000, guid: d7cd0f0f23eb26c46b37dea0cc93bfd4, type: 3}
-    volume: 0.5
+    volume: 1
     minDistance: 1
     maxDistance: 32
   - key: 19
@@ -163,9 +163,9 @@ MonoBehaviour:
     maxDistance: 32
   - key: 23
     clip: {fileID: 8300000, guid: d25282a3d4857fe429293f817f194cbb, type: 3}
-    volume: 1
+    volume: 0.7
     minDistance: 1
-    maxDistance: 32
+    maxDistance: 48
   - key: 24
     clip: {fileID: 8300000, guid: 9f72bed8015a6de4193df5d7b19a5481, type: 3}
     volume: 0.7
@@ -218,6 +218,26 @@ MonoBehaviour:
     maxDistance: 32
   - key: 34
     clip: {fileID: 8300000, guid: d3510d781ea17c34e9e1cbfa1a7e32a9, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 35
+    clip: {fileID: 8300000, guid: 6b9a06b67f0d5cc44842e02136fedef8, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 36
+    clip: {fileID: 8300000, guid: 8e69c8a60dee5404892af492f3f3b807, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 37
+    clip: {fileID: 8300000, guid: f6439b2b4b1eb3f43a25849503c4f4ab, type: 3}
+    volume: 1
+    minDistance: 1
+    maxDistance: 32
+  - key: 38
+    clip: {fileID: 8300000, guid: 7dbb9484944f54d44aac9945c252ab2a, type: 3}
     volume: 1
     minDistance: 1
     maxDistance: 32

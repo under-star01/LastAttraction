@@ -18,6 +18,10 @@ public class SurvivorMove : NetworkBehaviour
     [SerializeField] private float turnSpeed = 15f;
     [SerializeField] private float escapeRunDuration = 2f;
 
+    [Header("피격 속도 보너스")]
+    [SerializeField] private float injuredSpeedBoostMultiplier = 1.5f;
+    [SerializeField] private float injuredSpeedBoostDuration = 3f;
+
     [Header("카메라")]
     [SerializeField] private float mouseSensitivity = 0.1f;
     [SerializeField] private float minPitch = -60f;
@@ -55,10 +59,37 @@ public class SurvivorMove : NetworkBehaviour
     private float serverYaw;
     private float serverPitch;
     private float escapeRunEndTime;
+    private float injuredSpeedBoostEndTime;
 
     [SyncVar] private float syncedYaw;
     [SyncVar] private float syncedPitch;
     [SyncVar] private float syncedModelYaw;
+
+    // 건강 상태에서 피격되어 부상 상태가 되었을 때 잠깐 이동 속도를 올린다.
+    [Server]
+    public void StartInjuredSpeedBoostServer()
+    {
+        if (injuredSpeedBoostDuration <= 0f)
+            return;
+
+        if (injuredSpeedBoostMultiplier <= 0f)
+            return;
+
+        injuredSpeedBoostEndTime = Time.time + injuredSpeedBoostDuration;
+    }
+
+    // 부상 속도 보너스가 현재 적용 가능한지 서버에서 확인한다.
+    [Server]
+    private bool IsInjuredSpeedBoostActive()
+    {
+        if (state == null)
+            return false;
+
+        if (!state.IsInjured)
+            return false;
+
+        return Time.time < injuredSpeedBoostEndTime;
+    }
 
     // 외부 스크립트가 이동을 잠글 때 사용
     public void SetMoveLock(bool value)
@@ -398,6 +429,11 @@ public class SurvivorMove : NetworkBehaviour
             speed = crouchSpeed;
         else if (isRunning)
             speed = runSpeed;
+
+        // 건강 상태에서 맞고 부상 상태가 된 직후 3초 동안 달릴 때만 이동 속도를 1.5배로 올린다.
+        // 걷기 / 앉기 이동에는 보너스를 적용하지 않는다.
+        if (isRunning && IsInjuredSpeedBoostActive())
+            speed *= injuredSpeedBoostMultiplier;
 
         if (controller.isGrounded)
             yVelocity = -1f;

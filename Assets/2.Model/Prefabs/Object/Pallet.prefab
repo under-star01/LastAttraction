@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 3423453828612308930}
   - component: {fileID: 6901615392935112166}
   - component: {fileID: 2642134331282143168}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Pallet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -148,11 +148,14 @@ MonoBehaviour:
   rightPoint: {fileID: 8087643541499887786}
   moveToPointSpeed: 5
   dropActionTime: 0.5
-  survivorVaultSpeed: 4
+  survivorVaultSpeed: 3
   breakActionTime: 2
   useDistance: 2
   occupationRadius: 1
   stunTime: 1.2
+  vaultSoundKey: 12
+  dropSoundKey: 13
+  breakSoundKey: 14
 --- !u!114 &6901615392935112166
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -196,7 +199,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8087643541499887786}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: RightPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -229,7 +232,7 @@ GameObject:
   - component: {fileID: 3221258045555276637}
   - component: {fileID: 7799100163623625362}
   - component: {fileID: 714394520662893179}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: SM_WalkBoard_A_LOD0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -317,7 +320,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3315285099514173878}
   - component: {fileID: 8798725689748735127}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Pallet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -385,7 +388,7 @@ GameObject:
   - component: {fileID: 3317726972478966682}
   - component: {fileID: 5512399340181958013}
   - component: {fileID: 734067138253713256}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: SM_WalkBoard_A_LOD1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -472,7 +475,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5077398298800477093}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: LeftPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -505,7 +508,7 @@ GameObject:
   - component: {fileID: 7039147886767088834}
   - component: {fileID: 8518053167460617169}
   - component: {fileID: 5308909240293237392}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: SM_WalkBoard_A_LOD3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -594,7 +597,7 @@ GameObject:
   - component: {fileID: 6401743493667042967}
   - component: {fileID: 8574269530830318303}
   - component: {fileID: 6761534690034371418}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: SM_WalkBoard_A_LOD2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
