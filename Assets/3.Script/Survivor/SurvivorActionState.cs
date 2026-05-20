@@ -254,7 +254,11 @@ public class SurvivorActionState : NetworkBehaviour
 
         if (move != null)
         {
-            move.ForceDownHitPoseServer();
+            move.SetCamAnim(false);
+            move.SetSearching(false);
+            move.SetVaulting(false);
+            move.SetStunned(false);
+            move.StopAnimation();
             move.SetMoveLock(true);
         }
 
@@ -262,6 +266,10 @@ public class SurvivorActionState : NetworkBehaviour
             interactor.ForceStopInteractFromServer();
 
         ApplyState();
+
+        // 앉기 / 이동 상태 Sync가 먼저 Animator에 반영될 시간을 준다.
+        yield return null;
+        yield return null;
 
         RpcDownHit();
 
@@ -280,14 +288,16 @@ public class SurvivorActionState : NetworkBehaviour
         if (interactor != null)
             interactor.ForceStopInteract();
 
-        if (move != null)
-        {
-            move.SetMoveLock(true);
-            move.ResetAnimatorForDownHit();
-        }
-
         if (animator != null)
+        {
+            animator.SetBool("IsCrouching", false);
+            animator.SetBool("IsDowned", false);
+            animator.SetFloat("MoveSpeed", 0f);
+
+            animator.ResetTrigger("Hit");
+            animator.ResetTrigger("Stun");
             animator.SetTrigger("DownHit");
+        }
     }
 
     // 트랩 / QTE 실패 등에서 공통으로 사용하는 스턴 루틴
