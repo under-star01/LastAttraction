@@ -26,6 +26,14 @@ public class InGameUIManager : MonoBehaviour
     [Header("상호작용 표시 UI")]
     [SerializeField] private Image interactCircleIcon;
 
+    [Header("상호작용 키 안내 UI")]
+    [SerializeField] private InteractionPromptUI interactionPromptUI;
+
+    [Header("입력 아이콘")]
+    [SerializeField] private Sprite holdInputIcon;     // 좌클릭 홀드 이미지
+    [SerializeField] private Sprite pressInputIcon;    // Space 이미지
+    [SerializeField] private Sprite killerPickUpIcon;  // E 이미지
+
     [Header("생존자 전용 UI")]
     [SerializeField] private LocalActionUI localActionUI;
     [SerializeField] private GameObject objectiveProgressUIObject;
@@ -85,6 +93,9 @@ public class InGameUIManager : MonoBehaviour
 
         if (resultUI != null)
             resultUI.SetActive(false);
+
+        if (interactionPromptUI != null)
+            interactionPromptUI.Hide();
 
         HideAcquiredEvidenceImages();
 
@@ -205,6 +216,26 @@ public class InGameUIManager : MonoBehaviour
     public Image GetInteractCircleIcon()
     {
         return interactCircleIcon;
+    }
+
+    public InteractionPromptUI GetInteractionPromptUI()
+    {
+        return interactionPromptUI;
+    }
+
+    public Sprite GetHoldInputIcon()
+    {
+        return holdInputIcon;
+    }
+
+    public Sprite GetPressInputIcon()
+    {
+        return pressInputIcon;
+    }
+
+    public Sprite GetKillerPickUpIcon()
+    {
+        return killerPickUpIcon;
     }
 
     public KillerSkillUI GetKillerSkillUI()
@@ -396,6 +427,9 @@ public class InGameUIManager : MonoBehaviour
 
         if (cameraSkillUI != null)
             cameraSkillUI.gameObject.SetActive(false);
+
+        if (interactionPromptUI != null)
+            interactionPromptUI.Hide();
 
         if (frameUI != null)
         {

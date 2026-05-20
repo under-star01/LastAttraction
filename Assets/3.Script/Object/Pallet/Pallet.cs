@@ -35,6 +35,8 @@ public class Pallet : NetworkBehaviour, IInteractable
     [SyncVar(hook = nameof(OnDroppedChanged))]
     private bool isDropped;
 
+    public bool IsDropped => isDropped;
+
     // 현재 판자가 사용 중인지 여부다.
     [SyncVar] private bool isBusy;
 
