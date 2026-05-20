@@ -362,7 +362,7 @@ public class KillerCombat : NetworkBehaviour
     [Server]
     private IEnumerator ServerLungeSoundRoutine()
     {
-        yield return new WaitForSeconds(maxLungeDuration * 0.3f);
+        yield return new WaitForSeconds(maxLungeDuration * 0.1f);
 
         if (state == null)
             yield break;
