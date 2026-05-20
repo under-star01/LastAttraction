@@ -96,4 +96,13 @@ public class SurvivorMoveState : NetworkBehaviour
         animator.SetBool("IsCrouching", isCrouching);
         animator.SetBool("IsDowned", isDowned);
     }
+
+    // 다운 상태 애니메이션을 즉시 강제 적용할 때 사용
+    public void ForceDownedAnimation(bool moving = false)
+    {
+        currentMoveState = SurvivorLocomotionState.Crawl;
+        isMoving = moving;
+
+        ApplyAnimator();
+    }
 }

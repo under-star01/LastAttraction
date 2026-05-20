@@ -336,7 +336,12 @@ public class SurvivorMove : NetworkBehaviour
             GravityOnly();
 
             if (moveState != null)
-                moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
+            {
+                if (isDowned)
+                    moveState.SetMoveState(SurvivorLocomotionState.Crawl, false);
+                else
+                    moveState.SetMoveState(SurvivorLocomotionState.Idle, false);
+            }
 
             return;
         }
@@ -789,6 +794,19 @@ public class SurvivorMove : NetworkBehaviour
         {
             CmdStopAnim();
         }
+    }
+
+    [Command]
+    private void CmdForceDownedAnimation()
+    {
+        if (moveState != null)
+            moveState.SetMoveState(SurvivorLocomotionState.Crawl, false);
+    }
+
+    public void ApplyDownedAnimationLocal()
+    {
+        if (moveState != null)
+            moveState.ForceDownedAnimation(false);
     }
 
     [Command]

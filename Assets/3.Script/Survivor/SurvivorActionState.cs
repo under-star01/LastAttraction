@@ -158,7 +158,12 @@ public class SurvivorActionState : NetworkBehaviour
         move.SetMoveLock(lockMove);
 
         if (lockMove)
-            move.StopAnimation();
+        {
+            if (currentAction == SurvivorAction.DownHit)
+                move.ApplyDownedAnimationLocal();
+            else
+                move.StopAnimation();
+        }
     }
 
     // 상태에 따라 SurvivorInteractor 사용 가능 여부를 바꾼다.
@@ -253,7 +258,10 @@ public class SurvivorActionState : NetworkBehaviour
         isDoingInteraction = false;
 
         if (move != null)
+        {
             move.SetStunned(false);
+            move.ApplyDownedAnimationLocal();
+        }
 
         // 서버 루틴이므로 소유 클라이언트에게 실제 상호작용 종료를 요청한다.
         if (interactor != null)
@@ -282,16 +290,21 @@ public class SurvivorActionState : NetworkBehaviour
         if (move != null)
         {
             move.SetMoveLock(true);
-            move.StopAnimation();
 
             move.SetCamAnim(false);
             move.SetSearching(false);
             move.SetVaulting(false);
             move.SetStunned(false);
+
+            move.ApplyDownedAnimationLocal();
         }
 
         if (animator != null)
+        {
+            animator.ResetTrigger("Hit");
+            animator.ResetTrigger("Stun");
             animator.SetTrigger("DownHit");
+        }
     }
 
     // 트랩 / QTE 실패 등에서 공통으로 사용하는 스턴 루틴
