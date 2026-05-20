@@ -693,9 +693,6 @@ public class SurvivorInteractor : NetworkBehaviour
     {
         if (interactable is EvidencePoint evidence)
         {
-            if (!string.IsNullOrWhiteSpace(evidence.DisplayName))
-                return $"{evidence.DisplayName} 조사";
-
             return "증거 조사";
         }
 
