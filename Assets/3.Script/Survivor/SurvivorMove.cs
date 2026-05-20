@@ -827,9 +827,8 @@ public class SurvivorMove : NetworkBehaviour
         }
     }
 
-    // 다운힛 / 사망 / 강제 상태 전환 전에 앉기 상태를 완전히 해제한다.
     [Server]
-    public void ForceStandForHitServer()
+    public void ForceDownHitPoseServer()
     {
         serverMoveInput = Vector2.zero;
         serverWantsRun = false;
@@ -844,6 +843,24 @@ public class SurvivorMove : NetworkBehaviour
         SetSearching(false);
         SetVaulting(false);
         SetStunned(false);
+    }
+
+    public void ResetAnimatorForDownHit()
+    {
+        if (animator == null)
+            return;
+
+        animator.SetFloat("MoveSpeed", 0f);
+        animator.SetBool("IsCrouching", false);
+        animator.SetBool("IsDowned", false);
+        animator.SetBool("IsCameraSkill", false);
+        animator.SetBool("IsSearching", false);
+        animator.SetBool("IsVaulting", false);
+        animator.SetBool("IsStunned", false);
+
+        animator.ResetTrigger("Hit");
+        animator.ResetTrigger("Stun");
+        animator.ResetTrigger("DownHit");
     }
 
     [Command]

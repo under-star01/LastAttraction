@@ -254,8 +254,7 @@ public class SurvivorActionState : NetworkBehaviour
 
         if (move != null)
         {
-            // 티배깅 중 남아있는 앉기 상태를 먼저 제거
-            move.ForceStandForHitServer();
+            move.ForceDownHitPoseServer();
             move.SetMoveLock(true);
         }
 
@@ -278,31 +277,17 @@ public class SurvivorActionState : NetworkBehaviour
     [ClientRpc]
     private void RpcDownHit()
     {
-        // 이 함수는 클라이언트에서 실행되므로 기존 ForceStopInteract를 직접 호출해도 된다.
         if (interactor != null)
             interactor.ForceStopInteract();
 
         if (move != null)
         {
             move.SetMoveLock(true);
-            move.StopAnimation();
-
-            move.SetCamAnim(false);
-            move.SetSearching(false);
-            move.SetVaulting(false);
-            move.SetStunned(false);
+            move.ResetAnimatorForDownHit();
         }
 
         if (animator != null)
-        {
-            animator.SetBool("IsCrouching", false);
-            animator.SetBool("IsDowned", false);
-            animator.SetFloat("MoveSpeed", 0f);
-
-            animator.ResetTrigger("Hit");
-            animator.ResetTrigger("Stun");
             animator.SetTrigger("DownHit");
-        }
     }
 
     // 트랩 / QTE 실패 등에서 공통으로 사용하는 스턴 루틴
