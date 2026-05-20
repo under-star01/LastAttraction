@@ -253,9 +253,12 @@ public class SurvivorActionState : NetworkBehaviour
         isDoingInteraction = false;
 
         if (move != null)
-            move.SetStunned(false);
+        {
+            // 티배깅 중 남아있는 앉기 상태를 먼저 제거
+            move.ForceStandForHitServer();
+            move.SetMoveLock(true);
+        }
 
-        // 서버 루틴이므로 소유 클라이언트에게 실제 상호작용 종료를 요청한다.
         if (interactor != null)
             interactor.ForceStopInteractFromServer();
 
@@ -291,7 +294,15 @@ public class SurvivorActionState : NetworkBehaviour
         }
 
         if (animator != null)
+        {
+            animator.SetBool("IsCrouching", false);
+            animator.SetBool("IsDowned", false);
+            animator.SetFloat("MoveSpeed", 0f);
+
+            animator.ResetTrigger("Hit");
+            animator.ResetTrigger("Stun");
             animator.SetTrigger("DownHit");
+        }
     }
 
     // 트랩 / QTE 실패 등에서 공통으로 사용하는 스턴 루틴
