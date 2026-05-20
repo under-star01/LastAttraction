@@ -26299,7 +26299,7 @@ MonoBehaviour:
   syncInterval: 0
   maxLungeDuration: 1.2
   hitFailPenalty: 2
-  hitSuccessPenalty: 2.5
+  hitSuccessPenalty: 3.5
   wallHitPenalty: 3
   attackPoint: {fileID: 7609542204705704420}
   attackRadius: 1
@@ -26376,9 +26376,9 @@ MonoBehaviour:
   resultCam: {fileID: 6676859139856432200}
   activeCameraPriority: 30
   inactiveCameraPriority: 0
-  moveSpeed: 4
+  moveSpeed: 4.4
   lungeMultiplier: 1.6
-  penaltyMultiplier: 0.4
+  penaltyMultiplier: 0.2
   rageSpeedMultiplier: 1.1
   lookSensitivity: 0.2
   footstepPositionOffset: {x: 0, y: 0.1, z: 0}

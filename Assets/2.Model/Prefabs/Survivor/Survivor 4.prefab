@@ -3469,10 +3469,10 @@ MonoBehaviour:
   cameraPitchRoot: {fileID: 2859212466978346225}
   modelRoot: {fileID: 8174374209964335500}
   animator: {fileID: 7436738972924962348}
-  walkSpeed: 2
-  runSpeed: 3.6
-  crouchSpeed: 1
-  crawlSpeed: 0.6
+  walkSpeed: 2.2
+  runSpeed: 4
+  crouchSpeed: 1.1
+  crawlSpeed: 0.8
   turnSpeed: 15
   escapeRunDuration: 2
   mouseSensitivity: 0.08
