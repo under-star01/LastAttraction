@@ -136,7 +136,7 @@ public class KillerCombat : NetworkBehaviour
                 return;
 
             if (currentLungeTime < maxLungeDuration * 0.5f &&
-                currentLungeTime + Time.deltaTime >= maxLungeDuration * 0.5f)
+                currentLungeTime + Time.deltaTime >= maxLungeDuration * 0.3f)
             {
                 CmdPlayLungeSound();
             }
