@@ -13199,7 +13199,7 @@ MonoBehaviour:
   noneActionIcon: {fileID: 21300000, guid: 786980231b1a35f4bbe06a59e080b293, type: 3}
   cameraActionIcon: {fileID: 21300000, guid: 7a47d7adb8fbf4a41b7bdf50be54898b, type: 3}
   evidenceActionIcon: {fileID: 21300000, guid: 20b5e2a092726a541a303eff559dec7a, type: 3}
-  healGiveActionIcon: {fileID: 21300000, guid: 2e0314f0da2d5254587b84c86c018a06, type: 3}
+  healGiveActionIcon: {fileID: 21300000, guid: 31ef4d0f82acb8b4d8988f786bbe60b1, type: 3}
   healReceiveActionIcon: {fileID: 21300000, guid: 2e0314f0da2d5254587b84c86c018a06, type: 3}
   prisonActionIcon: {fileID: 21300000, guid: fd43deeaf2743b14d84ac20fde1678c1, type: 3}
   uploadActionIcon: {fileID: 21300000, guid: 6f900a5b8b2848043a6ee000d5bc8ce8, type: 3}
