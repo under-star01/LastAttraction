@@ -370,4 +370,30 @@ public class KillerState : NetworkBehaviour
         else
             detector?.SetActive(false);
     }
+
+    // ---------------------------------------------------------
+    // 디버그용 기즈모 그리기 (씬 뷰에서 킬러 선택 시 표시됨)
+    // ---------------------------------------------------------
+    private void OnDrawGizmosSelected()
+    {
+        // 시야 탐지 시작 위치 (미간 높이)
+        Vector3 origin = transform.position + Vector3.up * 1.5f;
+        Vector3 endPos = origin + transform.forward * detectRange;
+
+        Gizmos.color = Color.red;
+
+        // 시작점과 끝점에 구체 그리기
+        Gizmos.DrawWireSphere(origin, detectRadius);
+        Gizmos.DrawWireSphere(endPos, detectRadius);
+
+        // 두 구체를 잇는 선 그려서 원기둥 형태(SphereCast) 시각화
+        Gizmos.DrawLine(origin + Vector3.up * detectRadius, endPos + Vector3.up * detectRadius);
+        Gizmos.DrawLine(origin - Vector3.up * detectRadius, endPos - Vector3.up * detectRadius);
+        Gizmos.DrawLine(origin + transform.right * detectRadius, endPos + transform.right * detectRadius);
+        Gizmos.DrawLine(origin - transform.right * detectRadius, endPos - transform.right * detectRadius);
+
+        // 중심 에임 선 (시선 방향)
+        Gizmos.color = new Color(1f, 0f, 0f, 0.5f);
+        Gizmos.DrawLine(origin, endPos);
+    }
 }
