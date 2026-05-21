@@ -35,6 +35,8 @@ public class KillerState : NetworkBehaviour
     [SerializeField] private float rageBuildThreshold = 1.0f; // 1초간 촬영 당하면 분노
     [SerializeField] private float rageDuration = 10.0f;       // 10초간 유지
     [SerializeField] private float detectRange = 15f;          // 감지 거리
+    // 레이캐스트의 굵기(반경)를 결정합니다.
+    [SerializeField] private float detectRadius = 2.0f;
     [SerializeField] private LayerMask survivorLayer;          // 생존자 레이어
     [SerializeField] private float rageRefreshRequestInterval = 0.2f;
 
@@ -189,12 +191,16 @@ public class KillerState : NetworkBehaviour
 
     private void CheckRageBuild()
     {
-        Ray ray = new Ray(transform.position + Vector3.up * 1.5f, transform.forward);
+        Vector3 origin = transform.position + Vector3.up * 1.5f;
 
-        if (Physics.Raycast(ray, out RaycastHit hit, detectRange, survivorLayer))
+        // 변경: Raycast 대신 SphereCastAll을 사용하여 굵은 원기둥 범위 내의 모든 대상을 찾습니다.
+        RaycastHit[] hits = Physics.SphereCastAll(origin, detectRadius, transform.forward, detectRange, survivorLayer);
+
+        foreach (RaycastHit hit in hits)
         {
             SurvivorCameraSkill survivorCam = hit.collider.GetComponentInParent<SurvivorCameraSkill>();
 
+            // 생존자가 카메라를 들고 촬영 중이라면 분노 게이지 축적
             if (survivorCam != null && survivorCam.IsRecordingKiller)
             {
                 currentRageBuildTime += Time.deltaTime;
@@ -204,11 +210,11 @@ public class KillerState : NetworkBehaviour
                     currentRageBuildTime = 0f;
                     CmdSetRage(true);
                 }
-
-                return;
+                return; // 한 명이라도 찍고 있으면 게이지가 차므로 즉시 종료
             }
         }
 
+        // 아무도 찍고 있지 않다면 게이지 초기화
         currentRageBuildTime = 0f;
     }
 
@@ -217,17 +223,20 @@ public class KillerState : NetworkBehaviour
         if (Time.time < nextRageRefreshRequestTime)
             return;
 
-        Ray ray = new Ray(transform.position + Vector3.up * 1.5f, transform.forward);
+        Vector3 origin = transform.position + Vector3.up * 1.5f;
 
-        if (Physics.Raycast(ray, out RaycastHit hit, detectRange, survivorLayer))
+        // 여기도 마찬가지로 SphereCastAll로 변경하여 갱신 판정을 넓혀줍니다.
+        RaycastHit[] hits = Physics.SphereCastAll(origin, detectRadius, transform.forward, detectRange, survivorLayer);
+
+        foreach (RaycastHit hit in hits)
         {
-            // Rage가 이미 켜진 상태에서는 카메라 촬영 여부를 보지 않는다.
             SurvivorState survivorState = hit.collider.GetComponentInParent<SurvivorState>();
 
             if (survivorState != null && !survivorState.IsDead)
             {
                 nextRageRefreshRequestTime = Time.time + rageRefreshRequestInterval;
                 CmdRefreshRageTimer();
+                return; // 하나라도 찾으면 바로 갱신 후 루프 종료
             }
         }
     }
