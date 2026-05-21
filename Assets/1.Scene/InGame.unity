@@ -2259,8 +2259,8 @@ MonoBehaviour:
   killerRageSource: {fileID: 201833055}
   ambientMaxVolume: 1
   range1MaxVolume: 0.2
-  range2MaxVolume: 0.2
-  range3MaxVolume: 0.2
+  range2MaxVolume: 0.3
+  range3MaxVolume: 0.4
   killerRageMaxVolume: 0.3
   heartbeatSource: {fileID: 201833048}
   heartbeatClip: {fileID: 8300000, guid: 7e0c3a5a46578724f8ec3cfb92923399, type: 3}
@@ -2268,6 +2268,7 @@ MonoBehaviour:
   range1: 32
   range2: 16
   range3: 8
+  crossFadeHalfRange: 2
   musicFadeSpeed: 3
   heartbeatInterval1: 1.5
   heartbeatInterval2: 1.2

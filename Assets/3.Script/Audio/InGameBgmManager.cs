@@ -19,29 +19,32 @@ public class InGameBgmManager : MonoBehaviour
     [SerializeField] private AudioSource killerRageSource; // 살인마 Rage 상태 BGM
 
     [Header("음악 최대 볼륨")]
-    [SerializeField] private float ambientMaxVolume = 0.15f;    // 32m 밖 ambient / 살인마 기본 배경음 최대 볼륨
-    [SerializeField] private float range1MaxVolume = 0.2f;      // 32m 음악 최대 볼륨
-    [SerializeField] private float range2MaxVolume = 0.3f;      // 16m 음악 최대 볼륨
-    [SerializeField] private float range3MaxVolume = 0.4f;      // 8m 음악 최대 볼륨
-    [SerializeField] private float killerRageMaxVolume = 0.55f; // 살인마 Rage BGM 최대 볼륨
+    [SerializeField] private float ambientMaxVolume = 0.15f;
+    [SerializeField] private float range1MaxVolume = 0.2f;
+    [SerializeField] private float range2MaxVolume = 0.3f;
+    [SerializeField] private float range3MaxVolume = 0.4f;
+    [SerializeField] private float killerRageMaxVolume = 0.55f;
 
     [Header("심장소리")]
-    [SerializeField] private AudioSource heartbeatSource; // 생존자 심장소리 재생용
-    [SerializeField] private AudioClip heartbeatClip;     // 두근 1번짜리 클립
+    [SerializeField] private AudioSource heartbeatSource;
+    [SerializeField] private AudioClip heartbeatClip;
     [SerializeField] private float heartbeatVolume = 0.5f;
 
     [Header("거리 단계")]
-    [SerializeField] private float range1 = 32f; // 공포 반경 바깥 기준
-    [SerializeField] private float range2 = 16f; // 중간 단계
-    [SerializeField] private float range3 = 8f;  // 가까운 단계
+    [SerializeField] private float range1 = 32f;
+    [SerializeField] private float range2 = 16f;
+    [SerializeField] private float range3 = 8f;
+
+    [Header("크로스페이드 거리")]
+    [SerializeField] private float crossFadeHalfRange = 2f; // 기준 거리 전후 몇 m에서 전환할지
 
     [Header("음악 전환")]
     [SerializeField] private float musicFadeSpeed = 3f;
 
     [Header("심장소리 간격")]
-    [SerializeField] private float heartbeatInterval1 = 1.2f;  // 32m 이내
-    [SerializeField] private float heartbeatInterval2 = 0.85f; // 16m 이내
-    [SerializeField] private float heartbeatInterval3 = 0.55f; // 8m 이내
+    [SerializeField] private float heartbeatInterval1 = 1.2f;
+    [SerializeField] private float heartbeatInterval2 = 0.85f;
+    [SerializeField] private float heartbeatInterval3 = 0.55f;
 
     [Header("탐색")]
     [SerializeField] private float findInterval = 1f;
@@ -198,50 +201,97 @@ public class InGameBgmManager : MonoBehaviour
     }
 
     // 생존자가 듣는 BGM
-    // - 32m 밖: ambientSource
-    // - 32m ~ 16m: 32m 음악이 줄어들고 16m 음악이 커짐
-    // - 16m ~ 8m: 16m 음악이 줄어들고 8m 음악이 커짐
-    // - 8m 안: 8m 음악만 재생
-    // - Rage BGM은 살인마 전용이므로 생존자에게는 재생하지 않음
+    // - 각 기준 거리 전후 crossFadeHalfRange 만큼만 크로스페이드한다.
+    // - 기본값 2m 기준:
+    //   34m ~ 30m : 앰비언트 -> 32m BGM
+    //   18m ~ 14m : 32m BGM -> 16m BGM
+    //   10m ~ 6m  : 16m BGM -> 8m BGM
     private void UpdateSurvivorBgm(float sqrDistance)
     {
         StopAllTargets();
 
-        if (sqrDistance > range1Sqr)
+        float distance = Mathf.Sqrt(sqrDistance);
+        float fade = Mathf.Max(0.01f, crossFadeHalfRange);
+
+        // 32m 경계보다 바깥쪽 완전 앰비언트 구간
+        if (distance > range1 + fade)
         {
             ambientTarget = 1f;
             return;
         }
 
-        float distance = Mathf.Sqrt(sqrDistance);
-
-        if (distance <= range3)
+        // 32m 경계 전후 전환 구간
+        if (distance > range1 - fade)
         {
-            range3Target = 1f;
+            SetCrossFadeTarget(
+                distance,
+                range1 + fade,
+                range1 - fade,
+                out ambientTarget,
+                out range1Target
+            );
             return;
         }
 
-        if (distance <= range2)
+        // 16m 경계 전까지는 32m BGM만
+        if (distance > range2 + fade)
         {
-            // 16m -> 8m 구간
-            // distance가 16m일 때 t = 0
-            // distance가 8m일 때 t = 1
-            float t = Mathf.InverseLerp(range2, range3, distance);
-            t = 1f - t;
-
-            range2Target = 1f - t;
-            range3Target = t;
+            range1Target = 1f;
             return;
         }
 
-        // 32m -> 16m 구간
-        // distance가 32m일 때 t = 0
-        // distance가 16m일 때 t = 1
-        float cross = Mathf.InverseLerp(range1, range2, distance);
-        cross = 1f - cross;
+        // 16m 경계 전후 전환 구간
+        if (distance > range2 - fade)
+        {
+            SetCrossFadeTarget(
+                distance,
+                range2 + fade,
+                range2 - fade,
+                out range1Target,
+                out range2Target
+            );
+            return;
+        }
 
-        range1Target = 1f - cross;
-        range2Target = cross;
+        // 8m 경계 전까지는 16m BGM만
+        if (distance > range3 + fade)
+        {
+            range2Target = 1f;
+            return;
+        }
+
+        // 8m 경계 전후 전환 구간
+        if (distance > range3 - fade)
+        {
+            SetCrossFadeTarget(
+                distance,
+                range3 + fade,
+                range3 - fade,
+                out range2Target,
+                out range3Target
+            );
+            return;
+        }
+
+        // 8m 경계보다 안쪽 완전 8m BGM 구간
+        range3Target = 1f;
+    }
+
+    // outerFullDistance에서는 바깥쪽 BGM 100%
+    // innerFullDistance에서는 안쪽 BGM 100%
+    // 그 사이에서는 두 BGM을 자연스럽게 섞는다.
+    private void SetCrossFadeTarget(
+        float distance,
+        float outerFullDistance,
+        float innerFullDistance,
+        out float outerTarget,
+        out float innerTarget
+    )
+    {
+        float t = Mathf.InverseLerp(outerFullDistance, innerFullDistance, distance);
+
+        outerTarget = 1f - t;
+        innerTarget = t;
     }
 
     private void StopAllTargets()
@@ -329,6 +379,9 @@ public class InGameBgmManager : MonoBehaviour
 
         if (range2 > range1) range2 = range1;
         if (range3 > range2) range3 = range2;
+
+        if (crossFadeHalfRange < 0.01f)
+            crossFadeHalfRange = 0.01f;
 
         if (ambientMaxVolume < 0f) ambientMaxVolume = 0f;
         if (range1MaxVolume < 0f) range1MaxVolume = 0f;
