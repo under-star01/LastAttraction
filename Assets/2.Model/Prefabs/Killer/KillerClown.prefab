@@ -26352,6 +26352,7 @@ MonoBehaviour:
   survivorLayer:
     serializedVersion: 2
     m_Bits: 2112
+  interactionPromptUI: {fileID: 0}
   incageSoundKey: 27
   incageSoundOffset: {x: 0, y: 1, z: 0}
 --- !u!114 &835159930052555109
@@ -26403,6 +26404,7 @@ MonoBehaviour:
   rageBuildThreshold: 1
   rageDuration: 3
   detectRange: 15
+  detectRadius: 3
   survivorLayer:
     serializedVersion: 2
     m_Bits: 393280
