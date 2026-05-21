@@ -2264,7 +2264,7 @@ MonoBehaviour:
   killerRageMaxVolume: 0.3
   heartbeatSource: {fileID: 201833048}
   heartbeatClip: {fileID: 8300000, guid: 7e0c3a5a46578724f8ec3cfb92923399, type: 3}
-  heartbeatVolume: 0.5
+  heartbeatVolume: 0.3
   range1: 32
   range2: 16
   range3: 8
@@ -11563,7 +11563,7 @@ MonoBehaviour:
   objectiveText: {fileID: 1477011221}
   targetComputer: {fileID: 0}
   objectiveTextValue: "\uC0B4\uC778\uB9C8 \uCD2C\uC601 \uB610\uB294 \uC99D\uAC70
-    \uC218\uC9D1 : \uBAA9\uD45C\uCE58 "
+    \uC218\uC0C9 : \uBAA9\uD45C\uCE58 "
   uploadGoalText: "\uCEF4\uD4E8\uD130\uC5D0 \uC99D\uAC70 \uC5C5\uB85C\uB4DC : \uC9C4\uD589\uB3C4"
   gateTimerText: "\uD0C8\uCD9C\uBB38 \uAC1C\uBC29 \uB300\uAE30 : \uB0A8\uC740 \uC2DC\uAC04"
 --- !u!1 &1297884726

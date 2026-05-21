@@ -52,7 +52,7 @@ MonoBehaviour:
   needEvidenceCount: 0
   objectiveMaxValue: 1
   evidenceObjectiveAdd: 0.1
-  needKillerDetectTime: 180
+  needKillerDetectTime: 90
   objectiveProgress: 0
   currentKillerDetectUserCount: 0
   currentKillerDetectMultiplier: 0
@@ -70,7 +70,7 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   killerResultPoint: {fileID: 0}
-  gateOpenDelay: 90
+  gateOpenDelay: 60
   survivorResultList: []
   killerResultData:
     nickname: 
