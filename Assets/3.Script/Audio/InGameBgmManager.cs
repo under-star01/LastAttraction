@@ -199,7 +199,9 @@ public class InGameBgmManager : MonoBehaviour
 
     // 생존자가 듣는 BGM
     // - 32m 밖: ambientSource
-    // - 32m 안: range1 / range2 / range3 단계 음악
+    // - 32m ~ 16m: 32m 음악이 줄어들고 16m 음악이 커짐
+    // - 16m ~ 8m: 16m 음악이 줄어들고 8m 음악이 커짐
+    // - 8m 안: 8m 음악만 재생
     // - Rage BGM은 살인마 전용이므로 생존자에게는 재생하지 않음
     private void UpdateSurvivorBgm(float sqrDistance)
     {
@@ -213,21 +215,33 @@ public class InGameBgmManager : MonoBehaviour
 
         float distance = Mathf.Sqrt(sqrDistance);
 
-        if (sqrDistance <= range3Sqr)
+        if (distance <= range3)
         {
             range3Target = 1f;
             return;
         }
 
-        if (sqrDistance <= range2Sqr)
+        if (distance <= range2)
         {
-            // 16m일 때 0, 8m일 때 1
-            range2Target = 1f - Mathf.InverseLerp(range2, range3, distance);
+            // 16m -> 8m 구간
+            // distance가 16m일 때 t = 0
+            // distance가 8m일 때 t = 1
+            float t = Mathf.InverseLerp(range2, range3, distance);
+            t = 1f - t;
+
+            range2Target = 1f - t;
+            range3Target = t;
             return;
         }
 
-        // 32m일 때 0, 16m일 때 1
-        range1Target = 1f - Mathf.InverseLerp(range1, range2, distance);
+        // 32m -> 16m 구간
+        // distance가 32m일 때 t = 0
+        // distance가 16m일 때 t = 1
+        float cross = Mathf.InverseLerp(range1, range2, distance);
+        cross = 1f - cross;
+
+        range1Target = 1f - cross;
+        range2Target = cross;
     }
 
     private void StopAllTargets()

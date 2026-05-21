@@ -57,7 +57,7 @@ MonoBehaviour:
   currentKillerDetectUserCount: 0
   currentKillerDetectMultiplier: 0
   objectiveState: 0
-  uploadTime: 120
+  uploadTime: 90
   uploadComputers:
   - {fileID: 0}
   - {fileID: 0}
