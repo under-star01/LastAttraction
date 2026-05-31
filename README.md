@@ -2,7 +2,7 @@
 
 <p align="center">
   <img height="260" alt="Last Attraction Screenshot 1" src="https://github.com/user-attachments/assets/e2015ad4-d228-4e1c-af80-1a516d1afaeb" />
-  <img height="260" alt="Last Attraction Screenshot 2" src="https://github.com/user-attachments/assets/862eeb60-fb4e-48ab-8c60-354370b2cab5" />
+  <img height="260" alt="Last Attraction Screenshot 2" src="https://github.com/user-attachments/assets/96b35bb0-2813-49d1-a1ab-03a707c5b3f4" />
 </p>
 
 **Last Attraction**은 폐쇄된 놀이공원을 배경으로 한  
