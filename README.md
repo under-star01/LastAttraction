@@ -1,5 +1,7 @@
 # LastAttraction
 
+<img width="759" height="415" alt="image" src="https://github.com/user-attachments/assets/862eeb60-fb4e-48ab-8c60-354370b2cab5" />
+
 **Last Attraction**은 폐쇄된 놀이공원을 배경으로 한  
 **1vs4 비대칭 멀티플레이 호러 서바이벌 프로젝트**입니다.
 
