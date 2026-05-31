@@ -1,5 +1,6 @@
 # LastAttraction
 
+<img width="776" height="433" alt="image (1)" src="https://github.com/user-attachments/assets/a90d9754-f333-4414-a73d-c5c90afb2841" />
 <img width="759" height="415" alt="image" src="https://github.com/user-attachments/assets/862eeb60-fb4e-48ab-8c60-354370b2cab5" />
 
 **Last Attraction**은 폐쇄된 놀이공원을 배경으로 한  
